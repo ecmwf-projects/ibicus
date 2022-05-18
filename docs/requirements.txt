@@ -1,0 +1,5 @@
+# Requirements for readthedocs
+sphinx
+ipykernel
+nbsphinx
+sphinx_rtd_theme
