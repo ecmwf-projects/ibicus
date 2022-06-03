@@ -1,18 +1,39 @@
 import scipy
 import numpy as np
 
+from scipy.stats import norm, gamma
 from debiaser import Debiaser
 
+variable_distribution_match = {
+    'temp': norm,
+    'precip': gamma
+}
+
 class QuantileMapping(Debiaser):
-    def __init__(self, distribution, delta_type):
+    def __init__(self, delta_type, variable = None, distribution = None, precip_model_type = "censored"):
+        
+        if distribution is None and variable is None:
+            raise ValueError("Either distribution or variable need to be specified")
+        
         if not isinstance(distribution, (scipy.stats.rv_continuous, scipy.stats.rv_discrete)):
             raise TypeError("Wrong type for distribution. Needs to be scipy.stats.rv_continuous or scipy.stats.rv_discrete") 
         
         if not delta_type in ["additive", "multiplicative", "none"]:
             raise ValueError("Wrong value for delta_type. Needs to be one of ['additive', 'multiplicative', 'none']")
         
+        if not precip_model_type in ["censored", "hurdle"]:
+            raise ValueError("Wrong value for precip_model_type. Needs to be one of ['censored', 'hurdle']")
+                
+        if distribution is None:
+            distribution = variable_distribution_match[variable]
+        
+        if variable is None:
+            variable = "unknown"
+            
+        self.variable = variable
         self.distribution = distribution
         self.delta_type = delta_type
+        self.precip_model_type = precip_model_type
         
         return None
     
