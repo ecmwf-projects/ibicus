@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats 
 import scipy.optimize
-
+from scipy.stats import gamma
 
 """----- Precipitation-helpers -----"""
 # TODO: in gamma.fit shall we specify gamma.fit(floc = 0) so keep loc fixed at zero?
@@ -35,22 +35,23 @@ def quantile_mapping_precipitation_hurdle_model(x, fit_right, fit_left, distribu
     x_mapped = ppf_precipitation_hurdle_model(q, fit = fit_left, distribution = distribution_left)
     return x_mapped
 
+
 # Censored model: rain values of zero (or below censoring_value) are treated as censored values
 def fit_censored_gamma(x, nr_censored_x, min_x):
     def neg_log_likelihood(params, x, nr_censored_x, min_x)->float:
         return - np.sum(gamma.logpdf(x, a = params[0], scale = params[1])) - nr_censored_x * np.log(gamma.cdf(min_x, a = params[0], scale = params[1]))
-    optimizer_result = scipy.optimize.minimize(neg_log_likelihood, x0 = np.array([1,1]), args = (x, nr_censored_x, min_x), options={'maxiter': 1000, 'disp': True}, 
+    optimizer_result = scipy.optimize.minimize(neg_log_likelihood, x0 = np.array([1,1]), args = (x, nr_censored_x, min_x), options={'maxiter': 1000, 'disp': False}, 
                     method='nelder-mead', tol=1e-8)
-    return (optimizer_result[0], 0, optimizer_result[1]) # location was fixed to zero
+    return (optimizer_result.x[0], 0, optimizer_result.x[1]) # location was fixed to zero
     
 def fit_precipitation_censored_gamma(data, censoring_value):
     noncensored_data = data[data > censoring_value]
     return fit_censored_gamma(noncensored_data, data.shape[0] - noncensored_data.shape[0], censoring_value)
 
-def quantile_mapping_precipitation_hurdle_model(x, censoring_value, fit_right, fit_left, distribution_right = scipy.stats.gamma, distribution_left = scipy.stats.gamma, randomization = True):
+def quantile_mapping_precipitation_censored_gamma(x, censoring_value, fit_right, fit_left):
     x_randomized = np.where(x < censoring_value, np.random.uniform(0, censoring_value), x)
-    q = distribution_right.cdf(x_randomized, *fit_right)
-    x_mapped = distribution_left.ppf(q, *fit_left)
+    q = gamma.cdf(x_randomized, *fit_right)
+    x_mapped = gamma.ppf(q, *fit_left)
     return np.where(x_mapped < censoring_value, 0, x_mapped)
     
     
