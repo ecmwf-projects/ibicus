@@ -11,29 +11,32 @@ from tqdm import tqdm
 
 
 # Debiaser class
-class Debiaser():
+class Debiaser:
     def __init__():
         return self
-    
+
     def apply_location(self, obs, cm_hist, cm_future):
-        raise NotImplementedError("apply_location is an abstract method which needs to be overriden in derived classes.")
-        
+        raise NotImplementedError(
+            "apply_location is an abstract method which needs to be overriden in derived classes."
+        )
+
     def apply(self, obs, cm_hist, cm_future):
-        raise NotImplementedError("apply is an abstract method which needs to be overriden in derived classes.")
-    
+        raise NotImplementedError(
+            "apply is an abstract method which needs to be overriden in derived classes."
+        )
 
     # Input checks:
     @staticmethod
     def is_correct_type(df):
         return isinstance(df, np.ndarray)
-    
+
     @staticmethod
     def has_correct_shape(df):
         if df.ndim == 3:
             return True
         else:
             return False
-        
+
     @staticmethod
     def have_same_shape(obs, cm_hist, cm_future):
         if obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]:
@@ -45,8 +48,8 @@ class Debiaser():
     def check_inputs(obs, cm_hist, cm_future):
         # correct type
         if not Debiaser.is_correct_type(obs):
-            raise TypeError("Wrong type for obs. Needs to be np.ndarray") 
-        
+            raise TypeError("Wrong type for obs. Needs to be np.ndarray")
+
         # correct shape
         if not Debiaser.has_correct_shape(obs):
             raise ValueError("obs needs to have 3 dimensions: time, x, y")
@@ -59,13 +62,15 @@ class Debiaser():
 
         # have shame shape
         if not Debiaser.have_same_shape(obs, cm_hist, cm_future):
-            raise ValueError("obs, cm_hist, cm_future need to have same (number of) spatial dimensions")
+            raise ValueError(
+                "obs, cm_hist, cm_future need to have same (number of) spatial dimensions"
+            )
 
         return True
 
     # Helpers for downstream:
     @staticmethod
-    def map_over_locations(fct, obs, cm_hist, cm_future, nr_timesteps_output = None):
+    def map_over_locations(fct, obs, cm_hist, cm_future, nr_timesteps_output=None):
         """
         Maps locationwise-defined function over all gridpoints.
 
@@ -81,19 +86,20 @@ class Debiaser():
             Array of climate model simulation data over future period.
         nr_timesteps_output : int
             Output-length at individual location.
-            
+
         Returns
         -------
         np.ndarray
             Numpy array containing locationwise output.
         """
-        
-        if nr_timesteps_output is None:
-            nr_timesteps_output  = cm_future.shape[0]
 
+        if nr_timesteps_output is None:
+            nr_timesteps_output = cm_future.shape[0]
 
         output = np.empty([nr_timesteps_output, obs.shape[1], obs.shape[2]])
-        for i, j in tqdm(np.ndindex(obs.shape[1:]), total = np.prod(obs.shape[1:])):
-            output[:, i, j] = fct(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])[0:nr_timesteps_output+1]
-                
-        return output 
+        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
+            output[:, i, j] = fct(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])[
+                0 : nr_timesteps_output + 1
+            ]
+
+        return output
