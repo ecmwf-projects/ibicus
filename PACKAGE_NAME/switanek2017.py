@@ -61,7 +61,8 @@ class Switanek2017(Debiaser):
         bias_corrected = norm.ppf(cdf_scaled, *fit_obs_detrended) + scaling
 
         # Step 7
-        return bias_corrected[argsort_cm_future] + (cm_future - cm_future_detrended)
+        reverse_sorting_idx = np.argsort(argsort_cm_future)
+        return bias_corrected[reverse_sorting_idx] + (cm_future - cm_future_detrended)
         
         # Open things:
         # - Not entirely clear what this code does. Different than from paper:
