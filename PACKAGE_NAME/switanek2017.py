@@ -1,10 +1,10 @@
-import scipy
 import numpy as np
-
+import scipy
+from debiaser import Debiaser
+from scipy.signal import detrend
 from scipy.stats import norm
 from statsmodels.distributions.empirical_distribution import ECDF
-from scipy.signal import detrend
-from debiaser import Debiaser
+
 
 # Reference Cannon et al. 2015
 class Switanek2017(Debiaser):
@@ -82,8 +82,8 @@ class Switanek2017(Debiaser):
         
         
     def absolute_sdm_location(self, obs_data, mod_data, sce_data, **kwargs):
-        from scipy.stats import norm
         from scipy.signal import detrend
+        from scipy.stats import norm
 
         cdf_threshold = kwargs.get('cdf_threshold', .99999)
         

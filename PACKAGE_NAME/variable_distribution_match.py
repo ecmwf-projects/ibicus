@@ -1,4 +1,4 @@
-from scipy.stats import norm, gamma
+from scipy.stats import gamma, norm
 
 standard_distributions = {
     'temp': norm,

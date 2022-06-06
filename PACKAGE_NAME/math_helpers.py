@@ -1,6 +1,6 @@
 import numpy as np
-import scipy.stats 
 import scipy.optimize
+import scipy.stats
 from scipy.stats import gamma
 
 """----- Precipitation-helpers -----"""

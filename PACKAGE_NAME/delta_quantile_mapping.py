@@ -1,8 +1,8 @@
-import scipy
 import numpy as np
-
-from statsmodels.distributions.empirical_distribution import ECDF
+import scipy
 from debiaser import Debiaser
+from statsmodels.distributions.empirical_distribution import ECDF
+
 
 # Reference Cannon et al. 2015
 class DeltaQuantileMapping(Debiaser):
