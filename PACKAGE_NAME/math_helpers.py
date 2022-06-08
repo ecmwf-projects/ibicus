@@ -3,7 +3,7 @@ import scipy.optimize
 import scipy.stats
 from scipy.stats import gamma
 
-"""----- Precipitation-helpers -----"""
+"""----- Precipitation helpers -----"""
 # TODO: in gamma.fit shall we specify gamma.fit(floc = 0) so keep loc fixed at zero?
 
 # Hurdle model: two step process: binomial if it rains and then amounts how much. P(X = 0) = p0, P(0 < X <= x) = p0 + (1-p0) F_A(x)
@@ -96,3 +96,11 @@ def quantile_mapping_precipitation_censored_gamma(
     q = gamma.cdf(x_randomized, *fit_right)
     x_mapped = gamma.ppf(q, *fit_left)
     return np.where(x_mapped < censoring_value, 0, x_mapped)
+
+
+"""----- Other helpers -----"""
+# Get the empirical inverse cdf
+def IECDF(x):
+    x.sort()
+    n = x.shape[0]
+    return lambda q: (x[np.rint(n*q).astype(int)])
