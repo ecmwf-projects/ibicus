@@ -111,6 +111,9 @@ class ISIMIP(Debiaser):
             "trend_preservation"
         ]
         self.detrending = standard_variables_isimip[variable]["detrending"]
+        
+        if (self.upper_bound < np.inf and self.upper_threshold < np.inf) or (self.lower_bound > -np.inf and self.lower_threshold > -np.inf):
+            self.powerlaw_exponent_step4 = 2
 
     @staticmethod
     def get_rolling_mean(x, n=365):
@@ -197,15 +200,15 @@ class ISIMIP(Debiaser):
             cm_future = np.where(
                 cm_future <= self.lower_threshold,
                 self.lower_bound
-                + (1 - np.random.powerlaw(a=2))
+                + (1 - np.random.power(a=self.powerlaw_exponent_step4))
                 / (self.lower_threshold - self.lower_bound),
                 cm_future,
             )
-        if self.upper_bound < np.inf and self.upper_threshold < n.inf:
+        if self.upper_bound < np.inf and self.upper_threshold < np.inf:
             cm_future = np.where(
                 cm_future >= self.upper_threshold,
                 self.upper_threshold
-                + np.random.powerlaw(a=2) / (self.upper_bound - self.upper_threshold),
+                + np.random.power(a=self.powerlaw_exponent_step4) / (self.upper_bound - self.upper_threshold),
                 cm_future,
             )
 
@@ -271,8 +274,7 @@ class ISIMIP(Debiaser):
                 "Wrong value for self.trend_preservation. Needs to be one of ['additive', 'multiplicative', 'mixed', 'bounded']"
             )
 
-    # TODO: Still need to do bound enforcing prior (and afterwards) (first part of step 6)
-    def step6_map_values_between_thresholds(
+    def _step6_values_between_thresholds(
         self, obs_hist_sorted, obs_future_sorted, cm_hist_sorted, cm_future_sorted
     ):
 
@@ -302,7 +304,7 @@ class ISIMIP(Debiaser):
         )
 
         # tas exception
-        if self.variable in ["tas", "temp", "temperature"]:
+        if self.variable == "tas":
             mapped_vals = self.distribution.ppf(cdf_vals_cm_future, *fit_obs_future)
             return mapped_vals
 
@@ -321,6 +323,7 @@ class ISIMIP(Debiaser):
         )
         return mapped_vals
 
+    # Core of the isimip-method: parametric quantile mapping
     def step6(self, obs_hist, obs_future, cm_hist, cm_future):
 
         # Sort arrays to apply parametric quantile mapping (values of equal rank are mapped together). Save sort-order of cm_future for backsorting
@@ -389,7 +392,7 @@ class ISIMIP(Debiaser):
                 nr_indices_to_set_to_lower_bound : (
                     len(cm_future_sorted) - nr_indices_to_set_to_higher_bound
                 )
-            ] = self.step6_map_values_between_thresholds(
+            ] = self._step6_values_between_thresholds(
                 obs_hist_sorted[
                     (obs_hist_sorted > self.lower_threshold)
                     & (obs_hist_sorted < self.upper_threshold)
@@ -414,7 +417,7 @@ class ISIMIP(Debiaser):
         else:
             # Return values inserted back at correct locations
             reverse_sorting_idx = np.argsort(cm_future_argsort)
-            cm_future_sorted = self.step6_map_values_between_thresholds(
+            cm_future_sorted = self._step6_values_between_thresholds(
                 obs_hist_sorted, obs_future_sorted, cm_hist_sorted, cm_future_sorted
             )
             return cm_future_sorted[reverse_sorting_idx]
