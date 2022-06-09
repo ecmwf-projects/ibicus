@@ -54,10 +54,3 @@ class DeltaQuantileMapping(Debiaser):
         """
 
         return debiased_cm
-
-    def apply(self, obs, cm_hist, cm_future):
-        print("----- Running debiasing -----")
-        Debiaser.check_inputs(obs, cm_hist, cm_future)
-        return Debiaser.map_over_locations(
-            self.apply_location, obs, cm_hist, cm_future, cm_future.shape[0]
-        )

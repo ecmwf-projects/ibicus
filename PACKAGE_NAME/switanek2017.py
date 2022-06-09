@@ -107,12 +107,8 @@ class Switanek2017(Debiaser):
         # - Not clear why scenario mean subtracted here again when trend readded:
         # correction += sce_diff - sce_mean
 
-    def apply(self, obs, cm_hist, cm_future):
-        print("----- Running debiasing -----")
-        Debiaser.check_inputs(obs, cm_hist, cm_future)
-        return Debiaser.map_over_locations(
-            self.apply_location_temp, obs, cm_hist, cm_future, cm_future.shape[0]
-        )
+    def apply_location(self, obs, cm_hist, cm_future):
+        return self.apply_location_temp(obs, cm_hist, cm_future)
 
     def absolute_sdm_location(self, obs_data, mod_data, sce_data, **kwargs):
         from scipy.signal import detrend

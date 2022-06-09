@@ -15,16 +15,6 @@ class Debiaser:
     def __init__():
         return self
 
-    def apply_location(self, obs, cm_hist, cm_future):
-        raise NotImplementedError(
-            "apply_location is an abstract method which needs to be overriden in derived classes."
-        )
-
-    def apply(self, obs, cm_hist, cm_future):
-        raise NotImplementedError(
-            "apply is an abstract method which needs to be overriden in derived classes."
-        )
-
     # Input checks:
     @staticmethod
     def is_correct_type(df):
@@ -67,39 +57,22 @@ class Debiaser:
             )
 
         return True
+    
+    # Apply functions:
+    def apply_location(self, obs, cm_hist, cm_future):
+        raise NotImplementedError(
+            "apply_location is an abstract method which needs to be overriden in derived classes."
+        )
 
-    # Helpers for downstream:
-    @staticmethod
-    def map_over_locations(fct, obs, cm_hist, cm_future, nr_timesteps_output=None):
-        """
-        Maps locationwise-defined function over all gridpoints.
-
-        Parameters
-        ----------
-        fct : function
-            Function to be mapped over all locations.
-        obs : array
-            Array of observations.
-        cm_hist : array
-            Array of climate model simulation data over historical period.
-        cm_future : array
-            Array of climate model simulation data over future period.
-        nr_timesteps_output : int
-            Output-length at individual location.
-
-        Returns
-        -------
-        np.ndarray
-            Numpy array containing locationwise output.
-        """
-
-        if nr_timesteps_output is None:
-            nr_timesteps_output = cm_future.shape[0]
-
-        output = np.empty([nr_timesteps_output, obs.shape[1], obs.shape[2]])
+    def apply(self, obs, cm_hist, cm_future):
+        print("----- Running debiasing -----")
+        Debiaser.check_inputs(obs, cm_hist, cm_future)
+        
+        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]])
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = fct(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])[
-                0 : nr_timesteps_output + 1
-            ]
+            output[:, i, j] = self.apply_location(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
 
         return output
+
+        
+    
