@@ -1,9 +1,7 @@
 import numpy as np
-import scipy
 from debiaser import Debiaser
 from scipy.signal import detrend
 from scipy.stats import norm
-from statsmodels.distributions.empirical_distribution import ECDF
 
 
 # Reference Cannon et al. 2015
@@ -96,17 +94,6 @@ class Switanek2017(Debiaser):
         reverse_sorting_idx = np.argsort(argsort_cm_future)
         return bias_corrected[reverse_sorting_idx] + (cm_future - cm_future_detrended)
 
-        # Open things:
-        # - Not entirely clear what this code does. Different than from paper:
-        # adapted_cdf = np.sign(obs_cdf_shift) * (
-        #        1. - 1. / (obs_inverse * sce_inverse / mod_inverse))
-        # adapted_cdf[adapted_cdf < 0] += 1.
-        # - Not entirely clear why the mean of the scaled values is subtracted and then shift with obs mean pluc difference of future and historical. Not in paper:
-        # xvals -= xvals.mean()
-        # xvals += obs_mean + (sce_mean - mod_mean)
-        # - Not clear why scenario mean subtracted here again when trend readded:
-        # correction += sce_diff - sce_mean
-
     def apply_location(self, obs, cm_hist, cm_future):
         return self.apply_location_temp(obs, cm_hist, cm_future)
 
@@ -163,7 +150,9 @@ class Switanek2017(Debiaser):
         mod_inverse = 1.0 / (0.5 - np.abs(mod_cdf_shift))
         sce_inverse = 1.0 / (0.5 - np.abs(sce_cdf_shift))
 
-        # Using adapted_cdf2 as below I get different results more in line with my code (difference between my cdf_scaled and the adapted_cdf is pretty much the same as between adapted_cdf and adapted_cdf2)
+        # Using adapted_cdf2 as below I get different results more in line with my code.
+        # Difference between my cdf_scaled and the adapted_cdf is pretty much the same
+        # as between adapted_cdf and adapted_cdf2
         """adapted_cdf2 = .5 + np.sign(obs_cdf_shift)*np.abs(.5 - 1. / (obs_inverse * sce_inverse / mod_inverse))
         adapted_cdf2 = np.maximum(
             np.minimum(adapted_cdf2, cdf_threshold), 1 - cdf_threshold)"""
@@ -190,20 +179,22 @@ class Switanek2017(Debiaser):
 
 """
 Several questions / issues with absolute_sdm:
-- I can calculate the adapted_cdf as: 
+- I can calculate the adapted_cdf as:
 
 adapted_cdf2 = .5 + np.sign(obs_cdf_shift)*np.abs(.5 - 1. / (obs_inverse * sce_inverse / mod_inverse))
 adapted_cdf2 = np.maximum(np.minimum(adapted_cdf2, cdf_threshold), 1 - cdf_threshold)
 
-which corresponds to what is written in the publication. However the results I get are different from the adapted cdf above: 
+which corresponds to what is written in the publication.
+However the results I get are different from the adapted cdf above:
 
 adapted_cdf = np.sign(obs_cdf_shift) * (1. - 1. / (obs_inverse * sce_inverse / mod_inverse))
 adapted_cdf[adapted_cdf < 0] += 1.
 adapted_cdf = np.maximum(np.minimum(adapted_cdf, cdf_threshold), 1 - cdf_threshold)
 
-which one is the right one? 
+which one is the right one?
 
-- Why is adapted_cdf sorted again in: 
+
+- Why is adapted_cdf sorted again in:
 
 xvals = norm.ppf(np.sort(adapted_cdf), *obs_norm) \
             + obs_norm[-1] / mod_norm[-1] \
@@ -213,7 +204,9 @@ to then be reinserted again with:
 
 correction[sce_argsort] = xvals
 
-wouldn't that sorting above just undo the effect of sce_argsort. Or is the most important thing when backinserting to make sure the biggest value is inserted into the previous biggest value.
+wouldn't that sorting above just undo the effect of sce_argsort.
+Or is the most important thing backinserting to make sure the biggest value is inserted into the previous biggest value.
+
 
 - Why is the mean of the new values subtracted here and new means are added:
 
@@ -224,9 +217,11 @@ correction = np.zeros(sce_len)
 correction[sce_argsort] = xvals
 correction += sce_diff - sce_mean
 
-In the publication it only says that the trend is reinserted again which would be just correction += sce_diff. But here several means are added and subtracted which isn't named in the paper. Also woulnd't it amount to:
+In the publication it only says that the trend is reinserted again which would be just correction += sce_diff.
+But here several means are added and subtracted which isn't named in the paper. Also woulnd't it amount to:
 
 correction = correction + sce_diff + obs_mean - mod_mean
 
-What does this factor obs_mean - mod_mean do here? This looks like some kind of delta change, but shouln't it already be accounted for in the rest of the methodology?
+What does this factor obs_mean - mod_mean do here?
+This looks like some kind of delta change, but shouln't it already be accounted for in the rest of the methodology?
 """

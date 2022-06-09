@@ -3,10 +3,13 @@ import scipy.optimize
 import scipy.stats
 from scipy.stats import gamma
 
+
 """----- Precipitation helpers -----"""
 # TODO: in gamma.fit shall we specify gamma.fit(floc = 0) so keep loc fixed at zero?
 
-# Hurdle model: two step process: binomial if it rains and then amounts how much. P(X = 0) = p0, P(0 < X <= x) = p0 + (1-p0) F_A(x)
+
+# Hurdle model: two step process
+# Binomial if it rains and then amounts how much. P(X = 0) = p0, P(0 < X <= x) = p0 + (1-p0) F_A(x)
 def fit_precipitation_hurdle_model(data, distribution=scipy.stats.gamma):
     rainy_days = data[data != 0]
 
@@ -38,7 +41,7 @@ def ppf_precipitation_hurdle_model(q, fit, distribution=scipy.stats.gamma):
     p0 = fit[0]
     fit_rainy_days = fit[1]
 
-    return np.where(q > p0, distribution.ppf((q - p0) / (1 - p0)), 0)
+    return np.where(q > p0, distribution.ppf((q - p0) / (1 - p0), *fit_rainy_days), 0)
 
 
 def quantile_mapping_precipitation_hurdle_model(
@@ -99,8 +102,28 @@ def quantile_mapping_precipitation_censored_gamma(
 
 
 """----- Other helpers -----"""
-# Get the empirical inverse cdf. Up to numerical accuracy this returns the same as np.quantile(x, q, method = "inverted_cdf")
+
+
 def IECDF(x):
+    """
+    Get the inverse empirical cdf of an array of data:
+
+    x = np.random.random(1000)
+    iecdf = IECDF(x)
+    iecdf(0.2)
+
+    Up to numerical accuracy this returns the same as np.quantile(x, q, method = "inverted_cdf") but is much faster.
+
+    Parameters
+    ----------
+    x : array
+        Array containing values for which the empirical cdf shall be calculated.
+
+    Returns
+    -------
+    lambda
+        Function to calculate the inverse empirical cdf-value for a given quantile q.
+    """
     y = np.sort(x)
     n = y.shape[0]
     return lambda q: y[np.floor((n - 1) * q).astype(int)]

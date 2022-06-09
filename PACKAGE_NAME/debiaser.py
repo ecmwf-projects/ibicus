@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 # Debiaser class
 class Debiaser:
-    def __init__():
-        return self
+    def __init__(self, name):
+        self.name = name
 
     # Input checks:
     @staticmethod

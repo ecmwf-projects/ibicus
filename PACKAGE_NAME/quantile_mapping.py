@@ -9,7 +9,6 @@ from math_helpers import (
     quantile_mapping_precipitation_censored_gamma,
     quantile_mapping_precipitation_hurdle_model,
 )
-from scipy.stats import gamma, norm
 from variable_distribution_match import standard_distributions
 
 
@@ -37,12 +36,12 @@ class QuantileMapping(Debiaser):
                 "Wrong type for distribution. Needs to be scipy.stats.rv_continuous or scipy.stats.rv_discrete"
             )
 
-        if not delta_type in ["additive", "multiplicative", "none"]:
+        if delta_type not in ["additive", "multiplicative", "none"]:
             raise ValueError(
                 "Wrong value for delta_type. Needs to be one of ['additive', 'multiplicative', 'none']"
             )
 
-        if not precip_model_type in ["censored", "hurdle"]:
+        if precip_model_type not in ["censored", "hurdle"]:
             raise ValueError(
                 "Wrong value for precip_model_type. Needs to be one of ['censored', 'hurdle']"
             )
@@ -176,6 +175,7 @@ class QuantileMapping(Debiaser):
     def cache_location(self, obs, cm_hist, cm_future):
         fit_obs = self.distribution.fit(cm_hist)
         fit_cm_hist = self.distribution.fit(cm_future)
-        
-        return lambda obs, cm_hist, cm_future: self.distribution.ppf(self.distribution.cdf(cm_future, *fit_cm_hist), *fit_obs)
+        return lambda obs, cm_hist, cm_future: self.distribution.ppf(
+            self.distribution.cdf(cm_future, *fit_cm_hist), *fit_obs
+        )
     """
