@@ -70,14 +70,14 @@ standard_variables_isimip = {
         "distribution": scipy.stats.norm,
         "trend_preservation": "additive",
         "detrending": True,
-        "reasonable_physical_range": [0, 400] # TODO: needs to appear everywhere
+        "reasonable_physical_range": [0, 400],  # TODO: needs to appear everywhere
     },
     "tasrange": {
         "lower_bound": 0,
         "lower_threshold": 0.01,
         "upper_bound": np.inf,
         "upper_threshold": np.inf,
-        "distribution": scipy.stats.rice, 
+        "distribution": scipy.stats.rice,
         "trend_preservation": "mixed",
         "detrending": False,
     },
@@ -104,17 +104,27 @@ class ISIMIP(Debiaser):
         # Main properties:
         self.variable = variable
         self.lower_bound = standard_variables_isimip.get(variable).get("lower_bound")
-        self.lower_threshold = standard_variables_isimip.get(variable).get("lower_threshold")
+        self.lower_threshold = standard_variables_isimip.get(variable).get(
+            "lower_threshold"
+        )
         self.upper_bound = standard_variables_isimip.get(variable).get("upper_bound")
-        self.upper_threshold = standard_variables_isimip.get(variable).get("upper_threshold")
+        self.upper_threshold = standard_variables_isimip.get(variable).get(
+            "upper_threshold"
+        )
         self.distribution = standard_variables_isimip.get(variable).get("distribution")
-        self.trend_preservation = standard_variables_isimip.get(variable).get("trend_preservation")
+        self.trend_preservation = standard_variables_isimip.get(variable).get(
+            "trend_preservation"
+        )
         self.detrending = standard_variables_isimip.get(variable).get("detrending")
-        
+
         # TODO: needs to be fully integrated
-        self.reasonable_physical_range = standard_variables_isimip.get(variable).get("reasonable_physical_range")
-        
-        if (self.upper_bound < np.inf and self.upper_threshold < np.inf) or (self.lower_bound > -np.inf and self.lower_threshold > -np.inf):
+        self.reasonable_physical_range = standard_variables_isimip.get(variable).get(
+            "reasonable_physical_range"
+        )
+
+        if (self.upper_bound < np.inf and self.upper_threshold < np.inf) or (
+            self.lower_bound > -np.inf and self.lower_threshold > -np.inf
+        ):
             self.powerlaw_exponent_step4 = 2
 
     @staticmethod
@@ -140,7 +150,7 @@ class ISIMIP(Debiaser):
             cdf_vals,
         )
 
-    def self.step1(self, obs, cm_hist, cm_future):
+    def step1(self, obs, cm_hist, cm_future):
         scale = None
         if variable == "rsds":
             # TODO
@@ -158,17 +168,17 @@ class ISIMIP(Debiaser):
 
             obs_hist = np.where(
                 np.isnan(obs),
-                iecdf_obs(np.random.uniform(size = len(obs))),
+                iecdf_obs(np.random.uniform(size=len(obs))),
                 obs,
             )
             cm_hist = np.where(
                 np.isnan(cm_hist),
-                iecdf_cm_hist(np.random.uniform(size = len(cm_hist))),
+                iecdf_cm_hist(np.random.uniform(size=len(cm_hist))),
                 cm_hist,
             )
             cm_future = np.where(
                 np.isnan(cm_future),
-                iecdf_cm_future(np.random.uniform(size = len(cm_future))),
+                iecdf_cm_future(np.random.uniform(size=len(cm_future))),
                 cm_future,
             )
 
@@ -211,7 +221,8 @@ class ISIMIP(Debiaser):
             cm_future = np.where(
                 cm_future >= self.upper_threshold,
                 self.upper_threshold
-                + np.random.power(a=self.powerlaw_exponent_step4) / (self.upper_bound - self.upper_threshold),
+                + np.random.power(a=self.powerlaw_exponent_step4)
+                / (self.upper_bound - self.upper_threshold),
                 cm_future,
             )
 
@@ -434,19 +445,37 @@ class ISIMIP(Debiaser):
         if variable == "rsds":
             pass
         return cm_future
-        
+
     def apply_location(self, obs, cm_hist, cm_future):
         print(self.reasonable_physical_range)
         if self.reasonable_physical_range is not None:
-            if np.any((obs < self.reasonable_physical_range[0]) | (obs > self.reasonable_physical_range[1])):
-                raise ValueError("Values of obs lie outside the reasonable physical range of %s"%self.reasonable_physical_range)
-            
-            if np.any((cm_hist < self.reasonable_physical_range[0]) | (cm_hist > self.reasonable_physical_range[1])):
-                raise ValueError("Values of cm_hist lie outside the reasonable physical range of %s"%self.reasonable_physical_range)
-            
-            if np.any((cm_future < self.reasonable_physical_range[0]) | (cm_future > self.reasonable_physical_range[1])):
-                raise ValueError("Values of cm_future lie outside the reasonable physical range of %s"%self.reasonable_physical_range)
-        
+            if np.any(
+                (obs < self.reasonable_physical_range[0])
+                | (obs > self.reasonable_physical_range[1])
+            ):
+                raise ValueError(
+                    "Values of obs lie outside the reasonable physical range of %s"
+                    % self.reasonable_physical_range
+                )
+
+            if np.any(
+                (cm_hist < self.reasonable_physical_range[0])
+                | (cm_hist > self.reasonable_physical_range[1])
+            ):
+                raise ValueError(
+                    "Values of cm_hist lie outside the reasonable physical range of %s"
+                    % self.reasonable_physical_range
+                )
+
+            if np.any(
+                (cm_future < self.reasonable_physical_range[0])
+                | (cm_future > self.reasonable_physical_range[1])
+            ):
+                raise ValueError(
+                    "Values of cm_future lie outside the reasonable physical range of %s"
+                    % self.reasonable_physical_range
+                )
+
         # Steps
         obs, cm_hist, cm_future, scale = self.step1(obs, cm_hist, cm_future)
         obs, cm_hist, cm_future = self.step2(obs, cm_hist, cm_future)
