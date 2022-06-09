@@ -3,7 +3,6 @@ import scipy.stats
 import scipy.special
 
 from debiaser import Debiaser
-from scipy.stats import norm
 from statsmodels.distributions.empirical_distribution import ECDF
 from math_helpers import IECDF
 
@@ -96,7 +95,7 @@ standard_variables_isimip = {
 # Reference TODO
 class ISIMIP(Debiaser):
     def __init__(self, variable):
-        if not variable in standard_variables_isimip.keys():
+        if variable not in standard_variables_isimip.keys():
             raise ValueError(
                 "variable needs to be one of %s" % standard_variables_isimip.keys()
             )
@@ -152,7 +151,7 @@ class ISIMIP(Debiaser):
 
     def step1(self, obs, cm_hist, cm_future):
         scale = None
-        if variable == "rsds":
+        if self.variable == "rsds":
             # TODO
             pass
 
@@ -184,10 +183,12 @@ class ISIMIP(Debiaser):
 
         return obs_hist, cm_hist, cm_future
 
-    @staticmethod
-    def step3_remove_trend(x):
+    """@staticmethod
+    def _step3_remove_trend(x):
         # TODO: if we regress on annual means then why not with a rolling window. Only question: how to fill?
-        # annual_means = np.zeros_like(x); annual_means[0:len(x)-365] = rolling_mean(x); annual_means[len(x)-365:] = ann annual_means[]
+        # annual_means = np.zeros_like(x)
+        # annual_means[0:len(x)-365] = rolling_mean(x)
+        # annual_means[len(x)-365:] = ann annual_means[]
         annual_means = ISIMIP.get_chunked_mean(obs_hist, 356)
         years = list(range(1, len(annual_means)))
         # TODO: is that the correct regression?
@@ -197,12 +198,12 @@ class ISIMIP(Debiaser):
             trend = r.slope * (years - np.mean(unique_years))
         else:  # do not detrend because trend is insignificant
             trend = np.zeros(years.size, dtype=x.dtype)
-        trend_daily_resolution = np.repeat(trend, 365)
+        trend_daily_resolution = np.repeat(trend, 365)"""
 
     # TODO: we need to know resolution for that
     def step3(self, obs, cm_hist, cm_future):
         trend = None
-        if variable in ["psl", "rlds", "tas"]:
+        if self.variable in ["psl", "rlds", "tas"]:
             pass
 
         return obs, cm_hist, cm_future, trend
@@ -236,12 +237,11 @@ class ISIMIP(Debiaser):
         p = ecdf_obs_hist(obs_hist)
 
         # Compute iecdfs
-        iecdf_obs_hist = IECDF(obs_hist)
         iecdf_cm_hist = IECDF(cm_hist)
         iecdf_cm_future = IECDF(cm_future)
 
         # Compute q-vals
-        q_obs_hist = obs_hist  # = iecdf_obs_hist(p), appears in eq. 7
+        q_obs_hist = obs_hist  # TODO: = iecdf_obs_hist(p), appears in eq. 7
         q_cm_future = iecdf_cm_future(p)
         q_cm_hist = iecdf_cm_hist(p)
 
@@ -285,7 +285,8 @@ class ISIMIP(Debiaser):
             return return_vals
         else:
             raise ValueError(
-                "Wrong value for self.trend_preservation. Needs to be one of ['additive', 'multiplicative', 'mixed', 'bounded']"
+                """ Wrong value for self.trend_preservation.
+                    Needs to be one of ['additive', 'multiplicative', 'mixed', 'bounded'] """
             )
 
     def _step6_values_between_thresholds(
@@ -301,7 +302,7 @@ class ISIMIP(Debiaser):
 
         # Get the cdf-vals and interpolate if there are unequal sample sizes (following Switanek 2017):
         cdf_vals_cm_future = ISIMIP.apply_cdf_thresholding(
-            self.distribution.cdf(cm_future_sorted, *fit_obs_hist)
+            self.distribution.cdf(cm_future_sorted, *fit_cm_future)
         )
 
         cdf_vals_obs_hist = ISIMIP.interp_cdf_values_on_len_cm_future(
@@ -340,7 +341,8 @@ class ISIMIP(Debiaser):
     # Core of the isimip-method: parametric quantile mapping
     def step6(self, obs_hist, obs_future, cm_hist, cm_future):
 
-        # Sort arrays to apply parametric quantile mapping (values of equal rank are mapped together). Save sort-order of cm_future for backsorting
+        # Sort arrays to apply parametric quantile mapping (values of equal rank are mapped together).
+        # Save sort-order of cm_future for backsorting
         cm_future_argsort = np.argsort(cm_future)
         cm_future_sorted = cm_future[cm_future_argsort]
 
@@ -436,18 +438,17 @@ class ISIMIP(Debiaser):
             )
             return cm_future_sorted[reverse_sorting_idx]
 
-    def step7(cm_future, trend):
-        if variable in ["psl", "rlds", "tas"]:
+    def step7(self, cm_future, trend):
+        if self.variable in ["psl", "rlds", "tas"]:
             pass
         return cm_future
 
-    def step8(cm_future, scale):
-        if variable == "rsds":
+    def step8(self, cm_future, scale):
+        if self.variable == "rsds":
             pass
         return cm_future
 
     def apply_location(self, obs, cm_hist, cm_future):
-        print(self.reasonable_physical_range)
         if self.reasonable_physical_range is not None:
             if np.any(
                 (obs < self.reasonable_physical_range[0])
