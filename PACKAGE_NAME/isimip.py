@@ -146,26 +146,27 @@ class ISIMIP(Debiaser):
 
         return obs, cm_hist, cm_future, scale
 
+    # TODO: make work with mask instead of nan
     def step2(self, obs, cm_hist, cm_future):
         if self.variable == "prsnratio":
             # Compute iecdfs to get values related to percentiles
-            iecdf_obs_hist = IECDF(obs_hist)
+            iecdf_obs = IECDF(obs)
             iecdf_cm_hist = IECDF(cm_hist)
             iecdf_cm_future = IECDF(cm_future)
 
             obs_hist = np.where(
-                np.isnan(obs_hist),
-                iecdf_obs_hist(np.random.uniform(len(obs_hist))),
-                obs_hist,
+                np.isnan(obs),
+                iecdf_obs(np.random.uniform(size = len(obs))),
+                obs,
             )
             cm_hist = np.where(
                 np.isnan(cm_hist),
-                iecdf_cm_hist(np.random.uniform(len(cm_hist))),
+                iecdf_cm_hist(np.random.uniform(size = len(cm_hist))),
                 cm_hist,
             )
             cm_future = np.where(
                 np.isnan(cm_future),
-                iecdf_cm_future(np.random.uniform(len(cm_future))),
+                iecdf_cm_future(np.random.uniform(size = len(cm_future))),
                 cm_future,
             )
 
@@ -313,10 +314,10 @@ class ISIMIP(Debiaser):
         L_cm_hist = scipy.special.logit(cdf_vals_cm_hist)
         L_cm_future = scipy.special.logit(cdf_vals_cm_future)
 
-        delta_log_odds = np.max(
-            -np.log(10), np.min(np.log(10), L_cm_future - L_cm_hist)
+        delta_log_odds = np.maximum(
+            -np.log(10), np.minimum(np.log(10), L_cm_future - L_cm_hist)
         )
-
+        #print(scipy.special.expit(L_obs_hist + delta_log_odds))
         # Map values following formula 10
         mapped_vals = self.distribution.ppf(
             scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future
