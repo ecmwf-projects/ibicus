@@ -99,8 +99,8 @@ def quantile_mapping_precipitation_censored_gamma(
 
 
 """----- Other helpers -----"""
-# Get the empirical inverse cdf
+# Get the empirical inverse cdf. Up to numerical accuracy this returns the same as np.quantile(x, q, method = "inverted_cdf")
 def IECDF(x):
-    x.sort()
-    n = x.shape[0]
-    return lambda q: (x[np.rint(n*q).astype(int)])
+    y = np.sort(x)
+    n = y.shape[0]
+    return lambda q: y[np.floor((n - 1) * q).astype(int)]
