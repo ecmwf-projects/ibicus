@@ -3,7 +3,6 @@ import scipy.optimize
 import scipy.stats
 from scipy.stats import gamma
 
-
 """----- Precipitation helpers -----"""
 # TODO: in gamma.fit shall we specify gamma.fit(floc = 0) so keep loc fixed at zero?
 

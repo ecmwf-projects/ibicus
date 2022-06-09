@@ -1,10 +1,9 @@
 import numpy as np
-import scipy.stats
 import scipy.special
-
+import scipy.stats
 from debiaser import Debiaser
-from statsmodels.distributions.empirical_distribution import ECDF
 from math_helpers import IECDF
+from statsmodels.distributions.empirical_distribution import ECDF
 
 standard_variables_isimip = {
     "hurs": {
