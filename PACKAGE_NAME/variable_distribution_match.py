@@ -1,8 +1,8 @@
-from scipy.stats import gamma, norm
+import scipy.stats
 
 standard_distributions = {
-    "temp": norm,
-    "temperature": norm,
-    "precip": gamma,
-    "precipitation": gamma,
+    "temp": scipy.stats.norm,
+    "temperature": scipy.stats.norm,
+    "precip": scipy.stats.gamma,
+    "precipitation": scipy.stats.gamma,
 }

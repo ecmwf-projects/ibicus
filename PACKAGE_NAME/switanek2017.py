@@ -1,7 +1,8 @@
 import numpy as np
-from debiaser import Debiaser
 from scipy.signal import detrend
 from scipy.stats import norm
+
+from .debiaser import Debiaser
 
 
 # Reference Cannon et al. 2015

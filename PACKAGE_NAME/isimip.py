@@ -1,9 +1,10 @@
 import numpy as np
 import scipy.special
 import scipy.stats
-from debiaser import Debiaser
-from math_helpers import IECDF
 from statsmodels.distributions.empirical_distribution import ECDF
+
+from .debiaser import Debiaser
+from .math_helpers import IECDF
 
 standard_variables_isimip = {
     "hurs": {
@@ -164,7 +165,7 @@ class ISIMIP(Debiaser):
             iecdf_cm_hist = IECDF(cm_hist)
             iecdf_cm_future = IECDF(cm_future)
 
-            obs_hist = np.where(
+            obs = np.where(
                 np.isnan(obs),
                 iecdf_obs(np.random.uniform(size=len(obs))),
                 obs,
@@ -180,7 +181,7 @@ class ISIMIP(Debiaser):
                 cm_future,
             )
 
-        return obs_hist, cm_hist, cm_future
+        return obs, cm_hist, cm_future
 
     """@staticmethod
     def _step3_remove_trend(x):
@@ -320,7 +321,7 @@ class ISIMIP(Debiaser):
         # tas exception
         if self.variable == "tas":
             mapped_vals = self.distribution.ppf(cdf_vals_cm_future, *fit_obs_future)
-            return mapped_vals
+            return mapped_vals  # , cdf_vals_cm_future, fit_obs_future
 
         # Calculate L-values and delta log-odds for mapping, following formula 11-14
         L_obs_hist = scipy.special.logit(cdf_vals_obs_hist)

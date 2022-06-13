@@ -2,14 +2,15 @@ import warnings
 
 import numpy as np
 import scipy
-from debiaser import Debiaser
-from math_helpers import (
+
+from .debiaser import Debiaser
+from .math_helpers import (
     fit_precipitation_censored_gamma,
     fit_precipitation_hurdle_model,
     quantile_mapping_precipitation_censored_gamma,
     quantile_mapping_precipitation_hurdle_model,
 )
-from variable_distribution_match import standard_distributions
+from .variable_distribution_match import standard_distributions
 
 
 class QuantileMapping(Debiaser):

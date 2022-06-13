@@ -1,7 +1,8 @@
 import numpy as np
 import scipy
-from debiaser import Debiaser
 from statsmodels.distributions.empirical_distribution import ECDF
+
+from .debiaser import Debiaser
 
 
 # Reference Cannon et al. 2015
