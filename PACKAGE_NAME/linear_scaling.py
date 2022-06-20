@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import scipy
 
 from .debiaser import Debiaser
 

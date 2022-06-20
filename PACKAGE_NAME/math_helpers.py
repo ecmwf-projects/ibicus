@@ -1,10 +1,7 @@
-from multiprocessing.sharedctypes import Value
-
 import numpy as np
 import scipy.optimize
 import scipy.stats
 import statsmodels.distributions.empirical_distribution
-from matplotlib.pyplot import step
 from scipy.stats import gamma
 
 """----- Precipitation helpers -----"""
@@ -132,7 +129,8 @@ def IECDF(x):
     return lambda q: y[np.floor((n - 1) * q).astype(int)]
 
 
-# TODO: this implementation is much faster, because np.quantile(x,p,method = "inverted_cdf") takes a bit. However it is slightly akward.
+# TODO: this implementation is much faster, because np.quantile(x,p,method = "inverted_cdf") takes a bit.
+# However it is slightly akward.
 def iecdf(x, p, method="inverted_cdf", **kwargs):
     """
     Return the values of the the inverse empirical cdf of x evaluated at p:
@@ -173,7 +171,10 @@ def ecdf(x: np.array, y: np.array, method: str) -> np.array:
     y = np.random.random(100)
     ecdf(x, y)
 
-    Three methods exist determined by method. Either a kernel density estimate of the ecdf is used, using scipy.stat.rv_histogram (method = "kernel_density"). Alternatively linear interpolation is possible, starting from a grid of cdf-values (method = "linear_interpolation"). And finally the classical step-function is possible (method = "step_function").
+    Three methods exist determined by method.
+        - method = "kernel_density": A kernel density estimate of the ecdf is used, using scipy.stat.rv_histogram.
+        - method = "linear_interpolation": Linear interpolation is used, starting from a grid of cdf-values.
+        - method = "step_function": The classical step-function.
 
     Parameters
     ----------

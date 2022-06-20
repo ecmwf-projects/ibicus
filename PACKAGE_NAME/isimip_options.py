@@ -8,7 +8,7 @@ import scipy.stats
 "pseudo_future_observations_bounded_variables": "v2.3",  # >= v2.3: new equation, step 5
 "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
 detrending for which variables
-event likelihood adjustment for which variables 
+event likelihood adjustment for which variables
 running window mode with params
 # iteration
 "running_window_mode": True,  # > v2.5

@@ -1,16 +1,12 @@
-from calendar import c
 from dataclasses import dataclass
-from re import I
-from turtle import st
 
 import numpy as np
 import scipy.special
 import scipy.stats
-from statsmodels.distributions.empirical_distribution import ECDF
 
 from .debiaser import Debiaser
 from .isimip_options import isimip_2_5, standard_variables_isimip
-from .math_helpers import IECDF, ecdf, iecdf
+from .math_helpers import ecdf, iecdf
 from .utils import (
     get_chunked_mean,
     interp_sorted_cdf_vals_on_given_length,
@@ -328,7 +324,7 @@ class ISIMIP(Debiaser):
 
     # TODO: v2.5 has randomised values sorted like original ones.
     def step4(self, obs_hist, cm_hist, cm_future):
-        if self.lower_bound > -np.inf and self.lower_threshold > -np.inf:
+        if self.has_lower_bound and self.has_lower_threshold:
             # TODO: Is this how to construct a power law that is increasing towards the left bound? Also which power?
             cm_future = np.where(
                 cm_future <= self.lower_threshold,
@@ -339,7 +335,7 @@ class ISIMIP(Debiaser):
                 / (self.lower_threshold - self.lower_bound),
                 cm_future,
             )
-        if self.upper_bound < np.inf and self.upper_threshold < np.inf:
+        if self.has_upper_bound and self.has_upper_threshold:
             cm_future = np.where(
                 cm_future >= self.upper_threshold,
                 self.upper_threshold
@@ -505,7 +501,7 @@ class ISIMIP(Debiaser):
             pass
             # do stuff
         else:
-            window_center = np.arange(365)[:: self.step_window_step_length]
+            # window_center = np.arange(365)[:: self.step_window_step_length]
             return cm_future
 
         months_obs_hist = kwargs.get("months_obs")
