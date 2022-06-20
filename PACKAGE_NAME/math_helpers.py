@@ -1,6 +1,10 @@
+from multiprocessing.sharedctypes import Value
+
 import numpy as np
 import scipy.optimize
 import scipy.stats
+import statsmodels.distributions.empirical_distribution
+from matplotlib.pyplot import step
 from scipy.stats import gamma
 
 """----- Precipitation helpers -----"""
@@ -126,3 +130,76 @@ def IECDF(x):
     y = np.sort(x)
     n = y.shape[0]
     return lambda q: y[np.floor((n - 1) * q).astype(int)]
+
+
+# TODO: this implementation is much faster, because np.quantile(x,p,method = "inverted_cdf") takes a bit. However it is slightly akward.
+def iecdf(x, p, method="inverted_cdf", **kwargs):
+    """
+    Return the values of the the inverse empirical cdf of x evaluated at p:
+
+    x = np.random.random(1000)
+    p = np.linspace(0, 1, 100)
+    iecdf(x, p)
+
+    The call is delegated to np.quantile with the method-argument determining whether eg. interpolation is used.
+
+    Parameters
+    ----------
+    x : array
+        Array containing values with which the inverse empirical cdf is defined.
+    p : array
+        Array containing values between [0, 1] for which the inverse empirical cdf is evaluated.
+    method : string
+        Method string for np.quantile
+    **kwargs
+
+    Returns
+    -------
+    array
+        Values of the inverse empirical cdf of x evaluated at p.
+    """
+    if method == "inverted_cdf":
+        iecdf = IECDF(x)
+        return iecdf(p)
+    else:
+        return np.quantile(x, p, method=method, **kwargs)
+
+
+def ecdf(x: np.array, y: np.array, method: str) -> np.array:
+    """
+    Return the values of the empirical cdf of x evaluated at y:
+
+    x = np.random.random(1000)
+    y = np.random.random(100)
+    ecdf(x, y)
+
+    Three methods exist determined by method. Either a kernel density estimate of the ecdf is used, using scipy.stat.rv_histogram (method = "kernel_density"). Alternatively linear interpolation is possible, starting from a grid of cdf-values (method = "linear_interpolation"). And finally the classical step-function is possible (method = "step_function").
+
+    Parameters
+    ----------
+    x : array
+        Array containing values with which the empirical cdf is defined.
+    y : array
+        Array containing values on which the empirical cdf is evaluated.
+    method : string
+        Method with which the ecdf is calculated. One of ["kernel_density", "linear_interpolation", "step_function"].
+
+    Returns
+    -------
+    array
+        Values of the empirical cdf of x evaluated at y.
+    """
+    if method == "kernel_density":
+        rv_histogram_fit = scipy.stats.rv_histogram(np.histogram(x, bins="auto"))
+        return rv_histogram_fit.cdf(y)
+    elif method == "linear_interpolation":
+        p_grid = np.linspace(0.0, 1.0, x.size)
+        q_vals_for_p_grid = np.quantile(x, p_grid)
+        return np.interp(x, q_vals_for_p_grid, p_grid)
+    elif method == "step_function":
+        step_function = statsmodels.distributions.empirical_distribution.ECDF(x)
+        return step_function(y)
+    else:
+        raise ValueError(
+            'method needs to be one of ["kernel_density", "linear_interpolation", "step_function"] '
+        )

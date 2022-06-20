@@ -3,16 +3,13 @@ from scipy.signal import detrend
 from scipy.stats import norm
 
 from .debiaser import Debiaser
+from .utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
 
 
 # Reference Cannon et al. 2015
 class Switanek2017(Debiaser):
     def __init__(self):
         pass
-
-    @staticmethod
-    def apply_cdf_thresholding(cdf, cdf_threshold=0.0001):
-        return np.maximum(np.minimum(cdf, 1 - cdf_threshold), cdf_threshold)
 
     def apply_location_temp(self, obs, cm_hist, cm_future):
 
@@ -28,26 +25,26 @@ class Switanek2017(Debiaser):
 
         argsort_cm_future = np.argsort(cm_future_detrended)
 
-        cdf_vals_obs_detrended_thresholded = Switanek2017.apply_cdf_thresholding(
+        cdf_vals_obs_detrended_thresholded = threshold_cdf_vals(
             np.sort(norm.cdf(obs_detrended, *fit_obs_detrended))
         )
-        cdf_vals_cm_hist_detrended_thresholded = Switanek2017.apply_cdf_thresholding(
+        cdf_vals_cm_hist_detrended_thresholded = threshold_cdf_vals(
             np.sort(norm.cdf(cm_hist_detrended, *fit_cm_hist_detrended))
         )
-        cdf_vals_cm_future_detrended_thresholded = Switanek2017.apply_cdf_thresholding(
+        cdf_vals_cm_future_detrended_thresholded = threshold_cdf_vals(
             norm.cdf(cm_future_detrended, *fit_cm_future_detrended)[argsort_cm_future]
         )
 
         # interpolate cdf-values for obs and mod to the length of the scenario
-        cdf_vals_obs_detrended_thresholded_intpol = np.interp(
-            np.linspace(1, len(obs), len(cm_future)),
-            np.linspace(1, len(obs), len(obs)),
-            cdf_vals_obs_detrended_thresholded,
+        cdf_vals_obs_detrended_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_obs_detrended_thresholded, cm_future.size
+            )
         )
-        cdf_vals_cm_hist_detrended_thresholded_intpol = np.interp(
-            np.linspace(1, len(cm_hist), len(cm_future)),
-            np.linspace(1, len(cm_hist), len(cm_hist)),
-            cdf_vals_cm_hist_detrended_thresholded,
+        cdf_vals_cm_hist_detrended_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_cm_hist_detrended_thresholded, cm_future.size
+            )
         )
 
         # Step 3
@@ -82,7 +79,7 @@ class Switanek2017(Debiaser):
             * recurrence_interval_cm_future
             / recurrence_interval_cm_hist,
         )
-        cdf_scaled = Switanek2017.apply_cdf_thresholding(
+        cdf_scaled = threshold_cdf_vals(
             0.5
             + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
             * np.abs(0.5 - 1 / recurrence_interval_scaled)
