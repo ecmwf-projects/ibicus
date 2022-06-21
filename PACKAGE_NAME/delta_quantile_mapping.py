@@ -1,28 +1,48 @@
+from typing import Union
+
+import attrs
 import numpy as np
 import scipy
+from matplotlib import docstring
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .debiaser import Debiaser
+from .variable_distribution_match import standard_distributions
 
 
 # Reference Cannon et al. 2015
+# TODO: add docstring
+# TODO: check correctness of time window implementation and precipitation-case
+@attrs.define
 class DeltaQuantileMapping(Debiaser):
-    def __init__(self, distribution, time_window_length):
-        if not isinstance(
-            distribution, (scipy.stats.rv_continuous, scipy.stats.rv_discrete)
-        ):
-            raise TypeError(
-                "Wrong type for distribution. Needs to be scipy.stats.rv_continuous or scipy.stats.rv_discrete"
+
+    distribution: Union[
+        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram
+    ] = attrs.field(
+        validator=attrs.validators.instance_of(
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
             )
+        )
+    )
+    time_window_length: int = attrs.field(
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+    )
+    variable: str = attrs.field(default="unknown", eq=False)
 
-        if not isinstance(time_window_length, int):
-            raise TypeError("Wrong type for time_window_length. Needs to int")
-
-        if not time_window_length > 0:
-            raise ValueError("Wrong value for time_window_length. Needs to be > 0")
-
-        self.distribution = distribution
-        self.time_window_length = time_window_length
+    @classmethod
+    def from_variable(cls, variable, time_window_length=50):
+        if variable not in standard_distributions.keys():
+            raise ValueError(
+                "variable needs to be one of %s" % standard_distributions.keys()
+            )
+        return cls(
+            distribution=standard_distributions.get(variable),
+            time_window_length=time_window_length,
+            variable=variable,
+        )
 
     def apply_location(self, obs, cm_hist, cm_future):
 

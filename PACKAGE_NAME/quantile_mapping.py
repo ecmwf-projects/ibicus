@@ -1,5 +1,7 @@
 import warnings
+from typing import Optional, Union
 
+import attrs
 import numpy as np
 import scipy
 
@@ -13,56 +15,54 @@ from .math_helpers import (
 from .variable_distribution_match import standard_distributions
 
 
+@attrs.define
 class QuantileMapping(Debiaser):
-    def __init__(
-        self,
-        delta_type,
-        variable=None,
-        distribution=None,
-        precip_model_type="censored",
-        precip_hurdle_randomization=False,
-        precip_censoring_value=0.1,
-    ):
 
-        if distribution is None and variable is None:
-            raise ValueError("Either distribution or variable need to be specified")
+    delta_type: str = attrs.field(
+        validator=attrs.validators.in_(["additive", "multiplicative", "no_delta"])
+    )
+    distribution: Union[
+        scipy.stats.rv_continuous,
+        scipy.stats.rv_discrete,
+        scipy.stats.rv_histogram,
+        None,
+    ] = attrs.field(
+        validator=attrs.validators.instance_of(
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
+                None,
+            )
+        )
+    )
+    variable: str = attrs.field(default="unknown", eq=False)
+    precip_model_type: str = attrs.field(
+        default="censored", validator=attrs.validators.in_(["censored", "hurdle"])
+    )
+    precip_hurdle_randomization: bool = False
+    precip_censoring_value: float = 0.1
 
-        if distribution is None:
-            distribution = standard_distributions[variable]
-
-        if not isinstance(
-            distribution, (scipy.stats.rv_continuous, scipy.stats.rv_discrete)
+    def __attrs_post_init__(self):
+        if (
+            self.variable in ["precip", "precipitation"]
+            and self.precip_model_type == "censored"
         ):
-            raise TypeError(
-                "Wrong type for distribution. Needs to be scipy.stats.rv_continuous or scipy.stats.rv_discrete"
-            )
-
-        if delta_type not in ["additive", "multiplicative", "none"]:
-            raise ValueError(
-                "Wrong value for delta_type. Needs to be one of ['additive', 'multiplicative', 'none']"
-            )
-
-        if precip_model_type not in ["censored", "hurdle"]:
-            raise ValueError(
-                "Wrong value for precip_model_type. Needs to be one of ['censored', 'hurdle']"
-            )
-
-        if variable is None:
-            variable = "unknown"
-
-        self.variable = variable
-        self.distribution = distribution
-        self.delta_type = delta_type
-
-        # Precipitation
-        if variable in ["precip", "precipitation"] and precip_model_type == "censored":
             warnings.warn(
                 "Only the gamma distribution is supported for a censored precipitation model"
             )
 
-        self.precip_model_type = precip_model_type
-        self.precip_censoring_value = precip_censoring_value
-        self.precip_hurdle_randomization = precip_hurdle_randomization
+    @classmethod
+    def from_variable(cls, variable, delta_type):
+        if variable not in standard_distributions.keys():
+            raise ValueError(
+                "variable needs to be one of %s" % standard_distributions.keys()
+            )
+        return cls(
+            delta_type=delta_type,
+            distribution=standard_distributions.get(variable),
+            variable=variable,
+        )
 
     def apply_location_precip_hurdle(self, obs, cm_hist, cm_future):
         fit_obs = fit_precipitation_hurdle_model(obs, self.distribution)
@@ -94,7 +94,7 @@ class QuantileMapping(Debiaser):
                 )
                 * delta
             )
-        elif self.delta_type == "none":
+        elif self.delta_type == "no_delta":
             return quantile_mapping_precipitation_hurdle_model(
                 cm_future,
                 fit_cm_hist,
@@ -105,7 +105,7 @@ class QuantileMapping(Debiaser):
             )
         else:
             raise ValueError(
-                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'none']"
+                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
             )
 
     def apply_location_precip_censored(self, obs, cm_hist, cm_future):
@@ -130,13 +130,13 @@ class QuantileMapping(Debiaser):
                 )
                 * delta
             )
-        elif self.delta_type == "none":
+        elif self.delta_type == "no_delta":
             return quantile_mapping_precipitation_censored_gamma(
                 cm_future, self.precip_censoring_value, fit_cm_hist, fit_obs
             )
         else:
             raise ValueError(
-                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'none']"
+                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
             )
 
     def standard_qm(self, x, fit_cm_hist, fit_obs):
@@ -152,11 +152,11 @@ class QuantileMapping(Debiaser):
         elif self.delta_type == "multiplicative":
             delta = np.mean(cm_future) / np.mean(cm_hist)
             return self.standard_qm(cm_future / delta, fit_cm_hist, fit_obs) * delta
-        elif self.delta_type == "none":
+        elif self.delta_type == "no_delta":
             return self.standard_qm(cm_future, fit_cm_hist, fit_obs)
         else:
             raise ValueError(
-                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'none']"
+                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
             )
 
     def apply_location(self, obs, cm_hist, cm_future):

@@ -12,6 +12,7 @@ linear_scaling MODULE - implements debiasing using linear scaling.
 
 import warnings
 
+import attrs
 import numpy as np
 
 from .debiaser import Debiaser
@@ -24,6 +25,7 @@ standard_delta_types = {
 }
 
 
+@attrs.define
 class LinearScaling(Debiaser):
     """
     Class LinearScaling representing debiasing via so-called linear scaling following Maraun 2016 as reference.
@@ -60,41 +62,18 @@ class LinearScaling(Debiaser):
         Applies linear scaling at all given locations on a grid and returns the the debiased timeseries.
     """
 
-    def __init__(self, variable: str = None, delta_type: str = None):
+    delta_type: str = attrs.field(
+        validator=attrs.validators.in_(["additive", "multiplicative"])
+    )
+    variable: str = attrs.field(default="unknown", eq=False)
 
-        # Checks
-        if variable is not None:
-            if variable not in standard_delta_types.keys():
-                raise ValueError(
-                    "variable needs to be one of %s" % standard_delta_types.keys()
-                )
-
-        if delta_type is not None:
-            if delta_type not in ["additive", "multiplicative"]:
-                raise ValueError(
-                    'delta_type needs to be one of ["additive", "multiplicative"].'
-                )
-
-        # Parameter setting
-        if variable is not None:
-            if delta_type is not None:
-                if delta_type != standard_delta_types.get(variable):
-                    warnings.warn(
-                        "Given delta type for variable is different from standard one."
-                    )
-                self.variable = variable
-                self.delta_type = delta_type
-            else:
-                self.variable = variable
-                self.delta_type = standard_delta_types.get(variable)
-        else:
-            if delta_type is not None:
-                self.variable = "unknown"
-                self.delta_type = delta_type
-            else:
-                raise ValueError(
-                    "At least one of variable, delta_type needs to be specified."
-                )
+    @classmethod
+    def from_variable(cls, variable):
+        if variable not in standard_delta_types.keys():
+            raise ValueError(
+                "variable needs to be one of %s" % standard_delta_types.keys()
+            )
+        return cls(delta_type=standard_delta_types.get(variable), variable=variable)
 
     def apply_location(
         self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray

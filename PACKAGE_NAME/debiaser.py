@@ -10,7 +10,6 @@ import numpy as np
 from tqdm import tqdm
 
 
-# Debiaser class
 class Debiaser:
     def __init__(self, name):
         self.name = name

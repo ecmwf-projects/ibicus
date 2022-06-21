@@ -1,3 +1,4 @@
+import attrs
 import numpy as np
 from scipy.signal import detrend
 from scipy.stats import norm
@@ -7,9 +8,10 @@ from .utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
 
 
 # Reference Cannon et al. 2015
+@attrs.define
 class Switanek2017(Debiaser):
-    def __init__(self):
-        pass
+
+    variable: str = attrs.field(default="unknown", eq=False)
 
     def apply_location_temp(self, obs, cm_hist, cm_future):
 
