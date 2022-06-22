@@ -10,8 +10,6 @@
 linear_scaling MODULE - implements debiasing using linear scaling.
 """
 
-import warnings
-
 import attrs
 import numpy as np
 
@@ -62,28 +60,20 @@ class LinearScaling(Debiaser):
         Applies linear scaling at all given locations on a grid and returns the the debiased timeseries.
     """
 
-    delta_type: str = attrs.field(
-        validator=attrs.validators.in_(["additive", "multiplicative"])
-    )
+    delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
     variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
     def from_variable(cls, variable):
         if variable not in standard_delta_types.keys():
-            raise ValueError(
-                "variable needs to be one of %s" % standard_delta_types.keys()
-            )
+            raise ValueError("variable needs to be one of %s" % standard_delta_types.keys())
         return cls(delta_type=standard_delta_types.get(variable), variable=variable)
 
-    def apply_location(
-        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
-    ) -> np.ndarray:
+    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
         """Applies linear scaling at one location and returns the debiased timeseries."""
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":
             return cm_future * (np.mean(obs) / np.mean(cm_hist))
         else:
-            raise ValueError(
-                'self.delta_type needs to be one of ["additive", "multiplicative"].'
-            )
+            raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')

@@ -51,9 +51,7 @@ class Debiaser:
 
         # have shame shape
         if not Debiaser.have_same_shape(obs, cm_hist, cm_future):
-            raise ValueError(
-                "obs, cm_hist, cm_future need to have same (number of) spatial dimensions"
-            )
+            raise ValueError("obs, cm_hist, cm_future need to have same (number of) spatial dimensions")
 
         return True
 
@@ -69,8 +67,6 @@ class Debiaser:
 
         output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]])
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = self.apply_location(
-                obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j]
-            )
+            output[:, i, j] = self.apply_location(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
 
         return output

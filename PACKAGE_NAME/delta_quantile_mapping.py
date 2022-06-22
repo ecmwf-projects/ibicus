@@ -16,9 +16,7 @@ from .variable_distribution_match import standard_distributions
 @attrs.define
 class DeltaQuantileMapping(Debiaser):
 
-    distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram
-    ] = attrs.field(
+    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram] = attrs.field(
         validator=attrs.validators.instance_of(
             (
                 scipy.stats.rv_continuous,
@@ -27,17 +25,13 @@ class DeltaQuantileMapping(Debiaser):
             )
         )
     )
-    time_window_length: int = attrs.field(
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
-    )
+    time_window_length: int = attrs.field(validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)])
     variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
     def from_variable(cls, variable, time_window_length=50):
         if variable not in standard_distributions.keys():
-            raise ValueError(
-                "variable needs to be one of %s" % standard_distributions.keys()
-            )
+            raise ValueError("variable needs to be one of %s" % standard_distributions.keys())
         return cls(
             distribution=standard_distributions.get(variable),
             time_window_length=time_window_length,
@@ -53,9 +47,7 @@ class DeltaQuantileMapping(Debiaser):
         # That, solution below or totally different one?
         # Test: time measurements are quite variable. More testing necessary. Which solution is cleaner?
         debiased_cm_list_of_time_windows = []
-        for cm_future_time_window in np.array_split(
-            cm_future, self.time_window_length, axis=0
-        ):
+        for cm_future_time_window in np.array_split(cm_future, self.time_window_length, axis=0):
             ecdf_cm_future_time_window = ECDF(cm_future_time_window)
             tau_t = ecdf_cm_future_time_window(cm_future_time_window)
             debiased_cm_list_of_time_windows.append(
