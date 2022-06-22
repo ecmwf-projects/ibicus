@@ -12,6 +12,15 @@ PACKAGE\_NAME.sample module
    :undoc-members:
    :show-inheritance:
 
+PACKAGE\_NAME.linear_scaling module
+---------------------------
+
+.. automodule:: PACKAGE_NAME.linear_scaling
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Module contents
 ---------------
 
@@ -19,3 +28,5 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+
+

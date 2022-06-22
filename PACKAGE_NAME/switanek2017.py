@@ -27,9 +27,7 @@ class Switanek2017(Debiaser):
 
         argsort_cm_future = np.argsort(cm_future_detrended)
 
-        cdf_vals_obs_detrended_thresholded = threshold_cdf_vals(
-            np.sort(norm.cdf(obs_detrended, *fit_obs_detrended))
-        )
+        cdf_vals_obs_detrended_thresholded = threshold_cdf_vals(np.sort(norm.cdf(obs_detrended, *fit_obs_detrended)))
         cdf_vals_cm_hist_detrended_thresholded = threshold_cdf_vals(
             np.sort(norm.cdf(cm_hist_detrended, *fit_cm_hist_detrended))
         )
@@ -38,53 +36,36 @@ class Switanek2017(Debiaser):
         )
 
         # interpolate cdf-values for obs and mod to the length of the scenario
-        cdf_vals_obs_detrended_thresholded_intpol = (
-            interp_sorted_cdf_vals_on_given_length(
-                cdf_vals_obs_detrended_thresholded, cm_future.size
-            )
+        cdf_vals_obs_detrended_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
+            cdf_vals_obs_detrended_thresholded, cm_future.size
         )
-        cdf_vals_cm_hist_detrended_thresholded_intpol = (
-            interp_sorted_cdf_vals_on_given_length(
-                cdf_vals_cm_hist_detrended_thresholded, cm_future.size
-            )
+        cdf_vals_cm_hist_detrended_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
+            cdf_vals_cm_hist_detrended_thresholded, cm_future.size
         )
 
         # Step 3
         scaling = (
             (
-                norm.ppf(
-                    cdf_vals_cm_future_detrended_thresholded, *fit_cm_future_detrended
-                )
-                - norm.ppf(
-                    cdf_vals_cm_future_detrended_thresholded, *fit_cm_hist_detrended
-                )
+                norm.ppf(cdf_vals_cm_future_detrended_thresholded, *fit_cm_future_detrended)
+                - norm.ppf(cdf_vals_cm_future_detrended_thresholded, *fit_cm_hist_detrended)
             )
             * fit_obs_detrended[1]
             / fit_cm_hist_detrended[1]
         )
 
         # Step 4
-        recurrence_interval_obs = 1 / (
-            0.5 - np.abs(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
-        )
-        recurrence_interval_cm_hist = 1 / (
-            0.5 - np.abs(cdf_vals_cm_hist_detrended_thresholded_intpol - 0.5)
-        )
-        recurrence_interval_cm_future = 1 / (
-            0.5 - np.abs(cdf_vals_cm_future_detrended_thresholded - 0.5)
-        )
+        recurrence_interval_obs = 1 / (0.5 - np.abs(cdf_vals_obs_detrended_thresholded_intpol - 0.5))
+        recurrence_interval_cm_hist = 1 / (0.5 - np.abs(cdf_vals_cm_hist_detrended_thresholded_intpol - 0.5))
+        recurrence_interval_cm_future = 1 / (0.5 - np.abs(cdf_vals_cm_future_detrended_thresholded - 0.5))
 
         # Step 5
         recurrence_interval_scaled = np.maximum(
             1,
-            recurrence_interval_obs
-            * recurrence_interval_cm_future
-            / recurrence_interval_cm_hist,
+            recurrence_interval_obs * recurrence_interval_cm_future / recurrence_interval_cm_hist,
         )
         cdf_scaled = threshold_cdf_vals(
             0.5
-            + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
-            * np.abs(0.5 - 1 / recurrence_interval_scaled)
+            + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5) * np.abs(0.5 - 1 / recurrence_interval_scaled)
         )
 
         # Step 6
@@ -134,12 +115,8 @@ class Switanek2017(Debiaser):
 
         # interpolate cdf-values for obs and mod to the length of the
         # scenario
-        obs_cdf_intpol = np.interp(
-            np.linspace(1, obs_len, sce_len), np.linspace(1, obs_len, obs_len), obs_cdf
-        )
-        mod_cdf_intpol = np.interp(
-            np.linspace(1, mod_len, sce_len), np.linspace(1, mod_len, mod_len), mod_cdf
-        )
+        obs_cdf_intpol = np.interp(np.linspace(1, obs_len, sce_len), np.linspace(1, obs_len, obs_len), obs_cdf)
+        mod_cdf_intpol = np.interp(np.linspace(1, mod_len, sce_len), np.linspace(1, mod_len, mod_len), mod_cdf)
 
         # adapt the observation cdfs
         # split the tails of the cdfs around the center
@@ -157,17 +134,13 @@ class Switanek2017(Debiaser):
         adapted_cdf2 = np.maximum(
             np.minimum(adapted_cdf2, cdf_threshold), 1 - cdf_threshold)"""
 
-        adapted_cdf = np.sign(obs_cdf_shift) * (
-            1.0 - 1.0 / (obs_inverse * sce_inverse / mod_inverse)
-        )
+        adapted_cdf = np.sign(obs_cdf_shift) * (1.0 - 1.0 / (obs_inverse * sce_inverse / mod_inverse))
         adapted_cdf[adapted_cdf < 0] += 1.0
-        adapted_cdf = np.maximum(
-            np.minimum(adapted_cdf, cdf_threshold), 1 - cdf_threshold
-        )
+        adapted_cdf = np.maximum(np.minimum(adapted_cdf, cdf_threshold), 1 - cdf_threshold)
 
-        xvals = norm.ppf(np.sort(adapted_cdf), *obs_norm) + obs_norm[-1] / mod_norm[
-            -1
-        ] * (norm.ppf(sce_cdf, *sce_norm) - norm.ppf(sce_cdf, *mod_norm))
+        xvals = norm.ppf(np.sort(adapted_cdf), *obs_norm) + obs_norm[-1] / mod_norm[-1] * (
+            norm.ppf(sce_cdf, *sce_norm) - norm.ppf(sce_cdf, *mod_norm)
+        )
         xvals -= xvals.mean()
         xvals += obs_mean + (sce_mean - mod_mean)
 
