@@ -10,9 +10,13 @@ from .debiaser import Debiaser
 from .isimip_options import isimip_2_5, standard_variables_isimip
 from .math_helpers import ecdf, iecdf
 from .utils import (
+    day,
     get_chunked_mean,
+    get_yearly_mean,
     interp_sorted_cdf_vals_on_given_length,
+    month,
     threshold_cdf_vals,
+    year,
 )
 
 
@@ -22,9 +26,7 @@ class ISIMIP(Debiaser):
     # Variables
     distribution: scipy.stats.rv_continuous
     trend_preservation_method: str = attrs.field(
-        validator=attrs.validators.in_(
-            ["additive", "multiplicative", "mixed", "bounded"]
-        )
+        validator=attrs.validators.in_(["additive", "multiplicative", "mixed", "bounded"])
     )
     detrending: bool = attrs.field(validator=attrs.validators.instance_of(bool))
     reasonable_physical_range: Optional[list] = attrs.field(default=None)
@@ -32,31 +34,19 @@ class ISIMIP(Debiaser):
     @reasonable_physical_range.validator
     def validate_reasonable_physical_range(x):
         if len(x) != 2:
-            raise ValueError(
-                "reasonable_physical_range should have only a lower and upper physical range"
-            )
+            raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
         if not all(isinstance(elem, int) for elem in x):
             raise ValueError("reasonable_physical_range needs to be a list of floats")
         if not x[0] < x[1]:
-            raise ValueError(
-                "lower bounds needs to be smaller than upper bound in reasonable_physical_range"
-            )
+            raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
     variable: str = attrs.field(default="unknown", eq=False)
 
     # Bounds
-    lower_bound: float = attrs.field(
-        default=np.inf, validator=attrs.validators.instance_of(float)
-    )
-    lower_threshold: float = attrs.field(
-        default=np.inf, validator=attrs.validators.instance_of(float)
-    )
-    upper_bound: float = attrs.field(
-        default=-np.inf, validator=attrs.validators.instance_of(float)
-    )
-    upper_threshold: float = attrs.field(
-        default=-np.inf, validator=attrs.validators.instance_of(float)
-    )
+    lower_bound: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float))
+    lower_threshold: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float))
+    upper_bound: float = attrs.field(default=-np.inf, validator=attrs.validators.instance_of(float))
+    upper_threshold: float = attrs.field(default=-np.inf, validator=attrs.validators.instance_of(float))
 
     # ISIMIP behavior
     trend_removal_with_significance_test: bool = attrs.field(
@@ -88,15 +78,11 @@ class ISIMIP(Debiaser):
     )
     iecdf_method: str = attrs.field(
         default="inverted_cdf",
-        validator=attrs.validators.in_(
-            ["kernel_density", "linear_interpolation", "step_function"]
-        ),
+        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
     )
 
     # iteration
-    running_window_mode: bool = attrs.field(
-        default=True, validator=attrs.validators.instance_of(bool)
-    )
+    running_window_mode: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
     running_window_length: int = attrs.field(
         default=31,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
@@ -108,13 +94,11 @@ class ISIMIP(Debiaser):
     @classmethod
     def from_variable(cls, variable):
         if variable not in standard_variables_isimip.keys():
-            raise ValueError(
-                "variable needs to be one of %s" % standard_variables_isimip.keys()
-            )
+            raise ValueError("variable needs to be one of %s" % standard_variables_isimip.keys())
         isimip_instance = cls(
             variable=variable,
             **isimip_2_5.get("variables").get(variable),
-            **isimip_2_5.get("isimip_run")
+            **isimip_2_5.get("isimip_run"),
         )
         return isimip_instance
 
@@ -162,27 +146,19 @@ class ISIMIP(Debiaser):
 
     def _check_reasonable_physical_range(self, obs_hist, cm_hist, cm_future):
         if self.reasonable_physical_range is not None:
-            if np.any(
-                (obs_hist < self.reasonable_physical_range[0])
-                | (obs_hist > self.reasonable_physical_range[1])
-            ):
+            if np.any((obs_hist < self.reasonable_physical_range[0]) | (obs_hist > self.reasonable_physical_range[1])):
                 raise ValueError(
                     "Values of obs_hist lie outside the reasonable physical range of %s"
                     % self.reasonable_physical_range
                 )
 
-            if np.any(
-                (cm_hist < self.reasonable_physical_range[0])
-                | (cm_hist > self.reasonable_physical_range[1])
-            ):
+            if np.any((cm_hist < self.reasonable_physical_range[0]) | (cm_hist > self.reasonable_physical_range[1])):
                 raise ValueError(
-                    "Values of cm_hist lie outside the reasonable physical range of %s"
-                    % self.reasonable_physical_range
+                    "Values of cm_hist lie outside the reasonable physical range of %s" % self.reasonable_physical_range
                 )
 
             if np.any(
-                (cm_future < self.reasonable_physical_range[0])
-                | (cm_future > self.reasonable_physical_range[1])
+                (cm_future < self.reasonable_physical_range[0]) | (cm_future > self.reasonable_physical_range[1])
             ):
                 raise ValueError(
                     "Values of cm_future lie outside the reasonable physical range of %s"
@@ -191,8 +167,12 @@ class ISIMIP(Debiaser):
 
     # ----- Non public helpers: ISIMIP-steps ----- #
 
-    def _step3_remove_trend(self, x):
-        annual_means = get_chunked_mean(x, self.running_window_length)
+    def _step3_remove_trend(self, x, years=None):
+        if years is None:
+            annual_means = get_chunked_mean(x, self.running_window_length)
+        else:
+            annual_means = get_yearly_mean(y, years)
+
         years = np.arange(annual_means.size)
         regression = scipy.stats.linregress(years, annual_means)
         if regression.pvalue < 0.05 and self.trend_removal_with_significance_test:
@@ -206,10 +186,7 @@ class ISIMIP(Debiaser):
     def _step6_calculate_percent_values_beyond_threshold(
         mask_for_observations_beyond_threshold,
     ):
-        return (
-            mask_for_observations_beyond_threshold.sum()
-            / mask_for_observations_beyond_threshold.size
-        )
+        return mask_for_observations_beyond_threshold.sum() / mask_for_observations_beyond_threshold.size
 
     # TODO: change equation to v2.3 one or add option
     @staticmethod
@@ -238,65 +215,49 @@ class ISIMIP(Debiaser):
             mask_for_observations_beyond_threshold_cm_future_sorted
         )
 
-        P_obs_future = ISIMIP._step6_get_P_obs_future(
-            P_obs_hist, P_cm_hist, P_cm_future
-        )
+        P_obs_future = ISIMIP._step6_get_P_obs_future(P_obs_hist, P_cm_hist, P_cm_future)
 
-        return round(
-            mask_for_observations_beyond_threshold_cm_future_sorted.size * P_obs_future
-        )
+        return round(mask_for_observations_beyond_threshold_cm_future_sorted.size * P_obs_future)
 
     @staticmethod
-    def _step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(
-        nr, cm_future_sorted
-    ):
+    def _step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(nr, cm_future_sorted):
         mask = np.zeros_like(cm_future_sorted, dtype=bool)
         mask[0:nr] = True
         return mask
 
-    def _step6_get_mask_for_entries_to_set_to_lower_bound(
-        self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-    ):
+    def _step6_get_mask_for_entries_to_set_to_lower_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
 
-        nr_of_entries_to_set_to_lower_bound = (
-            self._step6_get_nr_of_entries_to_set_to_bound(
-                self._get_mask_for_observations_beyond_lower_threshold(obs_hist_sorted),
-                self._get_mask_for_observations_beyond_lower_threshold(cm_hist_sorted),
-                self._get_mask_for_observations_beyond_lower_threshold(
-                    cm_future_sorted
-                ),
-            )
+        nr_of_entries_to_set_to_lower_bound = self._step6_get_nr_of_entries_to_set_to_bound(
+            self._get_mask_for_observations_beyond_lower_threshold(obs_hist_sorted),
+            self._get_mask_for_observations_beyond_lower_threshold(cm_hist_sorted),
+            self._get_mask_for_observations_beyond_lower_threshold(cm_future_sorted),
         )
 
-        mask_for_entries_to_set_to_lower_bound = ISIMIP._step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(
-            nr_of_entries_to_set_to_lower_bound, cm_future_sorted
+        mask_for_entries_to_set_to_lower_bound = (
+            ISIMIP._step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(
+                nr_of_entries_to_set_to_lower_bound, cm_future_sorted
+            )
         )
         return mask_for_entries_to_set_to_lower_bound
 
     @staticmethod
-    def _step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(
-        nr, cm_future_sorted
-    ):
+    def _step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(nr, cm_future_sorted):
         mask = np.zeros_like(cm_future_sorted, dtype=bool)
         mask[(cm_future_sorted.size - nr) :] = True
         return mask
 
-    def _step6_get_mask_for_entries_to_set_to_upper_bound(
-        self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-    ):
+    def _step6_get_mask_for_entries_to_set_to_upper_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
 
-        nr_of_entries_to_set_to_upper_bound = (
-            self._step6_get_nr_of_entries_to_set_to_bound(
-                self._get_mask_for_observations_beyond_upper_threshold(obs_hist_sorted),
-                self._get_mask_for_observations_beyond_upper_threshold(cm_hist_sorted),
-                self._get_mask_for_observations_beyond_upper_threshold(
-                    cm_future_sorted
-                ),
-            )
+        nr_of_entries_to_set_to_upper_bound = self._step6_get_nr_of_entries_to_set_to_bound(
+            self._get_mask_for_observations_beyond_upper_threshold(obs_hist_sorted),
+            self._get_mask_for_observations_beyond_upper_threshold(cm_hist_sorted),
+            self._get_mask_for_observations_beyond_upper_threshold(cm_future_sorted),
         )
 
-        mask_for_entries_to_set_to_upper_bound = ISIMIP._step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(
-            nr_of_entries_to_set_to_upper_bound, cm_future_sorted
+        mask_for_entries_to_set_to_upper_bound = (
+            ISIMIP._step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(
+                nr_of_entries_to_set_to_upper_bound, cm_future_sorted
+            )
         )
         return mask_for_entries_to_set_to_upper_bound
 
@@ -312,9 +273,7 @@ class ISIMIP(Debiaser):
         fit_cm_hist = self.distribution.fit(cm_hist_sorted)
 
         # Get the cdf-vals and interpolate if there are unequal sample sizes (following Switanek 2017):
-        cdf_vals_cm_future = threshold_cdf_vals(
-            self.distribution.cdf(cm_future_sorted, *fit_cm_future)
-        )
+        cdf_vals_cm_future = threshold_cdf_vals(self.distribution.cdf(cm_future_sorted, *fit_cm_future))
 
         cdf_vals_obs_hist = interp_sorted_cdf_vals_on_given_length(
             threshold_cdf_vals(self.distribution.cdf(obs_hist_sorted, *fit_obs_hist)),
@@ -334,14 +293,10 @@ class ISIMIP(Debiaser):
             L_cm_hist = scipy.special.logit(cdf_vals_cm_hist)
             L_cm_future = scipy.special.logit(cdf_vals_cm_future)
 
-            delta_log_odds = np.maximum(
-                -np.log(10), np.minimum(np.log(10), L_cm_future - L_cm_hist)
-            )
+            delta_log_odds = np.maximum(-np.log(10), np.minimum(np.log(10), L_cm_future - L_cm_hist))
 
             # Map values following formula 10
-            mapped_vals = self.distribution.ppf(
-                scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future
-            )
+            mapped_vals = self.distribution.ppf(scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future)
         return mapped_vals
 
     # ----- ISIMIP calculation steps ----- #
@@ -374,12 +329,12 @@ class ISIMIP(Debiaser):
 
         return obs_hist, cm_hist, cm_future
 
-    def step3(self, obs_hist, cm_hist, cm_future):
+    def step3(self, obs_hist, cm_hist, cm_future, years_obs_hist=None, years_cm_hist=None, years_cm_future=None):
         trend_cm_future = np.zeros_like(cm_future)
         if self.detrending:
-            obs_hist, _ = self._step3_remove_trend(obs_hist)
-            cm_hist, _ = self._step3_remove_trend(cm_hist)
-            cm_future, trend_cm_future = self._step3_remove_trend(cm_future)
+            obs_hist, _ = self._step3_remove_trend(obs_hist, years_obs_hist)
+            cm_hist, _ = self._step3_remove_trend(cm_hist, years_cm_hist)
+            cm_future, trend_cm_future = self._step3_remove_trend(cm_future, years_cm_future)
         return obs_hist, cm_hist, cm_future, trend_cm_future
 
     # TODO: v2.5 has randomised values sorted like original ones.
@@ -389,9 +344,7 @@ class ISIMIP(Debiaser):
             cm_future = np.where(
                 cm_future <= self.lower_threshold,
                 self.lower_bound
-                + (
-                    1 - np.random.power(a=1)
-                )  # Possible: powerlaw_exponent_step4 as attribute
+                + (1 - np.random.power(a=1))  # Possible: powerlaw_exponent_step4 as attribute
                 / (self.lower_threshold - self.lower_bound),
                 cm_future,
             )
@@ -432,10 +385,7 @@ class ISIMIP(Debiaser):
 
             gamma = np.zeros(len(obs_hist))
             gamma[condition1] = 1
-            gamma[condition2] = 0.5 * (
-                1
-                + np.cos(q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8
-            )
+            gamma[condition2] = 0.5 * (1 + np.cos(q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8)
 
             # Formula 6
             delta_add = q_cm_future - q_cm_hist
@@ -451,9 +401,9 @@ class ISIMIP(Debiaser):
             condition2 = np.isclose(q_cm_hist, q_cm_future)
 
             return_vals = b - (b - obs_hist) * (b - q_cm_future) / (b - q_cm_hist)
-            return_vals[condition1] = a + (obs_hist[condition1] - a) * (
-                q_cm_future[condition1] - a
-            ) / (q_cm_hist[condition1] - a)
+            return_vals[condition1] = a + (obs_hist[condition1] - a) * (q_cm_future[condition1] - a) / (
+                q_cm_hist[condition1] - a
+            )
             return_vals[condition2] = obs_hist[condition2]
             return return_vals
         else:
@@ -475,25 +425,17 @@ class ISIMIP(Debiaser):
         cm_hist_sorted = np.sort(cm_hist)
 
         # Calculate values that are set to lower bound for bounded/thresholded variables
-        mask_for_entries_to_set_to_lower_bound = np.zeros_like(
-            cm_future_sorted, dtype=bool
-        )
+        mask_for_entries_to_set_to_lower_bound = np.zeros_like(cm_future_sorted, dtype=bool)
         if self.has_lower_threshold:
-            mask_for_entries_to_set_to_lower_bound = (
-                self._step6_get_mask_for_entries_to_set_to_lower_bound(
-                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-                )
+            mask_for_entries_to_set_to_lower_bound = self._step6_get_mask_for_entries_to_set_to_lower_bound(
+                obs_hist_sorted, cm_hist_sorted, cm_future_sorted
             )
 
         # Calculate values that are set to lower bound for bounded/thresholded variables
-        mask_for_entries_to_set_to_upper_bound = np.zeros_like(
-            cm_future_sorted, dtype=bool
-        )
+        mask_for_entries_to_set_to_upper_bound = np.zeros_like(cm_future_sorted, dtype=bool)
         if self.has_upper_threshold:
-            mask_for_entries_to_set_to_upper_bound = (
-                self._step6_get_mask_for_entries_to_set_to_upper_bound(
-                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-                )
+            mask_for_entries_to_set_to_upper_bound = self._step6_get_mask_for_entries_to_set_to_upper_bound(
+                obs_hist_sorted, cm_hist_sorted, cm_future_sorted
             )
 
         # Set values to upper or lower bound for bounded/thresholded variables
@@ -505,9 +447,7 @@ class ISIMIP(Debiaser):
         )
 
         # Calculate values between bounds
-        cm_future_sorted[
-            mask_for_entries_not_set_to_either_bound
-        ] = self._step6_adjust_values_between_thresholds(
+        cm_future_sorted[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
             self._get_observations_between_thresholds(obs_hist_sorted),
             self._get_observations_between_thresholds(obs_future_sorted),
             self._get_observations_between_thresholds(cm_hist_sorted),
@@ -529,13 +469,19 @@ class ISIMIP(Debiaser):
         return cm_future
 
     # ----- Apply location function -----
-    def _apply_on_window(self, obs_hist, cm_hist, cm_future):
+    def _apply_on_window(
+        self,
+        obs_hist: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        years_obs_hist: Optional[np.ndarray] = None,
+        years_cm_hist: Optional[np.ndarray] = None,
+        years_cm_future: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         # Steps
         obs_hist, cm_hist, cm_future, scale = self.step1(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future = self.step2(obs_hist, cm_hist, cm_future)
-        obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(
-            obs_hist, cm_hist, cm_future
-        )
+        obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future = self.step4(obs_hist, cm_hist, cm_future)
         obs_future = self.step5(obs_hist, cm_hist, cm_future)
         cm_future = self.step6(obs_hist, obs_future, cm_hist, cm_future)
@@ -544,46 +490,65 @@ class ISIMIP(Debiaser):
 
         return cm_future
 
-    def apply_location(self, obs_hist, cm_hist, cm_future, *args, **kwargs):
+    def apply_location(
+        self,
+        obs_hist: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        time_obs_hist: Optional[np.ndarray] = None,
+        time_cm_hist: Optional[np.ndarray] = None,
+        time_cm_future: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         self._check_reasonable_physical_range(obs_hist, cm_hist, cm_future)
 
         # TODO: how do we integrate if day of year or month is passed as an argument
         if self.running_window_mode:
-            day_of_year_obs_hist = kwargs.get("day_of_year_obs")
-            day_of_year_cm_hist = kwargs.get("day_of_year_cm_hist")
-            day_of_year_cm_future = kwargs.get("day_of_yearcm_future")
-
-        if (
-            day_of_year_obs_hist is not None
-            and day_of_year_cm_hist is not None
-            and day_of_year_cm_future is not None
-        ):
-            pass
-            # do stuff
-        else:
-            # window_center = np.arange(365)[:: self.step_window_step_length]
             return cm_future
+        else:
+            if time_obs_hist is not None and time_cm_hist is not None and time_cm_future is not None:
 
-        months_obs_hist = kwargs.get("months_obs")
-        months_cm_hist = kwargs.get("months_cm_hist")
-        months_cm_future = kwargs.get("months_cm_future")
+                debiased_cm_future = np.zeros_like(cm_future)
+                for i_month in range(1, 13):
+                    mask_i_month_in_obs_hist = month(time_obs_hist) == i_month
+                    mask_i_month_in_cm_hist = month(time_cm_hist) == i_month
+                    mask_i_month_in_cm_future = month(time_cm_future) == i_month
 
-        if (
-            months_obs_hist is not None
-            and months_cm_hist is not None
-            and months_cm_future is not None
-        ):
-            debiased_cm_future = np.zeros_like(cm_future)
-            for month in months_obs_hist:
-                idxs_month_in_obs_hist = np.where(months_obs_hist == month)
-                idxs_month_in_cm_hist = np.where(months_cm_hist == month)
-                idxs_month_in_cm_future = np.where(months_cm_future == month)
-
-                debiased_cm_future[idxs_month_in_cm_future] = self._apply_on_window(
-                    obs_hist=obs_hist[idxs_month_in_obs_hist],
-                    cm_hist=cm_hist[idxs_month_in_cm_hist],
-                    cm_future=cm_future[idxs_month_in_cm_future],
+                    debiased_cm_future[mask_i_month_in_cm_future] = self._apply_on_window(
+                        obs_hist=obs_hist[mask_i_month_in_obs_hist],
+                        cm_hist=cm_hist[mask_i_month_in_cm_hist],
+                        cm_future=cm_future[mask_i_month_in_cm_future],
+                        years_obs_hist=year(time_obs_hist[mask_i_month_in_obs_hist]),
+                        years_cm_hist=year(time_cm_hist[mask_i_month_in_cm_hist]),
+                        years_cm_future=year(time_cm_future[mask_i_month_in_cm_future]),
+                    )
+                return debiased_cm_future
+            else:
+                raise ValueError(
+                    "ISIMIP not in running window mode requires time information. "
+                    "Please specify time_obs_hist, time_cm_hist, time_cm_future or change to running window mode."
                 )
-            return debiased_cm_future
 
-        return cm_future
+    @staticmethod
+    def _unpack_kwargs_and_get_locationwise_info(i, j, **kwargs):
+        return {
+            key: value[
+                :,
+                i,
+                j,
+            ]
+            for key, value in kwargs.items()
+        }
+
+    def apply(self, obs, cm_hist, cm_future, **kwargs):
+        print("----- Running debiasing -----")
+        Debiaser.check_inputs(obs, cm_hist, cm_future)
+        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]])
+        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
+            output[:, i, j] = self.apply_location(
+                obs[:, i, j],
+                cm_hist[:, i, j],
+                cm_future[:, i, j],
+                **ISIMIP._unpack_kwargs_and_get_locationwise_info(i, j, **kwargs),
+            )
+
+        return output
