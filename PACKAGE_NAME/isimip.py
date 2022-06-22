@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+from typing import Optional, Union
 
+import attrs
 import numpy as np
 import scipy.special
 import scipy.stats
@@ -17,33 +19,91 @@ from .utils import (
 # Reference TODO
 @dataclass
 class ISIMIP(Debiaser):
-    variable: str
-
     # Variables
     distribution: scipy.stats.rv_continuous
-    trend_preservation_method: str
-    detrending: bool
-    reasonable_physical_range: list = None
-    lower_bound: float = np.inf
-    lower_threshold: float = np.inf
-    upper_bound: float = -np.inf
-    upper_threshold: float = -np.inf
+    trend_preservation_method: str = attrs.field(
+        validator=attrs.validators.in_(
+            ["additive", "multiplicative", "mixed", "bounded"]
+        )
+    )
+    detrending: bool = attrs.field(validator=attrs.validators.instance_of(bool))
+    reasonable_physical_range: Optional[list] = attrs.field(default=None)
+
+    @reasonable_physical_range.validator
+    def validate_reasonable_physical_range(x):
+        if len(x) != 2:
+            raise ValueError(
+                "reasonable_physical_range should have only a lower and upper physical range"
+            )
+        if not all(isinstance(elem, int) for elem in x):
+            raise ValueError("reasonable_physical_range needs to be a list of floats")
+        if not x[0] < x[1]:
+            raise ValueError(
+                "lower bounds needs to be smaller than upper bound in reasonable_physical_range"
+            )
+
+    variable: str = attrs.field(default="unknown", eq=False)
+
+    # Bounds
+    lower_bound: float = attrs.field(
+        default=np.inf, validator=attrs.validators.instance_of(float)
+    )
+    lower_threshold: float = attrs.field(
+        default=np.inf, validator=attrs.validators.instance_of(float)
+    )
+    upper_bound: float = attrs.field(
+        default=-np.inf, validator=attrs.validators.instance_of(float)
+    )
+    upper_threshold: float = attrs.field(
+        default=-np.inf, validator=attrs.validators.instance_of(float)
+    )
 
     # ISIMIP behavior
-    trend_removal_with_significance_test: bool = True  # step 3
-    # powerlaw_exponent_step4: int  # step 4
-    # pseudo_future_observations_bounded_variables: str  # step 5
-    trend_transfer_only_for_values_within_threshold: bool = True  # step 5
-    event_likelihood_adjustment: bool = False  # step 6
+    trend_removal_with_significance_test: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )  # step 3
+    trend_transfer_only_for_values_within_threshold: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )  # step 5
+    event_likelihood_adjustment: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )  # step 6
 
     # math functions
-    ecdf_method: str = "step_function"
-    iecdf_method: str = "inverted_cdf"
+    ecdf_method: str = attrs.field(
+        default="step_function",
+        validator=attrs.validators.in_(
+            [
+                "inverted_cdf",
+                "averaged_inverted_cdf",
+                "closest_observation",
+                "interpolated_inverted_cdf",
+                "hazen",
+                "weibull",
+                "linear",
+                "median_unbiased",
+                "normal_unbiased",
+            ]
+        ),
+    )
+    iecdf_method: str = attrs.field(
+        default="inverted_cdf",
+        validator=attrs.validators.in_(
+            ["kernel_density", "linear_interpolation", "step_function"]
+        ),
+    )
 
     # iteration
-    running_window_mode: bool = True
-    running_window_length: int = 31
-    running_window_step_length: int = 1
+    running_window_mode: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=1, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+    )
 
     @classmethod
     def from_variable(cls, variable):
@@ -331,7 +391,7 @@ class ISIMIP(Debiaser):
                 self.lower_bound
                 + (
                     1 - np.random.power(a=1)
-                )  # TODO: powerlaw_exponent_step4 as attribute
+                )  # Possible: powerlaw_exponent_step4 as attribute
                 / (self.lower_threshold - self.lower_bound),
                 cm_future,
             )
@@ -339,7 +399,7 @@ class ISIMIP(Debiaser):
             cm_future = np.where(
                 cm_future >= self.upper_threshold,
                 self.upper_threshold
-                + np.random.power(a=1)  # TODO: powerlaw_exponent_step4 as attribute
+                + np.random.power(a=1)  # Possible: powerlaw_exponent_step4 as attribute
                 / (self.upper_bound - self.upper_threshold),
                 cm_future,
             )
