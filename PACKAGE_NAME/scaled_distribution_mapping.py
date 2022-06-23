@@ -9,7 +9,7 @@ from .utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
 
 # Reference Cannon et al. 2015
 @attrs.define
-class Switanek2017(Debiaser):
+class ScaledDistributionMapping(Debiaser):
 
     variable: str = attrs.field(default="unknown", eq=False)
 
