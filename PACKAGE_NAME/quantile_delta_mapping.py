@@ -14,7 +14,7 @@ from .variable_distribution_match import standard_distributions
 # TODO: add docstring
 # TODO: check correctness of time window implementation and precipitation-case
 @attrs.define
-class DeltaQuantileMapping(Debiaser):
+class QuantileDeltaMapping(Debiaser):
 
     distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram] = attrs.field(
         validator=attrs.validators.instance_of(
