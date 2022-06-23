@@ -22,6 +22,12 @@ def interp_sorted_cdf_vals_on_given_length(cdf_vals: np.ndarray, interpolation_l
     )
 
 
+def sort_array_like_another_one(x, y):
+    """Sorts an array x like another one y, meaning that the biggest value of x is at the position of the biggest value of y, etc."""
+    inverse_sort_y = np.argsort(np.argsort(y))
+    return np.sort(x)[inverse_sort_y]
+
+
 # ----- Datetime functionality -----
 
 

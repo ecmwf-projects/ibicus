@@ -15,6 +15,7 @@ from .utils import (
     get_yearly_mean,
     interp_sorted_cdf_vals_on_given_length,
     month,
+    sort_array_like_another_one,
     threshold_cdf_vals,
     year,
 )
@@ -133,10 +134,10 @@ class ISIMIP(Debiaser):
     # ----- Non public helpers: General ----- #
 
     def _get_mask_for_values_beyond_lower_threshold(self, x):
-        return x < self.lower_threshold
+        return x <= self.lower_threshold
 
     def _get_mask_for_values_beyond_upper_threshold(self, x):
-        return x > self.upper_threshold
+        return x >= self.upper_threshold
 
     def _get_mask_for_values_between_thresholds(self, x):
         return (x > self.lower_threshold) & (x < self.upper_threshold)
@@ -388,27 +389,46 @@ class ISIMIP(Debiaser):
             cm_future, trend_cm_future = self._step3_remove_trend(cm_future, years_cm_future)
         return obs_hist, cm_hist, cm_future, trend_cm_future
 
-    # TODO: v2.5 has randomised values sorted like original ones.
-    def step4(self, obs_hist, cm_hist, cm_future):
+    """
+    Comment: < v2.3 this is a powerlaw. can be
+    self.lower_bound
+            + (1 - np.random.power(a = 1))  
+            / (self.lower_threshold - self.lower_bound),
+
+    self.upper_threshold
+            + np.random.power(a=1)  # Possible: powerlaw_exponent_step4 as attribute
+            / (self.upper_bound - self.upper_threshold),
+    """
+
+    def step4(self, cm_future):
+
         if self.has_lower_bound and self.has_lower_threshold:
-            # TODO: Is this how to construct a power law that is increasing towards the left bound? Also which power?
-            cm_future = np.where(
-                cm_future <= self.lower_threshold,
-                self.lower_bound
-                + (1 - np.random.power(a=1))  # Possible: powerlaw_exponent_step4 as attribute
-                / (self.lower_threshold - self.lower_bound),
-                cm_future,
+            mask_cm_future_values_beyond_lower_threshold = self._get_mask_for_values_beyond_lower_threshold(cm_future)
+            randomised_values_between_threshold_and_bound = np.sort(
+                np.random.uniform(
+                    size=mask_cm_future_values_beyond_lower_threshold.sum(),
+                    low=self.lower_bound,
+                    high=self.lower_threshold,
+                )
             )
-        if self.has_upper_bound and self.has_upper_threshold:
-            cm_future = np.where(
-                cm_future >= self.upper_threshold,
-                self.upper_threshold
-                + np.random.power(a=1)  # Possible: powerlaw_exponent_step4 as attribute
-                / (self.upper_bound - self.upper_threshold),
-                cm_future,
+            cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
+                randomised_values_between_threshold_and_bound, cm_future[mask_cm_future_values_beyond_lower_threshold]
             )
 
-        return obs_hist, cm_hist, cm_future
+        if self.has_upper_bound and self.has_upper_threshold:
+            mask_cm_future_values_beyond_upper_threshold = self._get_mask_for_values_beyond_upper_threshold(cm_future)
+            randomised_values_between_threshold_and_bound = np.sort(
+                np.random.uniform(
+                    size=mask_cm_future_values_beyond_upper_threshold.sum(),
+                    low=self.upper_threshold,
+                    high=self.upper_bound,
+                )
+            )
+            cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
+                randomised_values_between_threshold_and_bound, cm_future[mask_cm_future_values_beyond_upper_threshold]
+            )
+
+        return cm_future
 
     # Generate pseudo future observations and transfer trends
     def step5(self, obs_hist, cm_hist, cm_future):
@@ -494,7 +514,7 @@ class ISIMIP(Debiaser):
         obs_hist, cm_hist, cm_future, scale = self.step1(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future = self.step2(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(obs_hist, cm_hist, cm_future)
-        obs_hist, cm_hist, cm_future = self.step4(obs_hist, cm_hist, cm_future)
+        cm_future = self.step4(cm_future)
         obs_future = self.step5(obs_hist, cm_hist, cm_future)
         cm_future = self.step6(obs_hist, obs_future, cm_hist, cm_future)
         cm_future = self.step7(cm_future, trend_cm_future)
