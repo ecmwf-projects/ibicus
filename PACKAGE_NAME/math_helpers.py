@@ -1,3 +1,7 @@
+"""math_helpers module - helpers used by different debiasers"""
+
+from typing import Union
+
 import numpy as np
 import scipy.optimize
 import scipy.stats
@@ -8,9 +12,31 @@ from scipy.stats import gamma
 # TODO: in gamma.fit shall we specify gamma.fit(floc = 0) so keep loc fixed at zero?
 
 
-# Hurdle model: two step process
-# Binomial if it rains and then amounts how much. P(X = 0) = p0, P(0 < X <= x) = p0 + (1-p0) F_A(x)
-def fit_precipitation_hurdle_model(data, distribution=scipy.stats.gamma):
+def fit_precipitation_hurdle_model(
+    data: np.ndarray, distribution: scipy.stats.rv_continuous = scipy.stats.gamma
+) -> tuple:
+    """
+    Fits a precipitation hurdle model and returns parameter estimates.
+
+    A hurdle-model is a two-step process: binomially it is determined if it rains (with probability p0 of no rain) and
+        then we assume that theamounts follow a given distribution (often gamma) described by a cdf F_A. Mathematically:
+
+    P(X = 0) = p0,
+    P(0 < X <= x) = p0 + (1-p0) F_A(x)
+
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array containing precipitation values.
+    distribution : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts.
+
+    Returns
+    -------
+    tuple
+        Tuple containing parameter estimates: (p0, tuple of parameter estimates for the amounts-distribution).
+    """
     rainy_days = data[data != 0]
 
     p0 = 1 - rainy_days.shape[0] / data.shape[0]
@@ -19,7 +45,33 @@ def fit_precipitation_hurdle_model(data, distribution=scipy.stats.gamma):
     return (p0, fit_rainy_days)
 
 
-def cdf_precipitation_hurdle_model(x, fit, distribution=scipy.stats.gamma, randomization=False):
+def cdf_precipitation_hurdle_model(
+    x: np.ndarray, fit: tuple, distribution: scipy.stats.rv_continuous = scipy.stats.gamma, randomization: bool = False
+) -> np.ndarray:
+    """
+    Returns cdf-values of a vector x for the cdf of a precipitation hurdle-model. If randomization = True then cdf-values for x == 0
+        (no rain) are randomized between (0, p0).
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Values for which the cdf shall be evaluated.
+    fit : tuple
+        Parameter controling the hurdle model: (p0, tuple of parameter estimates for the amounts-distribution).
+        Return value of fit_precipitation_hurdle_model.
+    distribution : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts.
+    randomization : bool
+        Whether cdf-values for x == 0 (no rain) shall be randomized uniformly within (0, p0).
+        Helps for quantile mapping and controlling the zero-inflation.
+
+
+    Returns
+    -------
+    np.ndarray
+        Array containing cdf-values for x.
+    """
+
     p0 = fit[0]
     fit_rainy_days = fit[1]
 
@@ -33,7 +85,27 @@ def cdf_precipitation_hurdle_model(x, fit, distribution=scipy.stats.gamma, rando
         )
 
 
-def ppf_precipitation_hurdle_model(q, fit, distribution=scipy.stats.gamma):
+def ppf_precipitation_hurdle_model(
+    q: np.ndarray, fit: tuple, distribution: scipy.stats.rv_continuous = scipy.stats.gamma
+):
+    """
+    Returns ppf (quantile / inverse cdf)-values of a vector x for the cdf of a precipitation hurdle-model.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        Values for which the ppf shall be evaluated.
+    fit : tuple
+        Parameter controling the hurdle model: (p0, tuple of parameter estimates for the amounts-distribution).
+        Return value of fit_precipitation_hurdle_model.
+    distribution : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts.
+
+    Returns
+    -------
+    np.ndarray
+        Array containing cdf-values for x.
+    """
     p0 = fit[0]
     fit_rainy_days = fit[1]
 
@@ -48,13 +120,64 @@ def quantile_mapping_precipitation_hurdle_model(
     distribution_left=scipy.stats.gamma,
     randomization=False,
 ):
+    """
+    Applies quantile mapping between two precipitation hurdle-models (see fit_precipitation_hurdle_model).
+
+    The values x are first mapped onto quantiles q in [0, 1] using the cdf of fit_right and then
+        to new values using the ppf/inverse cdf of fit_left. If randomization = True then on the right application
+        of the cdf the cdf-values for zero-precipitation values are randomized between (0, p0). See `cdf_precipitation_hurdle_model`
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Values for which the cdf shall be evaluated.
+    fit_right : tuple
+        Parameters controling the hurdle model on the right side of the quantile mapping:
+            (p0, tuple of parameter estimates for the amounts-distribution).
+        Return value of fit_precipitation_hurdle_model.
+    fit_left : tuple
+        Parameters controling the hurdle model on the left side of the quantile mapping:
+            (p0, tuple of parameter estimates for the amounts-distribution).
+        Return value of fit_precipitation_hurdle_model.
+    distribution_right : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts on the right side of the quantile mapping.
+    distribution_left : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts on the left side of the quantile mapping.
+    randomization : bool
+        Wether cdf-values for x == 0 (no rain) shall be randomized uniformly within (0, p0).
+        Helps for controlling the zero-inflation during quantile mapping.
+
+
+    Returns
+    -------
+    np.ndarray
+        Array containing the quantile mapped values for x.
+    """
     q = cdf_precipitation_hurdle_model(x, fit=fit_right, distribution=distribution_right, randomization=randomization)
     x_mapped = ppf_precipitation_hurdle_model(q, fit=fit_left, distribution=distribution_left)
     return x_mapped
 
 
 # Censored model: rain values of zero (or below censoring_value) are treated as censored values
-def fit_censored_gamma(x, nr_censored_x, min_x):
+def fit_censored_gamma(x: np.ndarray, nr_censored_x: int, min_x: float) -> tuple:
+    """
+    Fits a censored gamma distribution to left-censored data with `nr_censored_x` censored observations.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Non-censored values on which to fit the censored gamma.
+    nr_censored_x : tuple
+        Number of censored observations in the dataset on which to fit the censored gamma.
+    min_x : tuple
+        Censoring value.
+
+    Returns
+    -------
+    tuple
+        Parameter estimates for the gamma distribution.
+    """
+
     def neg_log_likelihood(params, x, nr_censored_x, min_x) -> float:
         return -np.sum(gamma.logpdf(x, a=params[0], scale=params[1])) - nr_censored_x * np.log(
             gamma.cdf(min_x, a=params[0], scale=params[1])
@@ -76,11 +199,53 @@ def fit_censored_gamma(x, nr_censored_x, min_x):
 
 
 def fit_precipitation_censored_gamma(data, censoring_value):
+    """
+    Fits a censored gamma distribution to precipitation data where everything under `censored_value` is assumed to be
+        a censored observation. This is useful when a slightly higher threshold is used to account for the drizzle effect in climate models.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Data on which to fit the censored gamma distribution.
+    censoring_value : tuple
+        Value under which observations are assumed to be censored
+
+    Returns
+    -------
+    tuple
+        Parameter estimates for the gamma distribution.
+    """
     noncensored_data = data[data > censoring_value]
     return fit_censored_gamma(noncensored_data, data.shape[0] - noncensored_data.shape[0], censoring_value)
 
 
-def quantile_mapping_precipitation_censored_gamma(x, censoring_value, fit_right, fit_left):
+def quantile_mapping_precipitation_censored_gamma(
+    x: np.ndarray, censoring_value: float, fit_right: tuple, fit_left: tuple
+) -> np.ndarray:
+    """
+    Applies quantile mapping between two precipitation censored gamma models.
+    The values x are first mapped onto quantiles q in [0, 1] using the cdf of fit_right and then
+        to new values using the ppf/inverse cdf of fit_left. Values under censoring_value are first
+        randomized on the right and then thresholded and set to zero again on the left
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Values for which the cdf shall be evaluated.
+    censoring_value : tuple
+        Value under which observations are assumed to be censored
+    fit_right : tuple
+        Parameters controling the censored model on the right side of the quantile mapping.
+        Return value of fit_precipitation_censored_gamma.
+    fit_left : tuple
+        Parameters controling the censored model on the left side of the quantile mapping
+        Return value of fit_precipitation_censored_gamma.
+
+    Returns
+    -------
+    np.ndarray
+        Array containing the quantile mapped values for x.
+    """
     x_randomized = np.where(x < censoring_value, np.random.uniform(0, censoring_value), x)
     q = gamma.cdf(x_randomized, *fit_right)
     x_mapped = gamma.ppf(q, *fit_left)
