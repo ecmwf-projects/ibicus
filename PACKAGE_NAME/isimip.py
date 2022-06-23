@@ -172,7 +172,7 @@ class ISIMIP(Debiaser):
         if years is None:
             annual_means = get_chunked_mean(x, self.running_window_length)
         else:
-            annual_means = get_yearly_mean(y, years)
+            annual_means = get_yearly_mean(x, years)
 
         years = np.arange(annual_means.size)
         regression = scipy.stats.linregress(years, annual_means)
@@ -360,8 +360,10 @@ class ISIMIP(Debiaser):
 
         return obs_hist, cm_hist, cm_future, scale
 
-    # TODO: make work with mask instead of nan
     def step2(self, obs_hist, cm_hist, cm_future):
+        """
+        Step 2: impute values for prsnratio which are missing on days where there is no precipitation. They are imputed by effectively sampling the iecdf (see Lange 2019 and ISIMIP3b factsheet for the method).
+        """
         if self.variable == "prsnratio":
             obs_hist = np.where(
                 np.isnan(obs_hist),
@@ -382,6 +384,15 @@ class ISIMIP(Debiaser):
         return obs_hist, cm_hist, cm_future
 
     def step3(self, obs_hist, cm_hist, cm_future, years_obs_hist=None, years_cm_hist=None, years_cm_future=None):
+        """
+        Step 3: Linear trend removal if detrending = True. This is because certain variables (eg. temp) can have substantial trends also within training and application period (not only between).
+        These trends are removed to "prevent a confusion of these trends with interannual variability during quantile mapping (steps 5 and6)" (Lange 2019). The trend for cm_future is subsequently added again in step7.
+        Trends are calculated by linearly regressing the yearly mean values y_i against years t_i. From each observation in year t_i then the slope * (t_i - mean(t_i)) is removed (normalising the trend such that the sum over all t_i is zero). See Lange 2019 for the exact method.
+
+        If trend_removal_with_significance_test = True (default in ISIMIP v2.5) then linear trends are only removed subject it being significant (p-value < 0.05).
+        If years_obs_hist, years_cm_hist or/and years_cm_future are given the yearly means can be calculated exactly because it is known to which year which observation pertains.
+        If they are None then it is assumed that observations are always group in chunks of self.window_size and the observation afterwards is part of a new year. This can lead to small inconsistencies with leap years, however the problems should be minor.
+        """
         trend_cm_future = np.zeros_like(cm_future)
         if self.detrending:
             obs_hist, _ = self._step3_remove_trend(obs_hist, years_obs_hist)
@@ -389,19 +400,11 @@ class ISIMIP(Debiaser):
             cm_future, trend_cm_future = self._step3_remove_trend(cm_future, years_cm_future)
         return obs_hist, cm_hist, cm_future, trend_cm_future
 
-    """
-    Comment: < v2.3 this is a powerlaw. can be
-    self.lower_bound
-            + (1 - np.random.power(a = 1))  
-            / (self.lower_threshold - self.lower_bound),
-
-    self.upper_threshold
-            + np.random.power(a=1)  # Possible: powerlaw_exponent_step4 as attribute
-            / (self.upper_bound - self.upper_threshold),
-    """
-
     def step4(self, cm_future):
-
+        """
+        Step4: If the variable is bounded then values between the threshold and corresponding bound (including values equal to the bound) are
+        randomized uniformly between the threshold and bound and resorted according to the order in which they were before.
+        """
         if self.has_lower_bound and self.has_lower_threshold:
             mask_cm_future_values_beyond_lower_threshold = self._get_mask_for_values_beyond_lower_threshold(cm_future)
             randomised_values_between_threshold_and_bound = np.sort(
@@ -432,7 +435,10 @@ class ISIMIP(Debiaser):
 
     # Generate pseudo future observations and transfer trends
     def step5(self, obs_hist, cm_hist, cm_future):
-
+        """
+        Step 5: generates pseudo future observations by transfering simulated trends to historical recorded observations.
+        This makes the ISIMIP-method trend-preserving.
+        """
         if self.trend_transfer_only_for_values_within_threshold:
             return self._step5_transfer_trend(obs_hist, cm_hist, cm_future)
         else:
@@ -446,6 +452,11 @@ class ISIMIP(Debiaser):
 
     # Core of the isimip-method: parametric quantile mapping
     def step6(self, obs_hist, obs_future, cm_hist, cm_future):
+        """
+        Step 6: parametric quantile mapping between cm_future and obs_future (the pseudo-future observations) to debias the former. Core of the bias adjustment method.
+        For (partly) bounded climate variables additionally the frequency of values is bias-adjusted before the other observations are quantile mapped.
+        If event_likelihood_adjustment = True then additionally to "normal quantile mapping" the likelihood of individual events is adjusted (see Lange 2019 for the method which is based on Switanek 2017).
+        """
 
         # Sort arrays to apply parametric quantile mapping (values of equal rank are mapped together).
         # Save sort-order of cm_future for backsorting
@@ -491,6 +502,9 @@ class ISIMIP(Debiaser):
         return cm_future_sorted[reverse_sorting_idx]
 
     def step7(self, cm_future, trend_cm_future):
+        """
+        Step 7: If detrending = True add the trend removed in step 3 back to the debiased cm_future values.
+        """
         if self.detrending:
             cm_future = cm_future + trend_cm_future
         return cm_future
@@ -513,7 +527,9 @@ class ISIMIP(Debiaser):
         # Steps
         obs_hist, cm_hist, cm_future, scale = self.step1(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future = self.step2(obs_hist, cm_hist, cm_future)
-        obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(obs_hist, cm_hist, cm_future)
+        obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(
+            obs_hist, cm_hist, cm_future, years_obs_hist, years_cm_hist, years_cm_future
+        )
         cm_future = self.step4(cm_future)
         obs_future = self.step5(obs_hist, cm_hist, cm_future)
         cm_future = self.step6(obs_hist, obs_future, cm_hist, cm_future)
