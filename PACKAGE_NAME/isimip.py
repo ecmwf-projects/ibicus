@@ -132,17 +132,17 @@ class ISIMIP(Debiaser):
 
     # ----- Non public helpers: General ----- #
 
-    def _get_mask_for_observations_beyond_lower_threshold(self, x):
+    def _get_mask_for_values_beyond_lower_threshold(self, x):
         return x < self.lower_threshold
 
-    def _get_mask_for_observations_beyond_upper_threshold(self, x):
+    def _get_mask_for_values_beyond_upper_threshold(self, x):
         return x > self.upper_threshold
 
-    def _get_mask_for_observations_between_thresholds(self, x):
+    def _get_mask_for_values_between_thresholds(self, x):
         return (x > self.lower_threshold) & (x < self.upper_threshold)
 
-    def _get_observations_between_thresholds(self, x):
-        return x[self._get_mask_for_observations_between_thresholds(x)]
+    def _get_values_between_thresholds(self, x):
+        return x[self._get_mask_for_values_between_thresholds(x)]
 
     def _check_reasonable_physical_range(self, obs_hist, cm_hist, cm_future):
         if self.reasonable_physical_range is not None:
@@ -183,41 +183,92 @@ class ISIMIP(Debiaser):
         x = x - trend
         return x, trend
 
-    def _step6_calculate_percent_values_beyond_threshold(
-        mask_for_observations_beyond_threshold,
-    ):
-        return mask_for_observations_beyond_threshold.sum() / mask_for_observations_beyond_threshold.size
+    def _step5_transfer_trend(self, obs_hist, cm_hist, cm_future):
+        # Compute p = F_obs_hist(x) with x in obs_hist
+        p = ecdf(obs_hist, obs_hist, method=self.ecdf_method)
 
-    # TODO: change equation to v2.3 one or add option
+        # Compute q-vals: q = IECDF(p)
+        q_obs_hist = obs_hist  # TODO: = iecdf_obs_hist(p), appears in eq. 7
+        q_cm_future = iecdf(cm_future, p, method=self.iecdf_method)
+        q_cm_hist = iecdf(cm_hist, p, method=self.iecdf_method)
+
+        if self.trend_preservation_method == "additive":
+            delta_add = q_cm_future - q_cm_hist
+            return obs_hist + delta_add
+        elif self.trend_preservation_method == "multiplicative":
+            delta_star_mult = np.where(q_cm_hist == 0, 1, q_cm_future / q_cm_hist)
+            delta_mult = np.maximum(0.01, np.minimum(100, delta_star_mult))
+            return obs_hist * delta_mult
+        elif self.trend_preservation_method == "mixed":
+            # Formula 7
+            condition1 = q_cm_hist >= q_obs_hist
+            condition2 = (q_cm_hist < q_obs_hist) & (q_obs_hist < 9 * q_cm_hist)
+
+            gamma = np.zeros(len(obs_hist))
+            gamma[condition1] = 1
+            gamma[condition2] = 0.5 * (1 + np.cos(q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8)
+
+            # Formula 6
+            delta_add = q_cm_future - q_cm_hist
+            delta_star_mult = np.where(q_cm_hist == 0, 1, q_cm_future / q_cm_hist)
+            delta_mult = np.maximum(0.01, np.minimum(100, delta_star_mult))
+            return gamma * obs_hist * delta_mult + (1 - gamma) * (obs_hist + delta_add)
+        elif self.trend_preservation_method == "bounded":
+            a = self.lower_bound
+            b = self.upper_bound
+
+            # Formula 8
+            condition1 = q_cm_hist > q_cm_future
+            condition2 = np.isclose(q_cm_hist, q_cm_future)
+
+            return_vals = b - (b - obs_hist) * (b - q_cm_future) / (b - q_cm_hist)
+            return_vals[condition1] = a + (obs_hist[condition1] - a) * (q_cm_future[condition1] - a) / (
+                q_cm_hist[condition1] - a
+            )
+            return_vals[condition2] = obs_hist[condition2]
+            return return_vals
+        else:
+            raise ValueError(
+                """ Wrong value for self.trend_preservation_method.
+                    Needs to be one of ['additive', 'multiplicative', 'mixed', 'bounded'] """
+            )
+
+    def _step6_calculate_percent_values_beyond_threshold(
+        mask_for_values_beyond_threshold,
+    ):
+        return mask_for_values_beyond_threshold.sum() / mask_for_values_beyond_threshold.size
+
     @staticmethod
     def _step6_get_P_obs_future(P_obs_hist, P_cm_hist, P_cm_future):
-        if np.isclose(P_cm_hist, P_cm_future):
-            return P_obs_hist
-        elif P_cm_hist > P_cm_future:
+        if np.isclose(P_cm_hist, P_obs_hist):
+            return P_cm_future
+        elif P_cm_future <= P_cm_hist and P_cm_hist > P_obs_hist:
             return P_obs_hist * P_cm_future / P_cm_hist
-        else:
+        elif P_cm_future >= P_cm_hist and P_cm_hist < P_obs_hist:
             return 1 - (1 - P_obs_hist) * (1 - P_cm_future) / (1 - P_cm_hist)
+        else:
+            return P_obs_hist + P_cm_future - P_cm_hist
 
     def _step6_get_nr_of_entries_to_set_to_bound(
         self,
-        mask_for_observations_beyond_threshold_obs_hist_sorted,
-        mask_for_observations_beyond_threshold_cm_hist_sorted,
-        mask_for_observations_beyond_threshold_cm_future_sorted,
+        mask_for_values_beyond_threshold_obs_hist_sorted,
+        mask_for_values_beyond_threshold_cm_hist_sorted,
+        mask_for_values_beyond_threshold_cm_future_sorted,
     ):
 
         P_obs_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_observations_beyond_threshold_obs_hist_sorted
+            mask_for_values_beyond_threshold_obs_hist_sorted
         )
         P_cm_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_observations_beyond_threshold_cm_hist_sorted
+            mask_for_values_beyond_threshold_cm_hist_sorted
         )
         P_cm_future = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_observations_beyond_threshold_cm_future_sorted
+            mask_for_values_beyond_threshold_cm_future_sorted
         )
 
         P_obs_future = ISIMIP._step6_get_P_obs_future(P_obs_hist, P_cm_hist, P_cm_future)
 
-        return round(mask_for_observations_beyond_threshold_cm_future_sorted.size * P_obs_future)
+        return round(mask_for_values_beyond_threshold_cm_future_sorted.size * P_obs_future)
 
     @staticmethod
     def _step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(nr, cm_future_sorted):
@@ -228,9 +279,9 @@ class ISIMIP(Debiaser):
     def _step6_get_mask_for_entries_to_set_to_lower_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
 
         nr_of_entries_to_set_to_lower_bound = self._step6_get_nr_of_entries_to_set_to_bound(
-            self._get_mask_for_observations_beyond_lower_threshold(obs_hist_sorted),
-            self._get_mask_for_observations_beyond_lower_threshold(cm_hist_sorted),
-            self._get_mask_for_observations_beyond_lower_threshold(cm_future_sorted),
+            self._get_mask_for_values_beyond_lower_threshold(obs_hist_sorted),
+            self._get_mask_for_values_beyond_lower_threshold(cm_hist_sorted),
+            self._get_mask_for_values_beyond_lower_threshold(cm_future_sorted),
         )
 
         mask_for_entries_to_set_to_lower_bound = (
@@ -249,9 +300,9 @@ class ISIMIP(Debiaser):
     def _step6_get_mask_for_entries_to_set_to_upper_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
 
         nr_of_entries_to_set_to_upper_bound = self._step6_get_nr_of_entries_to_set_to_bound(
-            self._get_mask_for_observations_beyond_upper_threshold(obs_hist_sorted),
-            self._get_mask_for_observations_beyond_upper_threshold(cm_hist_sorted),
-            self._get_mask_for_observations_beyond_upper_threshold(cm_future_sorted),
+            self._get_mask_for_values_beyond_upper_threshold(obs_hist_sorted),
+            self._get_mask_for_values_beyond_upper_threshold(cm_hist_sorted),
+            self._get_mask_for_values_beyond_upper_threshold(cm_future_sorted),
         )
 
         mask_for_entries_to_set_to_upper_bound = (
@@ -359,57 +410,18 @@ class ISIMIP(Debiaser):
 
         return obs_hist, cm_hist, cm_future
 
-    # Generate pseudo-future observations. Here x = x_obs_hist = obs_hist
-    # TODO: add option to do trend transfer only for values between thresholds.
+    # Generate pseudo future observations and transfer trends
     def step5(self, obs_hist, cm_hist, cm_future):
 
-        # Compute p = F_obs_hist(x) with x in obs_hist
-        p = ecdf(obs_hist, obs_hist, method=self.ecdf_method)
-
-        # Compute q-vals: q = IECDF(p)
-        q_obs_hist = obs_hist  # TODO: = iecdf_obs_hist(p), appears in eq. 7
-        q_cm_future = iecdf(cm_future, p, method=self.iecdf_method)
-        q_cm_hist = iecdf(cm_hist, p, method=self.iecdf_method)
-
-        if self.trend_preservation_method == "additive":
-            delta_add = q_cm_future - q_cm_hist
-            return obs_hist + delta_add
-        elif self.trend_preservation_method == "multiplicative":
-            delta_star_mult = np.where(q_cm_hist == 0, 1, q_cm_future / q_cm_hist)
-            delta_mult = np.maximum(0.01, np.minimum(100, delta_star_mult))
-            return obs_hist * delta_mult
-        elif self.trend_preservation_method == "mixed":
-            # Formula 7
-            condition1 = q_cm_hist >= q_obs_hist
-            condition2 = (q_cm_hist < q_obs_hist) & (q_obs_hist < 9 * q_cm_hist)
-
-            gamma = np.zeros(len(obs_hist))
-            gamma[condition1] = 1
-            gamma[condition2] = 0.5 * (1 + np.cos(q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8)
-
-            # Formula 6
-            delta_add = q_cm_future - q_cm_hist
-            delta_star_mult = np.where(q_cm_hist == 0, 1, q_cm_future / q_cm_hist)
-            delta_mult = np.maximum(0.01, np.minimum(100, delta_star_mult))
-            return gamma * obs_hist * delta_mult + (1 - gamma) * (obs_hist + delta_add)
-        elif self.trend_preservation_method == "bounded":
-            a = self.lower_bound
-            b = self.upper_bound
-
-            # Formula 8
-            condition1 = q_cm_hist > q_cm_future
-            condition2 = np.isclose(q_cm_hist, q_cm_future)
-
-            return_vals = b - (b - obs_hist) * (b - q_cm_future) / (b - q_cm_hist)
-            return_vals[condition1] = a + (obs_hist[condition1] - a) * (q_cm_future[condition1] - a) / (
-                q_cm_hist[condition1] - a
-            )
-            return_vals[condition2] = obs_hist[condition2]
-            return return_vals
+        if self.trend_transfer_only_for_values_within_threshold:
+            return self._step5_transfer_trend(obs_hist, cm_hist, cm_future)
         else:
-            raise ValueError(
-                """ Wrong value for self.trend_preservation_method.
-                    Needs to be one of ['additive', 'multiplicative', 'mixed', 'bounded'] """
+            mask_for_values_between_thresholds_obs_hist = self._get_mask_for_values_between_thresholds(obs_hist)
+            obs_future = obs_hist
+            obs_future[mask_for_values_between_thresholds_obs_hist] = self._step5_transfer_trend(
+                obs_hist[mask_for_values_between_thresholds_obs_hist],
+                self._get_values_between_thresholds(cm_hist),
+                self._get_values_between_thresholds(cm_future),
             )
 
     # Core of the isimip-method: parametric quantile mapping
@@ -448,9 +460,9 @@ class ISIMIP(Debiaser):
 
         # Calculate values between bounds
         cm_future_sorted[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
-            self._get_observations_between_thresholds(obs_hist_sorted),
-            self._get_observations_between_thresholds(obs_future_sorted),
-            self._get_observations_between_thresholds(cm_hist_sorted),
+            self._get_values_between_thresholds(obs_hist_sorted),
+            self._get_values_between_thresholds(obs_future_sorted),
+            self._get_values_between_thresholds(cm_hist_sorted),
             cm_future_sorted[mask_for_entries_not_set_to_either_bound],
         )
 
