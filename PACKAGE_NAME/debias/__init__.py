@@ -6,6 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+
+"""
+debias-module: provides functionality to debias climate models
+"""
+
 from ._debiaser import *
 from ._isimip import *
 from ._linear_scaling import *
