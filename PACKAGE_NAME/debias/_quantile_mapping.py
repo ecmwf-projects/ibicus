@@ -13,13 +13,12 @@ import attrs
 import numpy as np
 import scipy
 
-from ..utils import (
-    fit_precipitation_censored_gamma,
-    fit_precipitation_hurdle_model,
-    quantile_mapping_precipitation_censored_gamma,
-    quantile_mapping_precipitation_hurdle_model,
+from .._variables import (
+    Variable,
+    map_standard_precipitation_method,
+    map_variable_str_to_variable_class,
 )
-from ..variable_distribution_match import standard_distributions
+from ..utils import StatisticalModel
 from ._debiaser import Debiaser
 
 
@@ -28,139 +27,61 @@ class QuantileMapping(Debiaser):
 
     delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative", "no_delta"]))
     distribution: Union[
-        scipy.stats.rv_continuous,
-        scipy.stats.rv_discrete,
-        scipy.stats.rv_histogram,
-        None,
+        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (
-                scipy.stats.rv_continuous,
-                scipy.stats.rv_discrete,
-                scipy.stats.rv_histogram,
-                None,
-            )
+            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None)
         )
     )
     variable: str = attrs.field(default="unknown", eq=False)
-    precip_model_type: str = attrs.field(default="censored", validator=attrs.validators.in_(["censored", "hurdle"]))
-    precip_hurdle_randomization: bool = False
-    precip_censoring_value: float = 0.1
-
-    def __attrs_post_init__(self):
-        if self.variable in ["precip", "precipitation"] and self.precip_model_type == "censored":
-            warnings.warn("Only the gamma distribution is supported for a censored precipitation model")
 
     @classmethod
-    def from_variable(cls, variable, delta_type):
-        if variable not in standard_distributions.keys():
-            raise ValueError("variable needs to be one of %s" % standard_distributions.keys())
-        return cls(
-            delta_type=delta_type,
-            distribution=standard_distributions.get(variable),
-            variable=variable,
-        )
-
-    def apply_location_precip_hurdle(self, obs, cm_hist, cm_future):
-        fit_obs = fit_precipitation_hurdle_model(obs, self.distribution)
-        fit_cm_hist = fit_precipitation_hurdle_model(cm_hist, self.distribution)
-
-        if self.delta_type == "additive":
-            delta = np.mean(cm_future) - np.mean(cm_hist)
-            return (
-                quantile_mapping_precipitation_hurdle_model(
-                    cm_future - delta,
-                    fit_cm_hist,
-                    fit_obs,
-                    self.distribution,
-                    self.distribution,
-                    self.precip_hurdle_randomization,
-                )
-                + delta
-            )
-        elif self.delta_type == "multiplicative":
-            delta = np.mean(cm_future) / np.mean(cm_hist)
-            return (
-                quantile_mapping_precipitation_hurdle_model(
-                    cm_future / delta,
-                    fit_cm_hist,
-                    fit_obs,
-                    self.distribution,
-                    self.distribution,
-                    self.precip_hurdle_randomization,
-                )
-                * delta
-            )
-        elif self.delta_type == "no_delta":
-            return quantile_mapping_precipitation_hurdle_model(
-                cm_future,
-                fit_cm_hist,
-                fit_obs,
-                self.distribution,
-                self.distribution,
-                self.precip_hurdle_randomization,
+    def from_variable(
+        cls,
+        variable: Union[str, Variable],
+        delta_type: str,
+        precipitation_model_type: str = "censored",
+        precipitation_amounts_distribution=scipy.stats.gamma,
+        precipitation_censoring_value: float = 0.1,
+        precipitation_hurdle_model_randomization: bool = True,
+    ):
+        if isinstance(variable, Variable):
+            return cls(
+                delta_type=delta_type,
+                distribution=variable.method,
+                variable=variable.name,
             )
         else:
-            raise ValueError(
-                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
-            )
-
-    def apply_location_precip_censored(self, obs, cm_hist, cm_future):
-        fit_obs = fit_precipitation_censored_gamma(obs, self.precip_censoring_value)
-        fit_cm_hist = fit_precipitation_censored_gamma(cm_hist, self.precip_censoring_value)
-
-        if self.delta_type == "additive":
-            delta = np.mean(cm_future) - np.mean(cm_hist)
-            return (
-                quantile_mapping_precipitation_censored_gamma(
-                    cm_future - delta, self.precip_censoring_value, fit_cm_hist, fit_obs
+            variable = map_variable_str_to_variable_class(variable)
+            if variable.name == "Precipitation":
+                variable.method = map_standard_precipitation_method(
+                    precipitation_model_type,
+                    precipitation_amounts_distribution,
+                    precipitation_censoring_value,
+                    precipitation_hurdle_model_randomization,
                 )
-                + delta
-            )
-        elif self.delta_type == "multiplicative":
-            delta = np.mean(cm_future) / np.mean(cm_hist)
-            return (
-                quantile_mapping_precipitation_censored_gamma(
-                    cm_future / delta, self.precip_censoring_value, fit_cm_hist, fit_obs
-                )
-                * delta
-            )
-        elif self.delta_type == "no_delta":
-            return quantile_mapping_precipitation_censored_gamma(
-                cm_future, self.precip_censoring_value, fit_cm_hist, fit_obs
-            )
-        else:
-            raise ValueError(
-                "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
+            return cls(
+                delta_type=delta_type,
+                distribution=variable.method,
+                variable=variable.name,
             )
 
-    def standard_qm(self, x, fit_cm_hist, fit_obs):
+    def _standard_qm(self, x, fit_cm_hist, fit_obs):
         return self.distribution.ppf(self.distribution.cdf(x, *fit_cm_hist), *fit_obs)
 
-    def apply_location_standard(self, obs, cm_hist, cm_future):
+    def apply_location(self, obs, cm_hist, cm_future):
         fit_obs = self.distribution.fit(cm_hist)
         fit_cm_hist = self.distribution.fit(cm_hist)
 
         if self.delta_type == "additive":
             delta = np.mean(cm_future) - np.mean(cm_hist)
-            return self.standard_qm(cm_future - delta, fit_cm_hist, fit_obs) + delta
+            return self._standard_qm(cm_future - delta, fit_cm_hist, fit_obs) + delta
         elif self.delta_type == "multiplicative":
             delta = np.mean(cm_future) / np.mean(cm_hist)
-            return self.standard_qm(cm_future / delta, fit_cm_hist, fit_obs) * delta
+            return self._standard_qm(cm_future / delta, fit_cm_hist, fit_obs) * delta
         elif self.delta_type == "no_delta":
-            return self.standard_qm(cm_future, fit_cm_hist, fit_obs)
+            return self._standard_qm(cm_future, fit_cm_hist, fit_obs)
         else:
             raise ValueError(
                 "self.delta_type has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_delta']"
             )
-
-    def apply_location(self, obs, cm_hist, cm_future):
-        if self.variable in ["precipitation", "precip"]:
-            if self.precip_model_type == "censored":
-                return self.apply_location_precip_censored(obs, cm_hist, cm_future)
-            elif self.precip_model_type == "hurdle":
-                return self.apply_location_precip_censored(obs, cm_hist, cm_future)
-            else:
-                raise ValueError("Invalid self.precip_model_type. Needs to be one of ['censored', 'hurdle']")
-        else:
-            return self.apply_location_standard(obs, cm_hist, cm_future)
