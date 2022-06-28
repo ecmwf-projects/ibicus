@@ -6,14 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""
-linear_scaling MODULE - implements debiasing using linear scaling.
-"""
-
 import attrs
 import numpy as np
 
-from .debiaser import Debiaser
+from ._debiaser import Debiaser
 
 standard_delta_types = {
     "temp": "additive",

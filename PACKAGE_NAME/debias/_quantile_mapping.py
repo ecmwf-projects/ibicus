@@ -1,3 +1,11 @@
+# (C) Copyright 1996- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
 import warnings
 from typing import Union
 
@@ -5,14 +13,14 @@ import attrs
 import numpy as np
 import scipy
 
-from .debiaser import Debiaser
-from .math_helpers import (
+from ..utils import (
     fit_precipitation_censored_gamma,
     fit_precipitation_hurdle_model,
     quantile_mapping_precipitation_censored_gamma,
     quantile_mapping_precipitation_hurdle_model,
 )
-from .variable_distribution_match import standard_distributions
+from ..variable_distribution_match import standard_distributions
+from ._debiaser import Debiaser
 
 
 @attrs.define

@@ -6,11 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import scipy.stats
-
-standard_distributions = {
-    "temp": scipy.stats.norm,
-    "temperature": scipy.stats.norm,
-    "precip": scipy.stats.gamma,
-    "precipitation": scipy.stats.gamma,
-}
+from ._debiaser import *
+from ._isimip import *
+from ._linear_scaling import *
+from ._quantile_delta_mapping import *
+from ._quantile_mapping import *
+from ._scaled_distribution_mapping import *
