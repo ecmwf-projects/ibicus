@@ -16,6 +16,7 @@ import scipy.stats
 
 from ..isimip_options import isimip_2_5, standard_variables_isimip
 from ..utils import (
+    StatisticalModel,
     day,
     ecdf,
     get_chunked_mean,
@@ -31,10 +32,16 @@ from ._debiaser import Debiaser
 
 
 # Reference TODO
-@dataclass
+@attrs.define
 class ISIMIP(Debiaser):
     # Variables
-    distribution: scipy.stats.rv_continuous
+    distribution: Union[
+        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+    ] = attrs.field(
+        validator=attrs.validators.instance_of(
+            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+        )
+    )
     trend_preservation_method: str = attrs.field(
         validator=attrs.validators.in_(["additive", "multiplicative", "mixed", "bounded"])
     )
@@ -42,21 +49,24 @@ class ISIMIP(Debiaser):
     reasonable_physical_range: Optional[list] = attrs.field(default=None)
 
     @reasonable_physical_range.validator
-    def validate_reasonable_physical_range(x):
-        if len(x) != 2:
-            raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
-        if not all(isinstance(elem, int) for elem in x):
-            raise ValueError("reasonable_physical_range needs to be a list of floats")
-        if not x[0] < x[1]:
-            raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
+    def validate_reasonable_physical_range(self, attribute, value):
+        if value is not None:
+            if len(value) != 2:
+                raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
+            if not all(isinstance(elem, (int, float)) for elem in value):
+                raise ValueError("reasonable_physical_range needs to be a list of floats")
+            if not value[0] < value[1]:
+                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
     variable: str = attrs.field(default="unknown", eq=False)
 
     # Bounds
-    lower_bound: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float))
-    lower_threshold: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float))
-    upper_bound: float = attrs.field(default=-np.inf, validator=attrs.validators.instance_of(float))
-    upper_threshold: float = attrs.field(default=-np.inf, validator=attrs.validators.instance_of(float))
+    lower_bound: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
+    lower_threshold: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
+    upper_bound: float = attrs.field(default=-np.inf, validator=attrs.validators.instance_of(float), converter=float)
+    upper_threshold: float = attrs.field(
+        default=-np.inf, validator=attrs.validators.instance_of(float), converter=float
+    )
 
     # ISIMIP behavior
     trend_removal_with_significance_test: bool = attrs.field(
@@ -71,6 +81,10 @@ class ISIMIP(Debiaser):
 
     # math functions
     ecdf_method: str = attrs.field(
+        default="inverted_cdf",
+        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
+    )
+    iecdf_method: str = attrs.field(
         default="step_function",
         validator=attrs.validators.in_(
             [
@@ -85,10 +99,6 @@ class ISIMIP(Debiaser):
                 "normal_unbiased",
             ]
         ),
-    )
-    iecdf_method: str = attrs.field(
-        default="inverted_cdf",
-        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
     )
 
     # iteration
