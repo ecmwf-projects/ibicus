@@ -42,7 +42,7 @@ class StatisticalModel(ABC):
         pass
 
     @abstractmethod
-    def cdf(self, x: np.ndarray, fit: tuple, **kwargs) -> np.ndarray:
+    def cdf(self, x: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
         """
         Returns cdf-values of a vector x for the cdf of a statistical model.
 
@@ -61,7 +61,7 @@ class StatisticalModel(ABC):
         pass
 
     @abstractmethod
-    def ppf(self, q: np.ndarray, fit: tuple, **kwargs) -> np.ndarray:
+    def ppf(self, q: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
         """
         Returns ppf (quantile / inverse cdf)-values of a vector q for the cdf of a statistical model.
 
@@ -84,10 +84,10 @@ class StatisticalModel(ABC):
 
 
 class _gen_PrecipitationPlaceholder(StatisticalModel):
-    def ppf(self, q: np.ndarray, fit: tuple, **kwargs) -> np.ndarray:
+    def ppf(self, q: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
         raise NotImplementedError("A concrete precipitation statistical modle needs to be implemented")
 
-    def cdf(self, x: np.ndarray, fit: tuple, **kwargs) -> np.ndarray:
+    def cdf(self, x: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
         raise NotImplementedError("A concrete precipitation statistical modle needs to be implemented")
 
     def fit(self, data: np.ndarray, **kwargs) -> tuple:
@@ -420,7 +420,7 @@ def ecdf(x: np.array, y: np.array, method: str) -> np.array:
     elif method == "linear_interpolation":
         p_grid = np.linspace(0.0, 1.0, x.size)
         q_vals_for_p_grid = np.quantile(x, p_grid)
-        return np.interp(x, q_vals_for_p_grid, p_grid)
+        return np.interp(y, q_vals_for_p_grid, p_grid)
     elif method == "step_function":
         step_function = statsmodels.distributions.empirical_distribution.ECDF(x)
         return step_function(y)
