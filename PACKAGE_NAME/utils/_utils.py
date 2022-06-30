@@ -44,21 +44,55 @@ def sort_array_like_another_one(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 def day(x):
-    return x.day
+    try:
+        return x.day
+    except:
+        raise ValueError(
+            "Your datetime object needs to implement a .day attribute. In doubt please use standard python datetime or cftime"
+        )
 
 
 day = np.vectorize(day)
 
 
 def month(x):
-    return x.month
+    try:
+        return x.month
+    except:
+        raise ValueError(
+            "Your datetime object needs to implement a .month attribute. In doubt please use standard python datetime or cftime"
+        )
 
 
 month = np.vectorize(month)
 
 
 def year(x):
-    return x.year
+    try:
+        return x.year
+    except:
+        raise ValueError(
+            "Your datetime object needs to implement a .year attribute. In doubt please use standard python datetime or cftime"
+        )
 
 
 year = np.vectorize(year)
+
+import datetime
+
+
+def day_of_year(x):
+    try:
+        if hasattr(x, "timetuple"):
+            return x.timetuple().tm_yday
+        else:
+            first_date_in_year = type(x)(year(x), 1, 1)
+            diff = x - first_date_in_year
+            return diff.days + 1
+    except:
+        raise ValueError(
+            "Your datetime object needs to implement either the .timetuple-method or a timedelta and datetime constructor using the type-name. In doubt please use standard python datetime or cftime"
+        )
+
+
+day_of_year = np.vectorize(day_of_year)

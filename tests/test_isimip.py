@@ -10,10 +10,8 @@
 Demo tests for raw template.
 """
 
-import sys
 import unittest
 
-# import isimip_code.utility_functions as uf
 import numpy as np
 import scipy.stats
 
@@ -72,3 +70,57 @@ class TestISIMIPsteps(unittest.TestCase):
         cm_future_between_thresholds = debiaser._get_values_between_thresholds(cm_future)
 
         assert all(step4_between_thresholds == cm_future_between_thresholds)
+
+
+class TestISIMIPRunningWindowIteration(unittest.TestCase):
+    def test__get_window_centers(self):
+        debiaser = ISIMIP.from_variable("pr")
+        debiaser.running_window_mode = True
+        debiaser.running_window_length = 31
+
+        for i in range(1, 30):
+            debiaser.running_window_step_length = i
+            window_centers = debiaser._get_window_centers(366)
+
+            # Not day appearing only every four years in there
+            assert not 366 in window_centers
+            if 366 % debiaser.running_window_step_length > 0:
+                # Enough window centers
+                assert window_centers.size == (366 // debiaser.running_window_step_length) + 1
+                # First and last window-center not drastically different
+                # assert window_centers[0] - (366 - window_centers[-1]) <= 1
+            else:
+                # Enough window centers
+                assert window_centers.size == (366 // debiaser.running_window_step_length)
+            # Equally spaced: except last one: when 366 is replaced by 365
+            assert all(
+                window_centers[1 : (window_centers.size - 1)] - window_centers[0 : (window_centers.size - 2)]
+                == debiaser.running_window_step_length
+            )
+
+    def test__get_indices_around_window_center(self):
+        debiaser = ISIMIP.from_variable("pr")
+        debiaser.running_window_mode = True
+        debiaser.running_window_length = 31
+
+        days_of_years = np.repeat(np.tile(1, 367), 10)
+        for i in range(1, 30):
+            debiaser.running_window_step_length = i
+            window_centers = debiaser._get_window_centers(366)
+            for center in window_centers:
+                indices = debiaser._get_indices_around_window_center(days_of_years, center)
+                # Check all indexes that we would expect in window are part of:
+                indices_center = np.where(days_of_years == center)[0]
+                window_indexes = np.concatenate(
+                    [
+                        np.mod(
+                            np.arange(
+                                index_center - debiaser.running_window_length // 2,
+                                index_center + debiaser.running_window_length // 2 + 1,
+                            ),
+                            days_of_years.size,
+                        )
+                        for index_center in indices_center
+                    ]
+                )
+                assert all(x in indices for x in window_indexes)

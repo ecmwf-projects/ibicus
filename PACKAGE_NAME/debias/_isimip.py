@@ -6,18 +6,18 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from dataclasses import dataclass
+from logging import warning
 from typing import Optional, Union
 
 import attrs
 import numpy as np
 import scipy.special
 import scipy.stats
+from tqdm import tqdm
 
-from ..isimip_options import isimip_2_5, standard_variables_isimip
 from ..utils import (
     StatisticalModel,
-    day,
+    day_of_year,
     ecdf,
     get_chunked_mean,
     get_yearly_mean,
@@ -29,6 +29,7 @@ from ..utils import (
     year,
 )
 from ._debiaser import Debiaser
+from ._isimip_options import isimip_2_5, standard_variables_isimip
 
 
 # Reference TODO
@@ -370,6 +371,66 @@ class ISIMIP(Debiaser):
             mapped_vals = self.distribution.ppf(scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future)
         return mapped_vals
 
+    # ----- Non-public helpers: Iteration -----#
+
+    def _get_window_centers(self, max_day_of_year: int) -> np.ndarray:
+        """
+        Returns an array of window-centers: integers representing a day of year (between 1 and 365) around which a window can be taken.
+        Although 366 is a valid day of year it is not taken as window-center, because it arises only in a few years. It is replaced by 365.
+
+        Parameters
+        ----------
+        max_day_of_year : int
+            Maximum day of year present in data. Normally 365 or 366. Determines how many windows need to fit in the data.
+        """
+        days_left_after_last_step = max_day_of_year % self.running_window_step_length
+        # Running window with step length fits perfectly into year
+        if days_left_after_last_step == 0:
+            first_window_center = 1 + self.running_window_step_length // 2
+        # Adjust start-window-center so the last window is not too much sorter
+        else:
+            first_window_center = (
+                1
+                + self.running_window_step_length // 2
+                - (self.running_window_step_length - days_left_after_last_step) // 2
+            )
+
+        window_centers = np.arange(
+            first_window_center,
+            max_day_of_year + 1,
+            self.running_window_step_length,
+        )
+
+        # Remove 366 as window center as it would only exist in very few cases
+        window_centers = np.where(window_centers == 366, 365, window_centers)
+
+        return window_centers
+
+    def _get_indices_around_window_center(self, days_of_years: np.ndarray, window_center: int) -> np.ndarray:
+        """
+        Gets the indices around a window-center in each year, contained in the window of length window_length.
+
+        Parameters
+        ----------
+        days_of_years : int
+            Array of days of years for which indices of window around window_center are returned.
+        window_center: int
+            Window center around which in each year a window of length self.window_length is taken and the indices returned
+        """
+        indices_center = np.where(days_of_years == window_center)[0]
+        indices = np.sort(
+            np.mod(
+                np.concatenate(
+                    [
+                        np.arange(i - self.running_window_length // 2, i + self.running_window_length // 2 + 1)
+                        for i in indices_center
+                    ]
+                ),
+                days_of_years.size,
+            )
+        )
+        return indices
+
     # ----- ISIMIP calculation steps ----- #
     def step1(self, obs_hist, cm_hist, cm_future):
         scale = None
@@ -434,7 +495,8 @@ class ISIMIP(Debiaser):
                 )
             )
             cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
-                randomised_values_between_threshold_and_bound, cm_future[mask_cm_future_values_beyond_lower_threshold]
+                randomised_values_between_threshold_and_bound,
+                cm_future[mask_cm_future_values_beyond_lower_threshold],
             )
 
         if self.has_upper_bound and self.has_upper_threshold:
@@ -447,7 +509,8 @@ class ISIMIP(Debiaser):
                 )
             )
             cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
-                randomised_values_between_threshold_and_bound, cm_future[mask_cm_future_values_beyond_upper_threshold]
+                randomised_values_between_threshold_and_bound,
+                cm_future[mask_cm_future_values_beyond_upper_threshold],
             )
 
         return cm_future
@@ -568,9 +631,55 @@ class ISIMIP(Debiaser):
     ) -> np.ndarray:
         self._check_reasonable_physical_range(obs_hist, cm_hist, cm_future)
 
-        # TODO: how do we integrate if day of year or month is passed as an argument
         if self.running_window_mode:
-            return cm_future
+            debiased_cm_future = np.zeros_like(cm_future)
+
+            if time_obs_hist is not None and time_cm_hist is not None and time_cm_future is not None:
+                days_of_year_obs_hist = day_of_year(time_obs_hist)
+                days_of_year_cm_hist = day_of_year(time_cm_hist)
+                days_of_year_cm_future = day_of_year(time_cm_future)
+
+                years_obs_hist = year(time_obs_hist)
+                years_cm_hist = year(time_cm_hist)
+                years_cm_future = year(time_cm_future)
+
+            else:
+                warning(
+                    """
+                    ISIMIP runs in running window mode without time-information.
+                    A standard length of 365 days is assumed for the year and observations are chunked using this.
+                    This can lead to slight numerical differences due to leap years
+                    """
+                )
+                days_of_year_obs_hist = np.repeat(np.tile(1, 366), (obs_hist.size // 365) + 1)[: obs_hist.size]
+                days_of_year_cm_hist = np.repeat(np.tile(1, 366), (cm_hist.size // 365) + 1)[: cm_hist.size]
+                days_of_year_cm_future = np.repeat(np.tile(1, 366), (cm_future.size // 365) + 1)[: cm_future.size]
+
+                years_obs_hist = np.concatenate([np.repeat(i, 366) for i in (obs_hist.size // 365 + 1)])[
+                    : obs_hist.size
+                ]
+                years_cm_hist = np.concatenate([np.repeat(i, 366) for i in (cm_hist.size // 365 + 1)])[: cm_hist.size]
+                years_cm_future = np.concatenate([np.repeat(i, 366) for i in (cm_future.size // 365 + 1)])[
+                    : cm_future.size
+                ]
+
+            window_centers = self._get_window_centers(np.max(days_of_year_cm_future))
+
+            # Main iteration
+            for day_of_year_center in window_centers:
+                indices_obs_hist = self._get_indices_around_window_center(days_of_year_obs_hist, day_of_year_center)
+                indices_cm_hist = self._get_indices_around_window_center(days_of_year_cm_hist, day_of_year_center)
+                indices_cm_future = self._get_indices_around_window_center(days_of_year_cm_future, day_of_year_center)
+                debiased_cm_future[indices_cm_future] = self._apply_on_window(
+                    obs_hist=obs_hist[indices_obs_hist],
+                    cm_hist=cm_hist[indices_cm_hist],
+                    cm_future=cm_future[indices_cm_future],
+                    years_obs_hist=years_obs_hist[indices_obs_hist],
+                    years_cm_hist=years_cm_hist[indices_cm_hist],
+                    years_cm_future=years_cm_future[indices_cm_future],
+                )
+
+            return debiased_cm_future
         else:
             if time_obs_hist is not None and time_cm_hist is not None and time_cm_future is not None:
 
