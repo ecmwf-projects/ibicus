@@ -11,6 +11,7 @@
 from typing import Union
 
 import attrs
+import numpy as np
 import scipy.stats
 
 import PACKAGE_NAME.utils as utils
@@ -26,10 +27,24 @@ class Variable:
         )
     )
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
+    reasonable_physical_range: list = attrs.field(default=None)
+
+    @reasonable_physical_range.validator
+    def validate_reasonable_physical_range(self, attribute, value):
+        if value is not None:
+            if len(value) != 2:
+                raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
+            if not all(isinstance(elem, (int, float)) for elem in value):
+                raise ValueError("reasonable_physical_range needs to be a list of floats")
+            if not value[0] < value[1]:
+                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
 
-Temperature = Variable(name="Temperature", method=scipy.stats.norm)
-Precipitation = Variable(name="Precipitation", method=utils.PrecipitationPlaceholder)
+Temperature = Variable(name="Temperature", method=scipy.stats.norm, reasonable_physical_range=[0, 400])
+Precipitation = Variable(
+    name="Precipitation", method=utils.PrecipitationPlaceholder, reasonable_physical_range=[0, np.inf]
+)
+
 
 str_to_variable_class = {
     "pr": Precipitation,
@@ -48,8 +63,6 @@ def map_standard_precipitation_method(
     precipitation_censoring_value: float = 0.1,
     precipitation_hurdle_model_randomization: bool = True,
 ):
-    if precipitation_model_type not in ["censored", "hurdle"]:
-        raise ValueError("precipitation_model_type needs to be one of ['censored', 'hurdle']")
     if precipitation_model_type == "censored":
         if precipitation_model_type == "censored" and precipitation_amounts_distribution != scipy.stats.gamma:
             raise ValueError("Only the gamma distribution is supported for a censored precipitation model")
@@ -60,8 +73,12 @@ def map_standard_precipitation_method(
         method = utils.gen_PrecipitationHurdleModel(
             precipitation_amounts_distribution, precipitation_hurdle_model_randomization
         )
+    elif precipitation_model_type == "ignore_zeros":
+        method = utils.gen_PrecipitationIgnoreZeroValuesModel(precipitation_amounts_distribution)
     else:
-        raise ValueError("precipitation_model_type has wrong value. Needs to be one of ['censored', 'hurdle']")
+        raise ValueError(
+            "precipitation_model_type has wrong value. Needs to be one of ['censored', 'hurdle', 'ignore_zeros']"
+        )
 
     return method
 

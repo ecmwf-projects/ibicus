@@ -9,6 +9,7 @@
 """math_helpers module - helpers used by different debiasers"""
 
 from abc import ABC, abstractmethod
+from importlib.metadata import distribution
 
 import attrs
 import numpy as np
@@ -95,6 +96,90 @@ class _gen_PrecipitationPlaceholder(StatisticalModel):
 
 
 PrecipitationPlaceholder = _gen_PrecipitationPlaceholder()
+
+
+@attrs.define
+class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
+    """
+    Represents a precipitation model where zero values are ignored and a cdf is only fitted to amounts.
+    In the cdf zero values are mapped to -np.inf and in the inverse cdf values of -np.inf are mapped to zero.
+
+    Parameters
+    ----------
+    self.distribution : scipy.stats.rv_continuous
+        Distribution assumed for the precipitation amounts.
+    """
+
+    distribution: scipy.stats.rv_continuous = attrs.field(
+        default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
+    )
+
+    def fit(self, data: np.ndarray) -> np.ndarray:
+        """
+        Fits a precipitation model to the amounts (ignoring zero values).
+
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Array containing precipitation values.
+
+        Returns
+        -------
+        tuple
+            Tuple containing parameter estimates: (p0, tuple of parameter estimates for the amounts-distribution).
+        """
+        rainy_days = data[data != 0]
+        fit_rainy_days = self.distribution.fit(rainy_days)
+
+        return fit_rainy_days
+
+    def cdf(self, x: np.ndarray, *fit: tuple) -> np.ndarray:
+        """
+        Returns cdf-values for the precipitation amounts and -np.inf for zero.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Values for which the cdf shall be evaluated.
+        fit : tuple
+            Parameters controling the amounts model.
+            Return value of fit.
+
+        Returns
+        -------
+        np.ndarray
+            Array containing cdf-values for x.
+        """
+
+        return np.where(
+            x == 0,
+            -np.inf,
+            self.distribution.cdf(x, *fit),
+        )
+
+    def ppf(self, q: np.ndarray, *fit: tuple) -> np.ndarray:
+        """
+        Returns ppf (quantile / inverse cdf)-values of a vector q of the amounts ppf and 0 for -np.inf.
+
+        Parameters
+        ----------
+        q : np.ndarray
+            Values for which the ppf shall be evaluated.
+        fit : tuple
+            Parameters controling the amounts model.
+            Return value of fit.
+
+        Returns
+        -------
+        np.ndarray
+            Array containing cdf-values for x.
+        """
+
+        return np.where(q != -np.inf, self.distribution.ppf(q, *fit), 0)
+
+
+PrecipitationGammaModelIgnoreZeroValues = gen_PrecipitationIgnoreZeroValuesModel(distribution=scipy.stats.gamma)
 
 
 @attrs.define

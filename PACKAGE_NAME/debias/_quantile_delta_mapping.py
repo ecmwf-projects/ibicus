@@ -14,10 +14,18 @@ import scipy
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from ..variable_distribution_match import standard_distributions
+from ..variables import (
+    Precipitation,
+    Variable,
+    map_standard_precipitation_method,
+    map_variable_str_to_variable_class,
+)
 from ._debiaser import Debiaser
 
-
 # Reference Cannon et al. 2015
+# TODO: test, especially also precipitation
+# TODO: how to centralise precipitation documentation?
+
 # TODO: add docstring
 # TODO: check correctness of time window implementation and precipitation-case
 @attrs.define
@@ -36,14 +44,72 @@ class QuantileDeltaMapping(Debiaser):
     variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
-    def from_variable(cls, variable, time_window_length=50):
-        if variable not in standard_distributions.keys():
-            raise ValueError("variable needs to be one of %s" % standard_distributions.keys())
-        return cls(
-            distribution=standard_distributions.get(variable),
-            time_window_length=time_window_length,
-            variable=variable,
+    def from_variable(cls, variable: Union[str, Variable], time_window_length: int = 50, **kwargs):
+        """
+        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+
+        Parameters
+        ----------
+        variable : Union[str, Variable]
+            String or Variable object referring to standard meteorological variable for which default settings can be used.
+        time_window_length: int
+            Length of moving time window to fit ECDFs.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
+        """
+        if not isinstance(variable, Variable):
+            variable = map_variable_str_to_variable_class(variable)
+
+        parameters = {
+            "time_window_length": time_window_length,
+            "distribution": variable.method,
+            "variable": variable.name,
+        }
+        return cls(**{**parameters, **kwargs})
+
+    @classmethod
+    def for_precipitation(
+        cls,
+        time_window_length=50,
+        precipitation_model_type: str = "censored",
+        precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
+        precipitation_censoring_value: float = 0.1,
+        precipitation_hurdle_model_randomization: bool = True,
+        **kwargs
+    ):
+        """
+        Instanciates the class to a precipitation-debiaser. This allows granular setting of available precipitation models without needing to explicitly specify the precipitation censored model for example.
+
+        Parameters
+        ----------
+        time_window_length: int
+            Length of moving time window to fit ECDFs.
+        precipitation_model_type: str
+            One of ["censored", "hurdle", "ignore_zeros"]. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details.
+        precipitation_amounts_distribution: scipy.stats.rv_continuous
+            Distribution used for precipitation amounts. For the censored model only scipy.stats.gamma is possible.
+        precipitation_censoring_value: float
+            The censoring-value if a censored precipitation model is used.
+        precipitation_hurdle_model_randomization: bool
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details
+        **kwargs:
+            All other class attributes that shall be set and where the standard values shall be overwritten.
+
+        """
+        variable = Precipitation
+
+        variable.method = map_standard_precipitation_method(
+            precipitation_model_type,
+            precipitation_amounts_distribution,
+            precipitation_censoring_value,
+            precipitation_hurdle_model_randomization,
         )
+        parameters = {
+            "time_window_length": time_window_length,
+            "distribution": variable.method,
+            "variable": variable.name,
+        }
+        return cls(**{**parameters, **kwargs})
 
     def apply_location(self, obs, cm_hist, cm_future):
 
