@@ -19,8 +19,7 @@ from ..utils import (
     StatisticalModel,
     day_of_year,
     ecdf,
-    get_chunked_mean,
-    get_yearly_mean,
+    get_years_and_yearly_means,
     iecdf,
     interp_sorted_cdf_vals_on_given_length,
     month,
@@ -188,19 +187,20 @@ class ISIMIP(Debiaser):
 
     # ----- Non public helpers: ISIMIP-steps ----- #
 
-    def _step3_remove_trend(self, x, years=None):
-        if years is None:
-            annual_means = get_chunked_mean(x, self.running_window_length)
-        else:
-            annual_means = get_yearly_mean(x, years)
+    def _step3_remove_trend(self, x, years):
 
-        years = np.arange(annual_means.size)
-        regression = scipy.stats.linregress(years, annual_means)
+        # Calculate annual trend
+        unique_years, annual_means = get_years_and_yearly_means(x, years)
+        regression = scipy.stats.linregress(unique_years, annual_means)
         if regression.pvalue < 0.05 and self.trend_removal_with_significance_test:
-            annual_trend = regression.slope * (years - np.mean(years))
+            annual_trend = regression.slope * (unique_years - np.mean(unique_years))
         else:
             annual_trend = np.zeros(years.size, dtype=x.dtype)
-        trend = np.repeat(annual_trend, self.running_window_length)[0 : x.size]
+
+        # Map annual trend onto daily resolution
+        trend = np.zeros_like(x)
+        for year_index, year in enumerate(unique_years):
+            trend[years == year] = annual_trend[year_index]
         x = x - trend
         return x, trend
 
@@ -463,7 +463,7 @@ class ISIMIP(Debiaser):
 
         return obs_hist, cm_hist, cm_future
 
-    def step3(self, obs_hist, cm_hist, cm_future, years_obs_hist=None, years_cm_hist=None, years_cm_future=None):
+    def step3(self, obs_hist, cm_hist, cm_future, years_obs_hist, years_cm_hist, years_cm_future):
         """
         Step 3: Linear trend removal if detrending = True. This is because certain variables (eg. temp) can have substantial trends also within training and application period (not only between).
         These trends are removed to "prevent a confusion of these trends with interannual variability during quantile mapping (steps 5 and6)" (Lange 2019). The trend for cm_future is subsequently added again in step7.
@@ -602,9 +602,9 @@ class ISIMIP(Debiaser):
         obs_hist: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        years_obs_hist: Optional[np.ndarray] = None,
-        years_cm_hist: Optional[np.ndarray] = None,
-        years_cm_future: Optional[np.ndarray] = None,
+        years_obs_hist: np.ndarray = None,
+        years_cm_hist: np.ndarray = None,
+        years_cm_future: np.ndarray = None,
     ) -> np.ndarray:
         # Steps
         obs_hist, cm_hist, cm_future, scale = self.step1(obs_hist, cm_hist, cm_future)
@@ -651,15 +651,17 @@ class ISIMIP(Debiaser):
                     This can lead to slight numerical differences due to leap years
                     """
                 )
-                days_of_year_obs_hist = np.repeat(np.tile(1, 366), (obs_hist.size // 365) + 1)[: obs_hist.size]
-                days_of_year_cm_hist = np.repeat(np.tile(1, 366), (cm_hist.size // 365) + 1)[: cm_hist.size]
-                days_of_year_cm_future = np.repeat(np.tile(1, 366), (cm_future.size // 365) + 1)[: cm_future.size]
-
-                years_obs_hist = np.concatenate([np.repeat(i, 366) for i in (obs_hist.size // 365 + 1)])[
+                days_of_year_obs_hist = np.tile(np.arange(1, 366), (obs_hist.size // 365) + 1)[: obs_hist.size]
+                days_of_year_cm_hist = np.tile(np.arange(1, 366), (cm_hist.size // 365) + 1)[: cm_hist.size]
+                days_of_year_cm_future = np.tile(np.arange(1, 366), (cm_future.size // 365) + 1)[: cm_future.size]
+                # TODO: do I want to construct years here. Otherwise detrending without years is never called
+                years_obs_hist = np.concatenate([np.repeat(i, 366) for i in range(obs_hist.size // 365 + 1)])[
                     : obs_hist.size
                 ]
-                years_cm_hist = np.concatenate([np.repeat(i, 366) for i in (cm_hist.size // 365 + 1)])[: cm_hist.size]
-                years_cm_future = np.concatenate([np.repeat(i, 366) for i in (cm_future.size // 365 + 1)])[
+                years_cm_hist = np.concatenate([np.repeat(i, 366) for i in range(cm_hist.size // 365 + 1)])[
+                    : cm_hist.size
+                ]
+                years_cm_future = np.concatenate([np.repeat(i, 366) for i in range(cm_future.size // 365 + 1)])[
                     : cm_future.size
                 ]
 
@@ -667,6 +669,7 @@ class ISIMIP(Debiaser):
 
             # Main iteration
             for day_of_year_center in window_centers:
+
                 indices_obs_hist = self._get_indices_around_window_center(days_of_year_obs_hist, day_of_year_center)
                 indices_cm_hist = self._get_indices_around_window_center(days_of_year_cm_hist, day_of_year_center)
                 indices_cm_future = self._get_indices_around_window_center(days_of_year_cm_future, day_of_year_center)

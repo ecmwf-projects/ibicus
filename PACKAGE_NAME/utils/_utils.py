@@ -15,9 +15,14 @@ def get_chunked_mean(x: np.ndarray, n: int) -> np.ndarray:
     return np.bincount(ids, x) / np.bincount(ids)
 
 
-def get_yearly_mean(x: np.ndarray, years: np.ndarray) -> np.ndarray:
+def get_yearly_means(x: np.ndarray, years: np.ndarray) -> np.ndarray:
     """Gets an array of yearly means of a timeseries x where each value has a corresponding year in years."""
     return np.array([np.mean(x[years == i_year]) for i_year in np.unique(years)])
+
+
+def get_years_and_yearly_means(x: np.ndarray, years: np.ndarray) -> np.ndarray:
+    """Gets an array of unique years and one of yearly means of a timeseries x where each value has a corresponding year in years."""
+    return np.unique(years), get_yearly_means(x, years)
 
 
 def threshold_cdf_vals(cdf_vals: np.ndarray, cdf_threshold: int = 0.0001) -> np.ndarray:
