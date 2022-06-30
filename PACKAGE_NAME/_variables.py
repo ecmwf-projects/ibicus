@@ -48,7 +48,7 @@ def map_standard_precipitation_method(
     precipitation_censoring_value: float = 0.1,
     precipitation_hurdle_model_randomization: bool = True,
 ):
-    if not precipitation_model_type in ["censored", "hurdle"]:
+    if precipitation_model_type not in ["censored", "hurdle"]:
         raise ValueError("precipitation_model_type needs to be one of ['censored', 'hurdle']")
     if precipitation_model_type == "censored":
         if precipitation_model_type == "censored" and precipitation_amounts_distribution != scipy.stats.gamma:

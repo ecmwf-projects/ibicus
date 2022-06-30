@@ -11,7 +11,6 @@ from typing import Union
 import attrs
 import numpy as np
 import scipy
-from matplotlib import docstring
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from ..variable_distribution_match import standard_distributions

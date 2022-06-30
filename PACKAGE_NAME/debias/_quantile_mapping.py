@@ -6,12 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import warnings
 from typing import Union
 
 import attrs
 import numpy as np
 import scipy
+import scipy.stats
 
 from .._variables import (
     Variable,
@@ -31,7 +31,7 @@ class QuantileMapping(Debiaser):
     ] = attrs.field(
         validator=attrs.validators.instance_of(
             (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None)
-        )
+        )  # Why none? TODO
     )
     variable: str = attrs.field(default="unknown", eq=False)
 
