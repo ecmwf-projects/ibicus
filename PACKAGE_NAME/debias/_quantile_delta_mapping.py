@@ -13,31 +13,31 @@ import numpy as np
 import scipy
 from statsmodels.distributions.empirical_distribution import ECDF
 
+from ..utils import StatisticalModel, gen_PrecipitationGammaLeftCensoredModel
 from ..variable_distribution_match import standard_distributions
 from ..variables import (
     Precipitation,
+    Temperature,
     Variable,
     map_standard_precipitation_method,
     map_variable_str_to_variable_class,
 )
 from ._debiaser import Debiaser
 
-# Reference Cannon et al. 2015
-# TODO: test, especially also precipitation
-# TODO: how to centralise precipitation documentation?
+default_settings = {
+    Temperature: {"distribution": scipy.stats.norm},
+    Precipitation: {"distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05)},
+}
 
-# TODO: add docstring
-# TODO: check correctness of time window implementation and precipitation-case
+# Reference Cannon et al. 2015
 @attrs.define
 class QuantileDeltaMapping(Debiaser):
 
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram] = attrs.field(
+    distribution: Union[
+        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+    ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (
-                scipy.stats.rv_continuous,
-                scipy.stats.rv_discrete,
-                scipy.stats.rv_histogram,
-            )
+            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
         )
     )
     time_window_length: int = attrs.field(validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)])
@@ -61,8 +61,8 @@ class QuantileDeltaMapping(Debiaser):
             variable = map_variable_str_to_variable_class(variable)
 
         parameters = {
+            **default_settings[variable],
             "time_window_length": time_window_length,
-            "distribution": variable.method,
             "variable": variable.name,
         }
         return cls(**{**parameters, **kwargs})
@@ -98,22 +98,23 @@ class QuantileDeltaMapping(Debiaser):
         """
         variable = Precipitation
 
-        variable.method = map_standard_precipitation_method(
+        method = map_standard_precipitation_method(
             precipitation_model_type,
             precipitation_amounts_distribution,
             precipitation_censoring_value,
             precipitation_hurdle_model_randomization,
         )
         parameters = {
+            **default_settings[variable],
             "time_window_length": time_window_length,
-            "distribution": variable.method,
+            "distribution": method,
             "variable": variable.name,
         }
         return cls(**{**parameters, **kwargs})
 
-    def apply_location(self, obs, cm_hist, cm_future):
-
-        fit_obs = self.distribution.fit(cm_hist)
+    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
+        """Applies QuantileDeltaMapping at one location and returns the debiased timeseries."""
+        fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
 
         # Q: What is the more efficient way to chunk and then return chunks of equal size to write a new array.

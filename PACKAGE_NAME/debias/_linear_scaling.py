@@ -6,16 +6,22 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from typing import Union
+
 import attrs
 import numpy as np
 
+from ..variables import (
+    Precipitation,
+    Temperature,
+    Variable,
+    map_variable_str_to_variable_class,
+)
 from ._debiaser import Debiaser
 
-standard_delta_types = {
-    "temp": "additive",
-    "pr": "multiplicative",
-    "temp": "additive",
-    "temp": "additive",
+default_settings = {
+    Temperature: {"delta_type": "additive"},
+    Precipitation: {"delta_type": "multiplicative"},
 }
 
 
@@ -60,10 +66,25 @@ class LinearScaling(Debiaser):
     variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
-    def from_variable(cls, variable):
-        if variable not in standard_delta_types.keys():
-            raise ValueError("variable needs to be one of %s" % standard_delta_types.keys())
-        return cls(delta_type=standard_delta_types.get(variable), variable=variable)
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        """
+        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+
+        Parameters
+        ----------
+        variable : Union[str, Variable]
+            String or Variable object referring to standard meteorological variable for which default settings can be used.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
+        """
+        if not isinstance(variable, Variable):
+            variable = map_variable_str_to_variable_class(variable)
+
+        parameters = {
+            **default_settings[variable],
+            "variable": variable.name,
+        }
+        return cls(**{**parameters, **kwargs})
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
         """Applies linear scaling at one location and returns the debiased timeseries."""

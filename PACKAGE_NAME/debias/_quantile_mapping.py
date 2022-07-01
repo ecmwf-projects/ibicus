@@ -13,14 +13,20 @@ import numpy as np
 import scipy
 import scipy.stats
 
-from ..utils import StatisticalModel
+from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
 from ..variables import (
     Precipitation,
+    Temperature,
     Variable,
     map_standard_precipitation_method,
     map_variable_str_to_variable_class,
 )
 from ._debiaser import Debiaser
+
+default_settings = {
+    Temperature: {"distribution": scipy.stats.norm, "delta_type": "additive"},
+    Precipitation: {"distribution": PrecipitationHurdleModelGamma, "delta_type": "multiplicative"},
+}
 
 
 @attrs.define
@@ -28,16 +34,16 @@ class QuantileMapping(Debiaser):
 
     delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative", "no_delta"]))
     distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None
+        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None)
-        )  # Why none? TODO
+            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+        )
     )
     variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
-    def from_variable(cls, variable: Union[str, Variable], delta_type: str, **kwargs):
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
         """
         Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
 
@@ -53,7 +59,7 @@ class QuantileMapping(Debiaser):
         if not isinstance(variable, Variable):
             variable = map_variable_str_to_variable_class(variable)
 
-        parameters = {"delta_type": delta_type, "distribution": variable.method, "variable": variable.name}
+        parameters = {**default_settings[variable], "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
     @classmethod

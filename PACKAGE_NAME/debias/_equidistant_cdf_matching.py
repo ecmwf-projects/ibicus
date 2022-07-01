@@ -23,9 +23,9 @@ from ..variables import (
 )
 from ._debiaser import Debiaser
 
-default_settings_EquidistantCDFMatching = {
-    Temperature: {"method": scipy.stats.beta},
-    Precipitation: {"method": PrecipitationHurdleModelGamma},
+default_settings = {
+    Temperature: {"distribution": scipy.stats.beta},
+    Precipitation: {"distribution": PrecipitationHurdleModelGamma},
 }
 
 
@@ -78,10 +78,7 @@ class EquidistantCDFMatching(Debiaser):
         if not isinstance(variable, Variable):
             variable = map_variable_str_to_variable_class(variable)
 
-        parameters = {
-            "distribution": default_settings_EquidistantCDFMatching[variable]["method"],
-            "variable": variable.name,
-        }
+        parameters = {**default_settings[variable], "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
     @classmethod

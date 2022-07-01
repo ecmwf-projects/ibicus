@@ -6,20 +6,54 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from typing import Union
+
 import attrs
 import numpy as np
 from scipy.signal import detrend
 from scipy.stats import norm
 
 from ..utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
+from ..variables import (
+    Precipitation,
+    Temperature,
+    Variable,
+    map_variable_str_to_variable_class,
+)
 from ._debiaser import Debiaser
 
+default_settings = {
+    Temperature: {"mapping_type": "absolute"},
+    Precipitation: {"mapping_type": "relative"},
+}
 
-# Reference Cannon et al. 2015
+# Reference Switanek et al. 2017
 @attrs.define
 class ScaledDistributionMapping(Debiaser):
 
+    mapping_type: str = attrs.field(validator=attrs.validators.in_(["absolute", "relative"]))
     variable: str = attrs.field(default="unknown", eq=False)
+
+    @classmethod
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        """
+        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+
+        Parameters
+        ----------
+        variable : Union[str, Variable]
+            String or Variable object referring to standard meteorological variable for which default settings can be used.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
+        """
+        if not isinstance(variable, Variable):
+            variable = map_variable_str_to_variable_class(variable)
+
+        parameters = {
+            **default_settings[variable],
+            "variable": variable.name,
+        }
+        return cls(**{**parameters, **kwargs})
 
     def apply_location_temp(self, obs, cm_hist, cm_future):
 
@@ -84,7 +118,12 @@ class ScaledDistributionMapping(Debiaser):
         return bias_corrected[reverse_sorting_idx] + (cm_future - cm_future_detrended)
 
     def apply_location(self, obs, cm_hist, cm_future):
-        return self.apply_location_temp(obs, cm_hist, cm_future)
+        if self.mapping_type == "absolute":
+            return self.apply_location_temp(obs, cm_hist, cm_future)
+        elif self.mapping_type == "relative":
+            pass
+        else:
+            raise ValueError('self.mapping_type needs too be one of ["absolute", "relative"].')
 
     def absolute_sdm_location(self, obs_data, mod_data, sce_data, **kwargs):
         from scipy.signal import detrend
