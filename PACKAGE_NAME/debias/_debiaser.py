@@ -55,6 +55,14 @@ class Debiaser:
 
         return True
 
+    # Helpers
+    @staticmethod
+    def map_over_locations(func, output_size, obs, cm_hist, cm_future):
+        output = np.empty(output_size)
+        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
+            output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
+        return output
+
     # Apply functions:
     def apply_location(self, obs, cm_hist, cm_future):
         raise NotImplementedError(
@@ -65,8 +73,7 @@ class Debiaser:
         print("----- Running debiasing -----")
         Debiaser.check_inputs(obs, cm_hist, cm_future)
 
-        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]])
-        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = self.apply_location(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
-
+        output = Debiaser.map_over_locations(
+            self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
+        )
         return output

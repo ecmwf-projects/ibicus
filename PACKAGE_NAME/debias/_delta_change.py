@@ -26,22 +26,22 @@ default_settings = {
 
 
 @attrs.define
-class LinearScaling(Debiaser):
+class DeltaChange(Debiaser):
     """
-    Class LinearScaling representing debiasing via so-called linear scaling following Maraun 2016 as reference.
+    Class DeltaChange representing debiasing via so-called delta change scaling following Maraun 2016 as reference.
 
-    In linear scaling the present day model bias is either subtracted or divided from the future climate model time-series.
-    Let :math:`y` be the observed timeseries :math:`x_{hist}` the simulated historical one and :math:`x_{fut}` the simulated future one (climate model historical and future run). Then additive linear scaling adjusts :math:`x_{fut}` as follows:
+    This is technically not a debiasing of a climate model because the future climate model output gets not directly transformed. Instead it only uses the models capturing of climate change to modify historical observations.
 
-    .. math:: x_{fut} \\rightarrow x_{fut} - (\\text{mean}(x_{hist}) - \\text{mean}(y))
+    Let :math:`y` be the observed timeseries :math:`x_{hist}` the simulated historical one and :math:`x_{fut}` the simulated future one (climate model historical and future run). Then in delta change a timeseries of future climate is generated as:
 
-    and multiplicative scaling:
+    .. math::  y +  - (\\text{mean}(x_{fut}) - \\text{mean}(x_{hist}))
 
-    .. math:: x_{fut} \\rightarrow x_{fut} * \\frac{\\text{mean}(y)}{\\text{mean}(x_{hist})}.
+    and for multiplicative change:
+
+    .. math:: y * \\frac{\\text{mean}(x_{fut})}{\\text{mean}(x_{hist})}.
 
 
-    Multiplicative scaling is classically used for precipitation and additive scaling for temperature. Additive scaling amounts to a simple mean bias correction, whilst multiplicative one adjusts both mean and variance, but keeps their ration constant (Maraun 2016).
-
+    Multiplicative change is classically used for precipitation and additive scaling for temperature.
 
     References:
     Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
@@ -87,10 +87,28 @@ class LinearScaling(Debiaser):
         return cls(**{**parameters, **kwargs})
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
-        """Applies linear scaling at one location and returns the debiased timeseries."""
+        """Applies delta change at one location and returns the debiased timeseries."""
         if self.delta_type == "additive":
-            return cm_future - (np.mean(cm_hist) - np.mean(obs))
+            return obs + (np.mean(cm_future) - np.mean(cm_hist))
         elif self.delta_type == "multiplicative":
-            return cm_future * (np.mean(obs) / np.mean(cm_hist))
+            return obs * (np.mean(cm_future) / np.mean(cm_hist))
         else:
             raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
+
+    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
+        """Applies delta change at one location and returns the debiased timeseries."""
+        if self.delta_type == "additive":
+            return obs + (np.mean(cm_future) - np.mean(cm_hist))
+        elif self.delta_type == "multiplicative":
+            return obs * (np.mean(cm_future) / np.mean(cm_hist))
+        else:
+            raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
+
+    def apply(self, obs, cm_hist, cm_future):
+        print("----- Running debiasing -----")
+        Debiaser.check_inputs(obs, cm_hist, cm_future)
+
+        output = Debiaser.map_over_locations(
+            func=self.apply_location, output_size=obs.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
+        )
+        return output
