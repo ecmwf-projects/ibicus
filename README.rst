@@ -5,6 +5,15 @@ python-package-template-repo
 
 |pypi_release| |pypi_status| |pypi_downloads| |docs|
 
+Debiasers implemented:
+
+- [x] Linear Scaling
+- [x] Quantile Mapping (with delta change)
+- [x] Quantile Delta Mapping following Cannon et al. 2015
+- [x] Equidistant CDF Matching following Li et al. 2010
+- [ ] Scaled Distribution Mapping following Switanek 2017
+- [ ] ISIMIP
+
 A template repository for developing Python packages
 
 **Quick start**
