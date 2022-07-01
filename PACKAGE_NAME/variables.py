@@ -17,7 +17,7 @@ import scipy.stats
 import PACKAGE_NAME.utils as utils
 
 
-@attrs.define
+@attrs.define(eq=False)
 class Variable:
     method: Union[
         scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, utils.StatisticalModel

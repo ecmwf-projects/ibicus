@@ -12,6 +12,7 @@ debias-module: provides functionality to debias climate models
 """
 
 from ._debiaser import *
+from ._equidistant_cdf_matching import *
 from ._isimip import *
 from ._linear_scaling import *
 from ._quantile_delta_mapping import *
