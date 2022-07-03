@@ -106,7 +106,7 @@ class QuantileMapping(Debiaser):
         return self.distribution.ppf(self.distribution.cdf(x, *fit_cm_hist), *fit_obs)
 
     def apply_location(self, obs, cm_hist, cm_future):
-        fit_obs = self.distribution.fit(cm_hist)
+        fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
 
         if self.delta_type == "additive":
