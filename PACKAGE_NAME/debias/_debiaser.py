@@ -69,7 +69,7 @@ class Debiaser:
             "apply_location is an abstract method which needs to be overriden in derived classes."
         )
 
-    def apply(self, obs, cm_hist, cm_future):
+    def apply(self, obs, cm_hist, cm_future, **kwargs):
         print("----- Running debiasing -----")
         Debiaser.check_inputs(obs, cm_hist, cm_future)
 

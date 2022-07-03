@@ -209,7 +209,7 @@ class ISIMIP(Debiaser):
         p = ecdf(obs_hist, obs_hist, method=self.ecdf_method)
 
         # Compute q-vals: q = IECDF(p)
-        q_obs_hist = obs_hist  # TODO: = iecdf_obs_hist(p), appears in eq. 7
+        q_obs_hist = obs_hist  # TODO: = iecdf(obs_hist, p, method=self.iecdf_method), appears in eq. 7
         q_cm_future = iecdf(cm_future, p, method=self.iecdf_method)
         q_cm_hist = iecdf(cm_hist, p, method=self.iecdf_method)
 
@@ -339,27 +339,29 @@ class ISIMIP(Debiaser):
 
         # Calculate cdf-fits
         fit_cm_future = self.distribution.fit(cm_future_sorted)
-
-        fit_obs_hist = self.distribution.fit(obs_hist_sorted)
         fit_obs_future = self.distribution.fit(obs_future_sorted)
-        fit_cm_hist = self.distribution.fit(cm_hist_sorted)
 
-        # Get the cdf-vals and interpolate if there are unequal sample sizes (following Switanek 2017):
+        # Get the cdf-vals of cm_future
         cdf_vals_cm_future = threshold_cdf_vals(self.distribution.cdf(cm_future_sorted, *fit_cm_future))
-
-        cdf_vals_obs_hist = interp_sorted_cdf_vals_on_given_length(
-            threshold_cdf_vals(self.distribution.cdf(obs_hist_sorted, *fit_obs_hist)),
-            cdf_vals_cm_future.size,
-        )
-        cdf_vals_cm_hist = interp_sorted_cdf_vals_on_given_length(
-            threshold_cdf_vals(self.distribution.cdf(cm_hist_sorted, *fit_cm_hist)),
-            cdf_vals_cm_future.size,
-        )
 
         # Event likelihood adjustment only happens in certain cases
         if not self.event_likelihood_adjustment:
             mapped_vals = self.distribution.ppf(cdf_vals_cm_future, *fit_obs_future)
         else:
+            # Calculate additional needed cdf-fits
+            fit_cm_hist = self.distribution.fit(cm_hist_sorted)
+            fit_obs_hist = self.distribution.fit(obs_hist_sorted)
+
+            # Get the cdf-vals and interpolate if there are unequal sample sizes (following Switanek 2017):
+            cdf_vals_obs_hist = interp_sorted_cdf_vals_on_given_length(
+                threshold_cdf_vals(self.distribution.cdf(obs_hist_sorted, *fit_obs_hist)),
+                cdf_vals_cm_future.size,
+            )
+            cdf_vals_cm_hist = interp_sorted_cdf_vals_on_given_length(
+                threshold_cdf_vals(self.distribution.cdf(cm_hist_sorted, *fit_cm_hist)),
+                cdf_vals_cm_future.size,
+            )
+
             # Calculate L-values and delta log-odds for mapping, following formula 11-14
             L_obs_hist = scipy.special.logit(cdf_vals_obs_hist)
             L_cm_hist = scipy.special.logit(cdf_vals_cm_hist)
@@ -727,7 +729,7 @@ class ISIMIP(Debiaser):
                 obs[:, i, j],
                 cm_hist[:, i, j],
                 cm_future[:, i, j],
-                **ISIMIP._unpack_kwargs_and_get_locationwise_info(i, j, **kwargs),
+                **kwargs,  # **ISIMIP._unpack_kwargs_and_get_locationwise_info(i, j, **kwargs),
             )
 
         return output

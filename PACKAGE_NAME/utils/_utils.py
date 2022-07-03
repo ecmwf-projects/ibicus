@@ -25,7 +25,7 @@ def get_years_and_yearly_means(x: np.ndarray, years: np.ndarray) -> np.ndarray:
     return np.unique(years), get_yearly_means(x, years)
 
 
-def threshold_cdf_vals(cdf_vals: np.ndarray, cdf_threshold: int = 0.0001) -> np.ndarray:
+def threshold_cdf_vals(cdf_vals: np.ndarray, cdf_threshold: float = 1e-10) -> np.ndarray:
     """Thresholds an array of cdf-values away from 0 and 1. Rounds down to `1-cdf_threshold` and up to `cdf_threshold` if above or below."""
     return np.maximum(np.minimum(cdf_vals, 1 - cdf_threshold), cdf_threshold)
 
