@@ -10,23 +10,25 @@
 import iris
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
-from math import sqrt
+#from sklearn.metrics import mean_squared_error
+#from math import sqrt
 import scipy
 import scipy.stats
-from scipy.stats import norm
+#from scipy.stats import norm
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
 
 import seaborn
 import pandas as pd
 
-import libpysal
+#import libpysal
 from libpysal.weights import lat2W
 from esda.moran import Moran
 
 from pylab import *
 from scipy.ndimage import measurements
+
+from statsmodels.tsa.stattools import adfuller
 
 
 
