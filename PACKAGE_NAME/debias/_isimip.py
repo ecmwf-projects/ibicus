@@ -231,9 +231,9 @@ class ISIMIP(Debiaser):
             condition1 = q_cm_hist >= q_obs_hist
             condition2 = (q_cm_hist < q_obs_hist) & (q_obs_hist < 9 * q_cm_hist)
 
-            gamma = np.zeros(len(obs_hist))
+            gamma = np.zeros_like(obs_hist)
             gamma[condition1] = 1
-            gamma[condition2] = 0.5 * (1 + np.cos(q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8)
+            gamma[condition2] = 0.5 * (1 + np.cos((q_obs_hist[condition2] / q_cm_hist[condition2] - 1) * np.pi / 8))
 
             # Formula 6
             delta_add = q_cm_future - q_cm_hist
@@ -519,8 +519,6 @@ class ISIMIP(Debiaser):
         This makes the ISIMIP-method trend-preserving.
         """
         if self.trend_transfer_only_for_values_within_threshold:
-            return self._step5_transfer_trend(obs_hist, cm_hist, cm_future)
-        else:
             mask_for_values_between_thresholds_obs_hist = self._get_mask_for_values_between_thresholds(obs_hist)
             obs_future = obs_hist
             obs_future[mask_for_values_between_thresholds_obs_hist] = self._step5_transfer_trend(
@@ -528,6 +526,9 @@ class ISIMIP(Debiaser):
                 self._get_values_between_thresholds(cm_hist),
                 self._get_values_between_thresholds(cm_future),
             )
+            return obs_future
+        else:
+            return self._step5_transfer_trend(obs_hist, cm_hist, cm_future)
 
     # Core of the isimip-method: parametric quantile mapping
     def step6(self, obs_hist, obs_future, cm_hist, cm_future):
@@ -651,7 +652,7 @@ class ISIMIP(Debiaser):
                 days_of_year_obs_hist = np.tile(np.arange(1, 366), (obs_hist.size // 365) + 1)[: obs_hist.size]
                 days_of_year_cm_hist = np.tile(np.arange(1, 366), (cm_hist.size // 365) + 1)[: cm_hist.size]
                 days_of_year_cm_future = np.tile(np.arange(1, 366), (cm_future.size // 365) + 1)[: cm_future.size]
-                # TODO: do I want to construct years here. Otherwise detrending without years is never called
+
                 years_obs_hist = np.concatenate([np.repeat(i, 366) for i in range(obs_hist.size // 365 + 1)])[
                     : obs_hist.size
                 ]
