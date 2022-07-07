@@ -409,9 +409,6 @@ class ISIMIP(Debiaser):
             self.running_window_step_length,
         )
 
-        # Remove 366 as window center as it would only exist in very few cases
-        window_centers = np.where(window_centers == 366, 365, window_centers)
-
         return window_centers
 
     def _get_indices_around_window_center(self, days_of_years: np.ndarray, window_center: int) -> np.ndarray:
@@ -425,7 +422,11 @@ class ISIMIP(Debiaser):
         window_center: int
             Window center around which in each year a window of length self.window_length is taken and the indices returned
         """
-        indices_center = np.where(days_of_years == window_center)[0]
+        # If window_center is 366th day of year, then use indices of 366th day of year for years with 366 days and for other years indices of first day of year
+        if window_center == 366:
+            indices_center = np.where(days_of_years == 365)[0] + 1
+        else:
+            indices_center = np.where(days_of_years == window_center)[0]
         indices = np.sort(
             np.mod(
                 np.concatenate(
