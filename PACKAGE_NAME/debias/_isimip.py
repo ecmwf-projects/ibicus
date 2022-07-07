@@ -558,7 +558,6 @@ class ISIMIP(Debiaser):
             mask_for_entries_to_set_to_upper_bound = self._step6_get_mask_for_entries_to_set_to_upper_bound(
                 obs_hist_sorted, cm_hist_sorted, cm_future_sorted
             )
-
         # Set values to upper or lower bound for bounded/thresholded variables
         cm_future_sorted[mask_for_entries_to_set_to_lower_bound] = self.lower_bound
         cm_future_sorted[mask_for_entries_to_set_to_upper_bound] = self.upper_bound
@@ -567,13 +566,14 @@ class ISIMIP(Debiaser):
             np.logical_not(mask_for_entries_to_set_to_upper_bound),
         )
 
-        # Calculate values between bounds
-        cm_future_sorted[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
-            self._get_values_between_thresholds(obs_hist_sorted),
-            self._get_values_between_thresholds(obs_future_sorted),
-            self._get_values_between_thresholds(cm_hist_sorted),
-            cm_future_sorted[mask_for_entries_not_set_to_either_bound],
-        )
+        # Calculate values between bounds (if any are to be calculated)
+        if any(mask_for_entries_not_set_to_either_bound == True):
+            cm_future_sorted[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
+                self._get_values_between_thresholds(obs_hist_sorted),
+                self._get_values_between_thresholds(obs_future_sorted),
+                self._get_values_between_thresholds(cm_hist_sorted),
+                cm_future_sorted[mask_for_entries_not_set_to_either_bound],
+            )
 
         # Return values inserted back at correct locations
         reverse_sorting_idx = np.argsort(cm_future_argsort)

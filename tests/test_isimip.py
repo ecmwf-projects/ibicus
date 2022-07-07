@@ -118,6 +118,26 @@ class TestISIMIPsteps(unittest.TestCase):
 
         assert all(step4_between_thresholds == cm_future_between_thresholds)
 
+    def test__step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(self):
+
+        x = np.random.random(1000)
+        nr = 100
+        mask = ISIMIP._step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(nr, x)
+        assert mask.sum() == nr
+        assert mask.size == x.size
+        assert all(mask[(mask.size - nr) : mask.size] == True)
+        assert all(mask[: (mask.size - nr)] == False)
+
+    def test__step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(self):
+
+        x = np.random.random(1000)
+        nr = 100
+        mask = ISIMIP._step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(nr, x)
+        assert mask.sum() == nr
+        assert mask.size == x.size
+        assert all(mask[0:nr] == True)
+        assert all(mask[nr + 1 :] == False)
+
 
 class TestISIMIPRunningWindowIteration(unittest.TestCase):
     def test__get_window_centers(self):
