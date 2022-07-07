@@ -187,6 +187,12 @@ class ISIMIP(Debiaser):
 
     # ----- Non public helpers: ISIMIP-steps ----- #
 
+    @staticmethod
+    def _step2_impute_values(x):
+        if all(np.isnan(x)):
+            raise ValueError("Step2: Imputation not possible because all values are Nan.")
+        return np.where(np.isnan(x), iecdf(x=x, p=np.random.uniform(size=x.size)), x)
+
     def _step3_remove_trend(self, x, years):
 
         # Calculate annual trend
@@ -447,21 +453,9 @@ class ISIMIP(Debiaser):
         Step 2: impute values for prsnratio which are missing on days where there is no precipitation. They are imputed by effectively sampling the iecdf (see Lange 2019 and ISIMIP3b factsheet for the method).
         """
         if self.variable == "prsnratio":
-            obs_hist = np.where(
-                np.isnan(obs_hist),
-                iecdf(x=obs_hist, p=np.random.uniform(size=obs_hist.size)),
-                obs_hist,
-            )
-            cm_hist = np.where(
-                np.isnan(cm_hist),
-                iecdf(x=cm_hist, p=np.random.uniform(size=cm_hist.size)),
-                cm_hist,
-            )
-            cm_future = np.where(
-                np.isnan(cm_future),
-                iecdf(x=cm_future, p=np.random.uniform(size=cm_future.size)),
-                cm_future,
-            )
+            obs_hist = ISIMIP._step2_impute_values(obs_hist)
+            cm_hist = ISIMIP._step2_impute_values(cm_hist)
+            cm_future = ISIMIP._step2_impute_values(cm_future)
 
         return obs_hist, cm_hist, cm_future
 
@@ -510,7 +504,7 @@ class ISIMIP(Debiaser):
                     high=self.upper_bound,
                 )
             )
-            cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
+            cm_future[mask_cm_future_values_beyond_upper_threshold] = sort_array_like_another_one(
                 randomised_values_between_threshold_and_bound,
                 cm_future[mask_cm_future_values_beyond_upper_threshold],
             )

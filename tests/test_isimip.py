@@ -19,6 +19,53 @@ from PACKAGE_NAME.debias import ISIMIP
 
 
 class TestISIMIPsteps(unittest.TestCase):
+    def test_step2_all_missing(self):
+        variable = "prsnratio"
+        debiaser = ISIMIP.from_variable(variable)
+
+        obs_hist = np.array([np.nan for i in range(1000)])
+        cm_hist = np.array([np.nan for i in range(1000)])
+        cm_future = np.array([np.nan for i in range(1000)])
+
+        with self.assertRaises(ValueError):
+            imputed_obs_hist, imputed_cm_hist, imputed_cm_future = debiaser.step2(obs_hist, cm_hist, cm_future)
+
+    def test_step2_none_missing(self):
+        variable = "prsnratio"
+        debiaser = ISIMIP.from_variable(variable)
+
+        obs_hist = np.random.random(1000)
+        cm_hist = np.random.random(1000)
+        cm_future = np.random.random(1000)
+
+        imputed_obs_hist, imputed_cm_hist, imputed_cm_future = debiaser.step2(obs_hist, cm_hist, cm_future)
+
+        assert all(imputed_obs_hist == obs_hist)
+        assert all(imputed_cm_hist == cm_hist)
+        assert all(imputed_cm_future == cm_future)
+
+    def test_step2(self):
+        variable = "prsnratio"
+        debiaser = ISIMIP.from_variable(variable)
+
+        obs_hist = np.random.random(1000)
+        cm_hist = np.random.random(1000)
+        cm_future = np.random.random(1000)
+
+        missing_idxs = np.random.randint(low=0, high=1000, size=100)
+        obs_hist[missing_idxs], cm_hist[missing_idxs], cm_future[missing_idxs] = np.nan, np.nan, np.nan
+
+        imputed_obs_hist, imputed_cm_hist, imputed_cm_future = debiaser.step2(obs_hist, cm_hist, cm_future)
+
+        # Array size
+        assert imputed_obs_hist.size == obs_hist.size
+        assert imputed_cm_hist.size == cm_hist.size
+        assert imputed_cm_future.size == cm_future.size
+
+        assert all(np.delete(imputed_obs_hist, missing_idxs) == np.delete(obs_hist, missing_idxs))
+        assert all(np.delete(imputed_cm_hist, missing_idxs) == np.delete(cm_hist, missing_idxs))
+        assert all(np.delete(imputed_cm_future, missing_idxs) == np.delete(cm_future, missing_idxs))
+
     def test_step6_get_P_obs_future_factsheet_edge_case(self):
         P_obs_hist = 0
         P_cm_hist = 0.8
