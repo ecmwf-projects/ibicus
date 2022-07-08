@@ -9,7 +9,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-#from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error
 from math import sqrt
 import scipy
 import scipy.stats
@@ -381,6 +381,19 @@ def clusters_violinplot(variable, boxplot_data, clustertype, columnname):
     return fig
 
 
+def clusters_histogram(variable, plot_data, clustertype, columnname):
+
+    fig = plt.figure(figsize=(8, 6))
+    seaborn.displot(x=columnname, 
+                     col='Exceedance over threshold',
+                     data=plot_data, 
+                     palette="colorblind",
+                     hue='Correction Method',
+                     kind='kde'
+                     )
+    return (fig)
+
+
 
 def EOT_mean_bias_days_2dplot(variable, threshold_prob_obs, threshold_prob_raw, threshold_prob_bc, thresholdname, thresholdsign, name_BC):
     
@@ -442,22 +455,59 @@ def EOT_compute_spell_length(variable, data, thresholdname, thresholdsign, min_l
 
 
 
-def EOT_spell_length_plot(variable, data_obs, data_raw, data_bc, BC_name, thresholdsign, thresholdtype, number_bins=9):
+def EOT_spell_length_plot(variable, data_obs, data_raw, data_bc, BC_name, number_bins=9, minimum_spell_length=2):
     
-    fig = plt.figure(figsize=(8, 6))
+    high_obs_spell_length = EOT_compute_spell_length(variable = variable, data = data_obs, 
+                                                 thresholdname = 'high_threshold', thresholdsign = '>', 
+                                                 min_length = minimum_spell_length)
+
+    low_obs_spell_length = EOT_compute_spell_length(variable = variable, data = data_obs, 
+                                                 thresholdname = 'low_threshold', thresholdsign = '<', 
+                                                 min_length = minimum_spell_length)
+
+    high_raw_spell_length = EOT_compute_spell_length(variable = variable, data = data_raw, 
+                                                 thresholdname = 'high_threshold', thresholdsign = '>', 
+                                                 min_length = minimum_spell_length)
+
+    low_raw_spell_length = EOT_compute_spell_length(variable = variable, data = data_raw, 
+                                                 thresholdname = 'low_threshold', thresholdsign = '<', 
+                                                 min_length = minimum_spell_length)
+
+    high_bc_spell_length = EOT_compute_spell_length(variable = variable, data = data_bc, 
+                                                 thresholdname = 'high_threshold', thresholdsign = '>', 
+                                                 min_length = minimum_spell_length)
+
+    low_bc_spell_length = EOT_compute_spell_length(variable = variable, data = data_bc, 
+                                                 thresholdname = 'low_threshold', thresholdsign = '<', 
+                                                 min_length = minimum_spell_length)
     
-    plt.hist(data_obs, bins=number_bins, label='Observed', alpha=0.5)
-    plt.hist(data_raw, bins=number_bins, label='Raw', alpha=0.5)
-    plt.hist(data_bc, bins=number_bins, label=BC_name, alpha=0.5)
+    
+    
+    fig1 = plt.figure(figsize=(8, 6))
+    
+    plt.hist(high_obs_spell_length, bins=number_bins, label='Observed', alpha=0.3)
+    plt.hist(high_raw_spell_length, bins=number_bins, label='Raw', alpha=0.3)
+    plt.hist(high_bc_spell_length, bins=number_bins, label=BC_name, alpha=0.3)
     plt.xlabel("Spell length")
     plt.ylabel("Number of occurences")
-    plt.title('Marginal spell length \n {} {} {} {}'.format(variable_dictionary.get(variable).get('name'), 
-                                                         thresholdsign,
-                                                         variable_dictionary.get(variable).get(thresholdtype),
+    plt.title('Spell length \n Days with {} > {} {}'.format(variable_dictionary.get(variable).get('name'), 
+                                                         variable_dictionary.get(variable).get('high_threshold'),
                                                          variable_dictionary.get(variable).get('unit')))
     plt.legend()
     
-    return(fig)
+    fig2 = plt.figure(figsize=(8, 6))
+    
+    plt.hist(low_obs_spell_length, bins=number_bins, label='Observed', alpha=0.5)
+    plt.hist(low_raw_spell_length, bins=number_bins, label='Raw', alpha=0.5)
+    plt.hist(low_bc_spell_length, bins=number_bins, label=BC_name, alpha=0.5)
+    plt.xlabel("Spell length")
+    plt.ylabel("Number of occurences")
+    plt.title('Spell length \n Days with {} < {} {}'.format(variable_dictionary.get(variable).get('name'), 
+                                                         variable_dictionary.get(variable).get('low_threshold'),
+                                                         variable_dictionary.get(variable).get('unit')))
+    plt.legend()
+    
+    return(fig1, fig2)
 
 
 
@@ -715,49 +765,95 @@ def EOT_spatial_compounding(variable, name_BC, data_obs, data_raw, data_bc):
 
 # test assumptions
 
-def goodness_of_fit_aic(variable, dataset):
+def goodness_of_fit_aic(variable, dataset, distribution_name = 'default'):
 
-    aic = np.array([])
+    if distribution_name =='default':
+        distribution = variable_dictionary.get(variable).get('distribution')
+    else:
+        distribution = distribution_name
+
+    aic = np.empty((0, 3))
 
     for i in range(dataset.shape[1]):
         for j in range(dataset.shape[2]):
 
-            fit = variable_dictionary.get(variable).get('distribution').fit(dataset[:, i, j])
+            fit = distribution.fit(dataset[:, i, j])
             
             k = len(fit)
-            logLik = np.sum(variable_dictionary.get(variable).get('distribution').logpdf(dataset[:, i, j], *fit))
+            logLik = np.sum(distribution.logpdf(dataset[:, i, j], *fit))
             aic_location = 2*k - 2*(logLik)
             
-            aic = np.append(aic, aic_location)
+            aic = np.append(aic,[[i,j, aic_location]],axis = 0)
             
-    
-    return(aic) 
+    aic_dataframe = pd.DataFrame(aic, columns=['x', 'y', 'AIC'])
+
+    return(aic_dataframe) 
   
 
-
-  
-def goodness_of_fit_plot(dataset, variable, data_type):
+def goodness_of_fit_plot_worst_fit(variable, dataset, aic, data_type, distribution_name='default', number_bins = 100):
     
     from scipy.stats import norm
+    
+    if distribution_name =='default':
+        distribution = variable_dictionary.get(variable).get('distribution')
+    else:
+        distribution = distribution_name
 
-    fit = variable_dictionary.get(variable).get('distribution').fit(dataset)
-    q = variable_dictionary.get(variable).get('distribution').cdf(dataset, *fit)
+    x_location = aic.loc[aic['AIC'].idxmax()]['x']
+    y_location = aic.loc[aic['AIC'].idxmax()]['y']
+    data_slice = dataset[:, int(x_location), int(y_location)]
+    
+    fit = distribution.fit(data_slice)
+    
+    fig = plt.figure(figsize=(8, 6))
+  
+    plt.hist(data_slice, bins=number_bins, density=True, label=data_type, alpha=0.5)
+    xmin, xmax = plt.xlim()
+    
+    x = np.linspace(xmin, xmax, 100)
+    p = distribution.pdf(x, *fit)
+    
+    plt.plot(x, p, 'k', linewidth=2)
+    title = "{} {}, distribution = {} \n Location = ({}, {})".format(data_type,
+                                                                    variable_dictionary.get(variable).get('name'),
+                                                                    distribution_name,
+                                                                    x_location, y_location)
+    plt.title(title)
+    
+    return(fig)
+
+  
+
+
+
+
+def goodness_of_fit_plot_quantiles(dataset, variable, data_type, distribution_name='default'):
+    
+    from scipy.stats import norm
+    
+    if distribution_name =='default':
+        distribution = variable_dictionary.get(variable).get('distribution')
+    else:
+        distribution = distribution_name
+
+    fit = distribution.fit(dataset)
+    q = distribution.cdf(dataset, *fit)
     
     q_normal = norm.ppf(q)
     
     fig, ax = plt.subplots(1,3, figsize=(14,4))
 
-    fig.suptitle('Goodness of fit evaluation - {} {}'.format(variable_dictionary.get(variable).get('name'), data_type))
+    fig.suptitle('{} - {}. Distribution = {}'.format(variable_dictionary.get(variable).get('name'), data_type, distribution_name))
     
     x = range(0, len(q))
     ax[0].plot(x, q)
-    ax[0].set_title('Quantile Residuals')
+    ax[0].set_title('Quantile Residuals - Timeseries')
     
     plot_acf(q, lags=1000, ax=ax[1])
-    ax[1].set_title('ACF')
+    ax[1].set_title('Quantile Residuals - ACF')
     
     sm.qqplot(q_normal, line='45', ax=ax[2])
-    ax[2].set_title('QQ Plot')
+    ax[2].set_title('Normalized Quantile Residuals - QQ Plot')
     
     return(fig)
 
