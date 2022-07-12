@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
+import scipy
+from itertools import chain
 
 variable_dictionary = {
         "tas": {
@@ -34,144 +36,158 @@ variable_dictionary = {
 }
 
   
-def histogram_plot(variable, dataset_obs, dataset_cm, dataset_cm_bc, bin_number=100):
+def plot_histogram(variable, data_obs, data_raw, bin_number=100, **kwargs): 
+
+      """
+      Plots histogram over full area covered. Expects a one-dimensional array as input, so 2d lat-long array has to be flattened using
+      for example np.ndarray.flatten. This plot will be more meaningful for smaller areas.
     
-  # requires one dimensional array as input
-  fig, ax = plt.subplots(1,2, figsize=(12,5))
+      Parameters
+      ----------
+      variable: str, variable name is standard form (i.e. 'tas', 'pr', etc)
+      data_obs : flattened entry of all observed values over the area, numeric entries expected
+      data_raw : flattened entry of all 'raw', i.e. not biased corrected, climate simulations over the area, numeric entries expected
+      bin_number: integer expected, number of bins of the plotted histogram, default set to 100
+      **kwargs: flattened, bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, the latter being
+      of the same form as data_obs and data_raw, numeric entries expected.
+      """
+        
+      number_biascorrections = len(kwargs.keys())
+      figure_length = 5 + number_biascorrections*5
+      plot_number = number_biascorrections +1
     
-  fig.suptitle("{}".format(variable_dictionary.get(variable).get('name')))
-  
-  ax[0].hist(dataset_obs, bins=bin_number, alpha=0.5, label='Observed')
-  ax[0].hist(dataset_cm, bins=bin_number, alpha=0.5, label='CM without BC') 
-  ax[0].set_title("Not Bias Corrected")
-  ax[0].legend()
-  
-  ax[1].hist(dataset_obs, bins=bin_number, alpha=0.5, label='Observed')
-  ax[1].hist(dataset_cm_bc, bins=bin_number, alpha=0.5, label='CM with BC') 
-  ax[1].set_title("Bias Corrected")
-  ax[1].legend()
-  
-  return fig
+      fig, ax = plt.subplots(1,plot_number, figsize=(figure_length,5))
+        
+      fig.suptitle("Distribution {} over entire area".format(variable_dictionary.get(variable).get('name')))
+      
+      ax[0].hist(data_obs, bins=bin_number, alpha=0.5, label='Observed')
+      ax[0].hist(data_raw, bins=bin_number, alpha=0.5, label='Climate model') 
+      ax[0].set_title("Not bias corrected")
+      ax[0].legend()
+      
+      i=0
+      for k in kwargs.keys():
+          
+          i=i+1
+          ax[i].hist(data_obs, bins=bin_number, alpha=0.5, label='Observed')
+          ax[i].hist(kwargs[k], bins=bin_number, alpha=0.5, label='Climate model') 
+          ax[i].set_title("Bias corrected ({})".format(k))
+          ax[i].legend()
+      
+      return fig
 
 
-def marginal_bias_plot(variable, dataset_obs, dataset_cm, dataset_cm_bc):
+def plot_bias_spatial(variable, data_obs, data_raw, **kwargs):
 
-  marginal_mean_obs = np.mean(dataset_obs, axis=0)
-  marginal_10pc_obs = np.quantile(dataset_obs, 0.1, axis=0)
-  marginal_90pc_obs = np.quantile(dataset_obs, 0.9, axis=0)
-
-  marginal_mean_cm = np.mean(dataset_cm, axis=0)
-  marginal_10pc_cm = np.quantile(dataset_cm, 0.1, axis=0)
-  marginal_90pc_cm = np.quantile(dataset_cm, 0.9, axis=0)
-  
-  marginal_mean_cm_bc = np.mean(dataset_cm_bc, axis=0)
-  marginal_10pc_cm_bc = np.quantile(dataset_cm_bc, 0.1, axis=0)
-  marginal_90pc_cm_bc = np.quantile(dataset_cm_bc, 0.9, axis=0)
-  
-  mean_bias_cm = 100*(marginal_mean_obs - marginal_mean_cm)/marginal_mean_obs
-  lowpc_bias_cm = 100*(marginal_10pc_obs - marginal_10pc_cm)/marginal_10pc_obs
-  highpc_bias_cm = 100*(marginal_90pc_obs - marginal_90pc_cm)/marginal_90pc_cm
-  
-  mean_bias_cm_bc = 100*(marginal_mean_obs - marginal_mean_cm_bc)/marginal_mean_obs
-  lowpc_bias_cm_bc = 100*(marginal_10pc_obs - marginal_10pc_cm_bc)/marginal_10pc_obs
-  highpc_bias_cm_bc = 100*(marginal_90pc_obs - marginal_90pc_cm_bc)/marginal_90pc_cm
-  
-  
-  axis_max = max(np.concatenate((np.ndarray.flatten(mean_bias_cm), 
-                                 np.ndarray.flatten(lowpc_bias_cm),
-                                 np.ndarray.flatten(highpc_bias_cm),
-                                 np.ndarray.flatten(mean_bias_cm_bc),
-                                 np.ndarray.flatten(lowpc_bias_cm_bc),
-                                 np.ndarray.flatten(highpc_bias_cm_bc),
-                                 )))
-  
-  axis_min = min(np.concatenate((np.ndarray.flatten(mean_bias_cm), 
-                                 np.ndarray.flatten(lowpc_bias_cm),
-                                 np.ndarray.flatten(highpc_bias_cm),
-                                 np.ndarray.flatten(mean_bias_cm_bc),
-                                 np.ndarray.flatten(lowpc_bias_cm_bc),
-                                 np.ndarray.flatten(highpc_bias_cm_bc),
-                                 )))
-
-  fig, ax = plt.subplots(2,3, figsize=(15,10))
-
-  fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
-
-  plot1 = ax[0, 0].imshow(mean_bias_cm, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[0, 0].set_title('Mean % bias - not BC')
-  fig.colorbar(plot1, ax=ax[0, 0])
-
-  plot2 = ax[0, 1].imshow(lowpc_bias_cm, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[0, 1].set_title('10th percentile % bias - not BC')
-  fig.colorbar(plot2, ax=ax[0, 1])
-
-  plot3 = ax[0, 2].imshow(highpc_bias_cm, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[0, 2].set_title('95th percentile % bias - not BC')
-  fig.colorbar(plot3, ax=ax[0, 2])
-  
-  plot4 = ax[1, 0].imshow(mean_bias_cm_bc, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[1, 0].set_title('Mean % bias - BC')
-  fig.colorbar(plot4, ax=ax[1, 0])
-
-  plot5 = ax[1, 1].imshow(lowpc_bias_cm_bc, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[1, 1].set_title('10th percentile % bias - BC')
-  fig.colorbar(plot5, ax=ax[1, 1])
-
-  plot6 = ax[1, 2].imshow(highpc_bias_cm_bc, cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-  ax[1, 2].set_title('95th percentile % bias - BC')
-  fig.colorbar(plot6, ax=ax[1, 2])
-
-
-  return fig
-
-
-
-
-def marginal_bias_violinplot(variable, dataset_obs, dataset_cm, dataset_cm_bc, name_BC):
-
-  marginal_mean_obs = np.mean(dataset_obs, axis=0)
-  marginal_10pc_obs = np.quantile(dataset_obs, 0.1, axis=0)
-  marginal_90pc_obs = np.quantile(dataset_obs, 0.9, axis=0)
-
-  marginal_mean_cm = np.mean(dataset_cm, axis=0)
-  marginal_10pc_cm = np.quantile(dataset_cm, 0.1, axis=0)
-  marginal_90pc_cm = np.quantile(dataset_cm, 0.9, axis=0)
-  
-  marginal_mean_cm_bc = np.mean(dataset_cm_bc, axis=0)
-  marginal_10pc_cm_bc = np.quantile(dataset_cm_bc, 0.1, axis=0)
-  marginal_90pc_cm_bc = np.quantile(dataset_cm_bc, 0.9, axis=0)
-  
-  mean_bias_cm = 100*(marginal_mean_obs - marginal_mean_cm)/marginal_mean_obs
-  lowpc_bias_cm = 100*(marginal_10pc_obs - marginal_10pc_cm)/marginal_10pc_obs
-  highpc_bias_cm = 100*(marginal_90pc_obs - marginal_90pc_cm)/marginal_90pc_cm
-  
-  mean_bias_cm_bc = 100*(marginal_mean_obs - marginal_mean_cm_bc)/marginal_mean_obs
-  lowpc_bias_cm_bc = 100*(marginal_10pc_obs - marginal_10pc_cm_bc)/marginal_10pc_obs
-  highpc_bias_cm_bc = 100*(marginal_90pc_obs - marginal_90pc_cm_bc)/marginal_90pc_cm
+    number_biascorrections = len(kwargs.keys())
+    fig_length = 5 + 5*number_biascorrections
+    plot_number = number_biascorrections +1
     
-  # re-organize data for grouped boxplot
-  length = len(np.ndarray.flatten(mean_bias_cm))
-  array1 = np.transpose(np.array([['Raw']*length, ['Mean']*length, np.transpose(np.ndarray.flatten(mean_bias_cm))]))
-  array2 = np.transpose(np.array([['Raw']*length, ['10pc']*length, np.transpose(np.ndarray.flatten(lowpc_bias_cm))]))
-  array3 = np.transpose(np.array([['Raw']*length, ['90pc']*length, np.transpose(np.ndarray.flatten(highpc_bias_cm))]))
-
-  array4 = np.transpose(np.array([[name_BC]*length, ['Mean']*length, np.transpose(np.ndarray.flatten(mean_bias_cm_bc))]))
-  array5 = np.transpose(np.array([[name_BC]*length, ['10pc']*length, np.transpose(np.ndarray.flatten(lowpc_bias_cm_bc))]))
-  array6 = np.transpose(np.array([[name_BC]*length, ['90pc']*length, np.transpose(np.ndarray.flatten(highpc_bias_cm_bc))]))
+    mean_obs = np.mean(data_obs, axis=0)
+    lowpc_obs = np.quantile(data_obs, 0.1, axis=0)
+    highpc_obs = np.quantile(data_obs, 0.9, axis=0)
     
-  arrays = np.concatenate((array1, array2, array3, array4, array5, array6))
+    bias_mean = {}
+    bias_lowpc = {}
+    bias_highpc = {}
+    
+    bias_mean['raw'] = 100*(mean_obs - np.mean(data_raw, axis=0))/mean_obs
+    bias_lowpc['raw'] = 100*(lowpc_obs - np.quantile(data_raw, 0.1, axis=0))/lowpc_obs
+    bias_highpc['raw'] = 100*(highpc_obs - np.quantile(data_raw, 0.9, axis=0))/highpc_obs
 
-  boxplot_data = pd.DataFrame(arrays, columns=['Correction Method','Metric', 'Percentage bias'])
-  boxplot_data["Percentage bias"] = pd.to_numeric(boxplot_data["Percentage bias"])
+    
+    for k in kwargs.keys():
+        
+        bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
+        bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
+        bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
 
-  fig = plt.figure(figsize=(8, 6))
-  seaborn.violinplot(y='Percentage bias', x='Metric', 
+    arrays_max = max(max(np.ndarray.flatten(np.vstack(list(chain(*bias_mean.values()))))),
+                   max(np.ndarray.flatten(np.vstack(list(chain(*bias_lowpc.values()))))),
+                   max(np.ndarray.flatten(np.vstack(list(chain(*bias_highpc.values()))))))
+    
+    arrays_min = min(min(np.ndarray.flatten(np.vstack(list(chain(*bias_mean.values()))))),
+                   min(np.ndarray.flatten(np.vstack(list(chain(*bias_lowpc.values()))))),
+                   min(np.ndarray.flatten(np.vstack(list(chain(*bias_highpc.values()))))))
+    
+    axis_max = max(abs(arrays_max), abs(arrays_min))
+    axis_min = -axis_max
+
+    fig, ax = plt.subplots(plot_number, 3, figsize=(18,fig_length))
+
+    fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
+    
+    i=0
+    for k in ('raw', *kwargs.keys()):
+
+        plot1 = ax[i, 0].imshow(bias_mean[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[i, 0].set_title('% bias of mean \n {}'.format(k))
+        fig.colorbar(plot1, ax=ax[i, 0])
+
+        plot2 = ax[i, 1].imshow(bias_lowpc[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[i, 1].set_title('% bias of 10th percentile \n {}'.format(k))
+        fig.colorbar(plot2, ax=ax[i, 1])
+
+        plot3 = ax[i, 2].imshow(bias_highpc[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[i, 2].set_title('% bias of 90th percentile \n {}'.format(k))
+        fig.colorbar(plot3, ax=ax[i, 2])
+        
+        i=i+1
+
+
+    return fig
+
+
+
+
+
+def plot_bias_distribution(variable, data_obs, data_raw, **kwargs):
+
+    mean_obs = np.mean(data_obs, axis=0)
+    lowpc_obs = np.quantile(data_obs, 0.1, axis=0)
+    highpc_obs = np.quantile(data_obs, 0.9, axis=0)
+
+    bias_mean = {}
+    bias_lowpc = {}
+    bias_highpc = {}
+    
+    bias_mean['raw'] = 100*(mean_obs - np.mean(data_raw, axis=0))/mean_obs
+    bias_lowpc['raw'] = 100*(lowpc_obs - np.quantile(data_raw, 0.1, axis=0))/lowpc_obs
+    bias_highpc['raw'] = 100*(highpc_obs - np.quantile(data_raw, 0.9, axis=0))/highpc_obs
+
+    for k in kwargs.keys():
+        
+        bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
+        bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
+        bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
+
+    bias_array = np.empty((0, 3))
+    length = len(np.ndarray.flatten(bias_mean['raw']))
+    
+    for k in ('raw', *kwargs.keys()):
+        
+        bias_array = np.append(bias_array,
+                               np.transpose(np.array([[k]*length, ['Mean']*length, np.transpose(np.ndarray.flatten(bias_mean[k]))])), 
+                               axis = 0)
+        bias_array = np.append(bias_array,
+                               np.transpose(np.array([[k]*length, ['10pc']*length, np.transpose(np.ndarray.flatten(bias_lowpc[k]))])), 
+                               axis = 0)
+        bias_array = np.append(bias_array,
+                               np.transpose(np.array([[k]*length, ['90pc']*length, np.transpose(np.ndarray.flatten(bias_highpc[k]))])), 
+                               axis = 0)
+        
+
+    boxplot_data = pd.DataFrame(bias_array, columns=['Correction Method','Metric', 'Percentage bias'])
+    boxplot_data["Percentage bias"] = pd.to_numeric(boxplot_data["Percentage bias"])
+
+    fig_width = 5 + 2*len(kwargs.keys())
+    fig = plt.figure(figsize=(fig_width, 6))
+    seaborn.violinplot(y='Percentage bias', x='Metric', 
                  data=boxplot_data, 
                  palette="colorblind",
                  hue='Correction Method')
 
+    fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
 
-  fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
-
-  return fig
+    return fig
 

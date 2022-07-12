@@ -56,7 +56,7 @@ variable_dictionary = {
 
 # marginal evaluation
 
-def histogram_plot(variable, dataset_obs, dataset_cm, dataset_cm_bc, bin_number=100):
+'''def histogram_plot(variable, dataset_obs, dataset_cm, dataset_cm_bc, bin_number=100):
     
   # requires one dimensional array as input
   fig, ax = plt.subplots(1,2, figsize=(12,5))
@@ -197,6 +197,7 @@ def marginal_bias_violinplot(variable, dataset_obs, dataset_cm, dataset_cm_bc, n
 
   return fig
 
+'''
 
 # trend analysis
 
