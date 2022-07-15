@@ -79,7 +79,7 @@ isimip_2_5 = {
             "lower_threshold": 0.01,
             "upper_bound": np.inf,
             "upper_threshold": np.inf,
-            "distribution": scipy.stats.exponweib,  # TODO: needs to be real weibull (log of exponweib)
+            "distribution": scipy.stats.weibull_min,  # TODO: needs to be real weibull (log of exponweib)
             "trend_preservation_method": "mixed",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
@@ -169,7 +169,7 @@ standard_variables_isimip = {
         "lower_threshold": 0.01,
         "upper_bound": np.inf,
         "upper_threshold": np.inf,
-        "distribution": scipy.stats.exponweib,  # TODO: needs to be real weibull (log of exponweib)
+        "distribution": scipy.stats.weibull_min,  # TODO: needs to be real weibull (log of exponweib)
         "trend_preservation_method": "mixed",
         "detrending": False,
     },

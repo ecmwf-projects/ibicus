@@ -384,7 +384,7 @@ class ISIMIP(Debiaser):
             else None
         )
 
-        if self.distribution in [scipy.stats.rice, scipy.stats.exponweib]:
+        if self.distribution in [scipy.stats.rice, scipy.stats.weibull_min]:
             fixed_args = {"floc": floc}
         else:
             fixed_args = {"floc": floc, "fscale": fscale}
