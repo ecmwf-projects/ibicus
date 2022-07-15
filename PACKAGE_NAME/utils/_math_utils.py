@@ -438,7 +438,7 @@ def IECDF(x):
     return lambda q: y[np.floor((n - 1) * q).astype(int)]
 
 
-def iecdf(x, p, method="inverted_cdf", **kwargs):
+def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
     """
     Return the values of the the inverse empirical cdf of x evaluated at p:
 
@@ -472,7 +472,7 @@ def iecdf(x, p, method="inverted_cdf", **kwargs):
         return np.quantile(x, p, method=method, **kwargs)
 
 
-def ecdf(x: np.array, y: np.array, method: str) -> np.array:
+def ecdf(x: np.array, y: np.array, method: str = "step_function") -> np.array:
     """
     Return the values of the empirical cdf of x evaluated at y:
 
@@ -511,3 +511,46 @@ def ecdf(x: np.array, y: np.array, method: str) -> np.array:
         return step_function(y)
     else:
         raise ValueError('method needs to be one of ["kernel_density", "linear_interpolation", "step_function"] ')
+
+
+def _isimip_quantile_map_non_parametically(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    p_x = (scipy.stats.rankdata(x) - 1.0) / x.size  # percent points of x
+    p_y = np.linspace(0.0, 1.0, y.size)  # percent points of sorted y
+    z = np.interp(p_x, p_y, np.sort(y))  # quantile mapping
+    return z
+
+
+def quantile_map_non_parametically(
+    x: np.ndarray,
+    y: np.ndarray,
+    mode="normal",
+    ecdf_method: str = "step_function",
+    iecdf_method: str = "inverted_cdf",
+    **kwargs
+) -> np.ndarray:
+    """
+    Quantiles maps a vector of values x onto a vector of values y.
+    If mode = "normal" this is done using the empirical cdf and inverse cdf. Quantiles of values in x are first found using the ecdf of the values in x. Afterwards they are transformed onto y using the empirical inverse cdf of y.
+    If mode = "isimip" the scipy.stats.rankdata function is used for the quantiles and linear interpolation to find the corresponding quantile mapped values. In this case the ecdf_method and iecdf_method arguments are ignored.
+
+    Parameters:
+        x: np.ndarray
+            Values to quantile map non parametically.
+        y: np.ndarray
+            Values defining an empirical distribution with whose iecdf the quantiles are transformed.
+        mode: str
+            One of ["normal", "isimipv3.0"]. Determines the mode of quantile mapping.
+        ecdf_method: str
+            Method to use for the ecdf (transformation of x). Passed to ecdf.
+        iecdf_method: str
+            Method to use for the iecdf (transformation of the quantiles). Passed to iecdf.
+        **kwargs:
+            Passed to iecdf.
+    """
+
+    if mode == "normal":
+        return iecdf(y, ecdf(x, x, method=ecdf_method), method=iecdf_method, **kwargs)
+    elif mode == "isimipv3.0":
+        return _isimip_quantile_map_non_parametically(x, y)
+    else:
+        raise ValueError('mode needs to be one of ["normal", "isimipv3.0"]')

@@ -15,7 +15,12 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.utils import ecdf, gen_PrecipitationGammaLeftCensoredModel, iecdf
+from PACKAGE_NAME.utils import (
+    ecdf,
+    gen_PrecipitationGammaLeftCensoredModel,
+    iecdf,
+    quantile_map_non_parametically,
+)
 
 
 class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
@@ -60,6 +65,17 @@ class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
                 np.abs(ecdf(self.x, iecdf(self.x, self.p, method=iecdf_option), method="kernel_density") - self.p)
                 < self.min_distance
             )
+
+    def test_quantile_map_non_parametically_same_vector(self):
+        x = np.random.random(1000)
+
+        assert all(np.isclose(x, quantile_map_non_parametically(x, x)))
+
+    def test_quantile_map_non_parametically_translation(self):
+        x = np.random.random(1000)
+        y = x + 100
+
+        assert all(np.isclose(y, quantile_map_non_parametically(x, y)))
 
 
 class Testgen_PrecipitationGammaLeftCensoredModel(unittest.TestCase):

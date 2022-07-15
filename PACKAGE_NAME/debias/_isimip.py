@@ -23,6 +23,7 @@ from ..utils import (
     iecdf,
     interp_sorted_cdf_vals_on_given_length,
     month,
+    quantile_map_non_parametically,
     sort_array_like_another_one,
     threshold_cdf_vals,
     year,
@@ -100,6 +101,9 @@ class ISIMIP(Debiaser):
             ]
         ),
     )
+    mode_non_parametric_quantile_mapping: str = attrs.field(
+        default="normal", validator=attrs.validators.in_(["normal", "isimipv3.0"])
+    )
 
     # iteration
     running_window_mode: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
@@ -146,6 +150,20 @@ class ISIMIP(Debiaser):
     @property
     def has_upper_bound(self):
         if self.upper_bound is not None and self.upper_bound < np.inf:
+            return True
+        else:
+            return False
+
+    @property
+    def has_bound(self):
+        if self.has_upper_bound or self.has_lower_bound:
+            return True
+        else:
+            return False
+
+    @property
+    def has_threshold(self):
+        if self.has_upper_threshold or self.has_lower_threshold:
             return True
         else:
             return False
@@ -340,31 +358,61 @@ class ISIMIP(Debiaser):
         return mask_for_entries_to_set_to_upper_bound
 
     def _step6_adjust_values_between_thresholds(
-        self, obs_hist_sorted, obs_future_sorted, cm_hist_sorted, cm_future_sorted
+        self,
+        obs_hist_sorted_entries_between_thresholds,
+        obs_future_sorted_entries_between_thresholds,
+        cm_hist_sorted_entries_between_thresholds,
+        cm_future_sorted_entries_not_sent_to_bound,
+        cm_future_sorted_entries_between_thresholds,
     ):
 
+        # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
+        if self.has_threshold:
+            cm_future_sorted_entries_not_sent_to_bound = quantile_map_non_parametically(
+                cm_future_sorted_entries_not_sent_to_bound,
+                cm_future_sorted_entries_between_thresholds,
+                self.mode_non_parametric_quantile_mapping,
+                self.ecdf_method,
+                self.iecdf_method,
+            )
+
+        # ISIMIP v2.5: fix location and scale as function of upper and lower threshold
+        floc = self.lower_threshold if self.has_lower_threshold else None
+        fscale = (
+            self.upper_threshold - self.lower_threshold
+            if self.has_lower_threshold and self.has_upper_threshold
+            else None
+        )
+
+        if self.distribution in [scipy.stats.rice, scipy.stats.exponweib]:
+            fixed_args = {"floc": floc}
+        else:
+            fixed_args = {"floc": floc, "fscale": fscale}
+
         # Calculate cdf-fits
-        fit_cm_future = self.distribution.fit(cm_future_sorted)
-        fit_obs_future = self.distribution.fit(obs_future_sorted)
+        fit_cm_future = self.distribution.fit(cm_future_sorted_entries_between_thresholds, **fixed_args)
+        fit_obs_future = self.distribution.fit(obs_future_sorted_entries_between_thresholds, **fixed_args)
 
         # Get the cdf-vals of cm_future
-        cdf_vals_cm_future = threshold_cdf_vals(self.distribution.cdf(cm_future_sorted, *fit_cm_future))
+        cdf_vals_cm_future = threshold_cdf_vals(
+            self.distribution.cdf(cm_future_sorted_entries_not_sent_to_bound, *fit_cm_future)
+        )
 
         # Event likelihood adjustment only happens in certain cases
         if not self.event_likelihood_adjustment:
             mapped_vals = self.distribution.ppf(cdf_vals_cm_future, *fit_obs_future)
         else:
             # Calculate additional needed cdf-fits
-            fit_cm_hist = self.distribution.fit(cm_hist_sorted)
-            fit_obs_hist = self.distribution.fit(obs_hist_sorted)
+            fit_cm_hist = self.distribution.fit(cm_hist_sorted_entries_between_thresholds)
+            fit_obs_hist = self.distribution.fit(obs_hist_sorted_entries_between_thresholds)
 
             # Get the cdf-vals and interpolate if there are unequal sample sizes (following Switanek 2017):
             cdf_vals_obs_hist = interp_sorted_cdf_vals_on_given_length(
-                threshold_cdf_vals(self.distribution.cdf(obs_hist_sorted, *fit_obs_hist)),
+                threshold_cdf_vals(self.distribution.cdf(obs_hist_sorted_entries_between_thresholds, *fit_obs_hist)),
                 cdf_vals_cm_future.size,
             )
             cdf_vals_cm_hist = interp_sorted_cdf_vals_on_given_length(
-                threshold_cdf_vals(self.distribution.cdf(cm_hist_sorted, *fit_cm_hist)),
+                threshold_cdf_vals(self.distribution.cdf(cm_hist_sorted_entries_between_thresholds, *fit_cm_hist)),
                 cdf_vals_cm_future.size,
             )
 
@@ -520,7 +568,7 @@ class ISIMIP(Debiaser):
         """
         if self.trend_transfer_only_for_values_within_threshold:
             mask_for_values_between_thresholds_obs_hist = self._get_mask_for_values_between_thresholds(obs_hist)
-            obs_future = obs_hist
+            obs_future = obs_hist.copy()
             obs_future[mask_for_values_between_thresholds_obs_hist] = self._step5_transfer_trend(
                 obs_hist[mask_for_values_between_thresholds_obs_hist],
                 self._get_values_between_thresholds(cm_hist),
@@ -547,6 +595,9 @@ class ISIMIP(Debiaser):
         obs_future_sorted = np.sort(obs_future)
         cm_hist_sorted = np.sort(cm_hist)
 
+        # Vector to store quantile mapped values
+        mapped_vals = cm_future_sorted.copy()
+
         # Calculate values that are set to lower bound for bounded/thresholded variables
         mask_for_entries_to_set_to_lower_bound = np.zeros_like(cm_future_sorted, dtype=bool)
         if self.has_lower_threshold:
@@ -561,8 +612,8 @@ class ISIMIP(Debiaser):
                 obs_hist_sorted, cm_hist_sorted, cm_future_sorted
             )
         # Set values to upper or lower bound for bounded/thresholded variables
-        cm_future_sorted[mask_for_entries_to_set_to_lower_bound] = self.lower_bound
-        cm_future_sorted[mask_for_entries_to_set_to_upper_bound] = self.upper_bound
+        mapped_vals[mask_for_entries_to_set_to_lower_bound] = self.lower_bound
+        mapped_vals[mask_for_entries_to_set_to_upper_bound] = self.upper_bound
         mask_for_entries_not_set_to_either_bound = np.logical_and(
             np.logical_not(mask_for_entries_to_set_to_lower_bound),
             np.logical_not(mask_for_entries_to_set_to_upper_bound),
@@ -570,16 +621,17 @@ class ISIMIP(Debiaser):
 
         # Calculate values between bounds (if any are to be calculated)
         if any(mask_for_entries_not_set_to_either_bound == True):
-            cm_future_sorted[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
+            mapped_vals[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
                 self._get_values_between_thresholds(obs_hist_sorted),
                 self._get_values_between_thresholds(obs_future_sorted),
                 self._get_values_between_thresholds(cm_hist_sorted),
-                cm_future_sorted[mask_for_entries_not_set_to_either_bound],
+                mapped_vals[mask_for_entries_not_set_to_either_bound],
+                self._get_values_between_thresholds(cm_future_sorted),
             )
 
         # Return values inserted back at correct locations
         reverse_sorting_idx = np.argsort(cm_future_argsort)
-        return cm_future_sorted[reverse_sorting_idx]
+        return mapped_vals[reverse_sorting_idx]
 
     def step7(self, cm_future, trend_cm_future):
         """

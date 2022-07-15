@@ -13,12 +13,11 @@ isimip_2_5 = {
     "isimip_run": {
         # ISIMIP behavior
         "trend_removal_with_significance_test": True,  # >= v2.1, step 3
-        # "powerlaw_exponent_step4": 1,  # >= v2.2: uniform distribution, step 4
-        # "pseudo_future_observations_bounded_variables": "v2.3",  # >= v2.3: new equation, step 5
         "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
         # math_helpers
         "ecdf_method": "linear_interpolation",
         "iecdf_method": "linear",
+        "mode_non_parametric_quantile_mapping": "isimipv3.0",  # >= v2.4, step 6
         # iteration
         "running_window_mode": True,  # >= v2.5
         "running_window_length": 31,  # >= v2.5
