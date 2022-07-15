@@ -95,7 +95,10 @@ def EOT_calculate_probability_once(variable, data, thresholdname, thresholdsign)
 
 
 
-def EOT_probability(variablename, name_BC, data_obs, data_raw, data_bc):
+def EOT_probability(variable, data_obs, **kwargs):
+    
+    high_bias = {}
+    low_bias = {}
     
     high_obs = EOT_calculate_probability_once(variable = variable, 
                                               data = data_obs, 
@@ -105,40 +108,32 @@ def EOT_probability(variablename, name_BC, data_obs, data_raw, data_bc):
                                              data = data_obs, 
                                              thresholdname = 'low_threshold', 
                                              thresholdsign = '<')
-    high_raw = EOT_calculate_probability_once(variable = variable, 
-                                              data = data_raw, 
-                                              thresholdname = 'high_threshold', 
-                                              thresholdsign = '>')
-    low_raw = EOT_calculate_probability_once(variable = variable, 
-                                             data = data_raw, 
-                                             thresholdname = 'low_threshold', 
-                                             thresholdsign = '<')
-    high_bc = EOT_calculate_probability_once(variable = variable, 
-                                             data = data_bc, 
-                                             thresholdname = 'high_threshold', 
-                                             thresholdsign = '>')
-    low_bc = EOT_calculate_probability_once(variable = variable, 
-                                            data = data_bc, 
-                                            thresholdname = 'low_threshold', 
-                                            thresholdsign = '<')
     
-    low_bias_raw = low_obs*365 - low_raw*365
-    low_bias_bc = low_obs*365 - low_bc*365
-    
-    high_bias_raw = high_obs*365 - high_raw*365
-    high_bias_bc = high_obs*365 - high_bc*365
-      
-    # re-organize data for grouped boxplot
-    length = len(np.ndarray.flatten(low_bias_raw))
-    
-    array1 = np.transpose(np.array([['Raw']*length, ['High']*length, np.transpose(np.ndarray.flatten(high_bias_raw))]))
-    array2 = np.transpose(np.array([['Raw']*length, ['Low']*length, np.transpose(np.ndarray.flatten(low_bias_raw))]))
-    array3 = np.transpose(np.array([[name_BC]*length, ['High']*length, np.transpose(np.ndarray.flatten(high_bias_bc))]))
-    array4 = np.transpose(np.array([[name_BC]*length, ['Low']*length, np.transpose(np.ndarray.flatten(low_bias_bc))]))
-      
-    arrays = np.concatenate((array1, array2, array3, array4))
+    for k in kwargs.keys():
+        
+        high_bias[k] = high_obs*365 - 365*EOT_calculate_probability_once(variable = variable, 
+                                                          data = kwargs[k], 
+                                                          thresholdname = 'high_threshold', 
+                                                          thresholdsign = '>')
+        low_bias[k] = low_obs*365 - 365*EOT_calculate_probability_once(variable = variable, 
+                                                  data = kwargs[k], 
+                                                  thresholdname = 'low_threshold', 
+                                                  thresholdsign = '<')
 
-    plot_data = pd.DataFrame(arrays, columns=['Correction Method','Exceedance over threshold', 'Mean bias (days/year)'])
+    bias_array = np.empty((0, 3))
+    length = len(np.ndarray.flatten(high_bias['raw']))
+       
+    for k in ('raw', *kwargs.keys()):
+           
+        bias_array = np.append(bias_array,
+                                  np.transpose(np.array([[k]*length, ['High']*length, np.transpose(np.ndarray.flatten(high_bias[k]))])), 
+                                  axis = 0)
+        bias_array = np.append(bias_array,
+                                  np.transpose(np.array([[k]*length, ['Low']*length, np.transpose(np.ndarray.flatten(low_bias[k]))])), 
+                                  axis = 0)
+
+
+    plot_data = pd.DataFrame(bias_array, columns=['Correction Method','Exceedance over threshold', 'Mean bias (days/year)'])
     plot_data["Mean bias (days/year)"] = pd.to_numeric(plot_data["Mean bias (days/year)"])
     
     return(plot_data)
