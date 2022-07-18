@@ -74,6 +74,16 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
         },
+        "rlds": {
+            "lower_bound": -np.inf,
+            "lower_threshold": -np.inf,
+            "upper_bound": np.inf,
+            "upper_threshold": np.inf,
+            "distribution": scipy.stats.norm,
+            "trend_preservation_method": "additive",
+            "detrending": True,
+            "event_likelihood_adjustment": False,
+        },
         "sfcWind": {
             "lower_bound": 0,
             "lower_threshold": 0.01,
@@ -100,7 +110,7 @@ isimip_2_5 = {
             "lower_threshold": 0.01,
             "upper_bound": np.inf,
             "upper_threshold": np.inf,
-            "distribution": scipy.stats.rice,
+            "distribution": scipy.stats.weibull_min,  # was rice in paper but is weibull in command
             "trend_preservation_method": "mixed",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6

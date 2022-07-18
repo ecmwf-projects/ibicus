@@ -58,7 +58,7 @@ class Debiaser:
     # Helpers
     @staticmethod
     def map_over_locations(func, output_size, obs, cm_hist, cm_future):
-        output = np.empty(output_size)
+        output = np.empty(output_size, dtype=cm_future.dtype)
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
             output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
         return output

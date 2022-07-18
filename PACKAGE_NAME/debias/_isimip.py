@@ -117,8 +117,8 @@ class ISIMIP(Debiaser):
 
     @classmethod
     def from_variable(cls, variable):
-        if variable not in standard_variables_isimip.keys():
-            raise ValueError("variable needs to be one of %s" % standard_variables_isimip.keys())
+        if variable not in isimip_2_5.get("variables").keys():
+            raise ValueError("variable needs to be one of %s" % isimip_2_5.get("variables").keys())
         isimip_instance = cls(
             variable=variable,
             **isimip_2_5.get("variables").get(variable),
@@ -830,7 +830,7 @@ class ISIMIP(Debiaser):
     def apply(self, obs, cm_hist, cm_future, **kwargs):
         print("----- Running debiasing -----")
         Debiaser.check_inputs(obs, cm_hist, cm_future)
-        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]])
+        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]], dtype=cm_future.dtype)
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
             output[:, i, j] = self.apply_location(
                 obs[:, i, j],

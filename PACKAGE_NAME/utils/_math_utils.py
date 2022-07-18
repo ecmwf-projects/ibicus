@@ -515,8 +515,8 @@ def ecdf(x: np.array, y: np.array, method: str = "step_function") -> np.array:
 
 def _isimip_quantile_map_non_parametically(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     p_x = (scipy.stats.rankdata(x) - 1.0) / x.size  # percent points of x
-    p_y = np.linspace(0.0, 1.0, y.size)  # percent points of sorted y
-    z = np.interp(p_x, p_y, np.sort(y))  # quantile mapping
+    p_y = np.linspace(0.0, 1.0, y.size, dtype=y.dtype)  # percent points of sorted y
+    z = np.interp(p_x, p_y, np.sort(y)).astype(y.dtype)  # quantile mapping
     return z
 
 
