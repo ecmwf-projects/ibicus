@@ -46,9 +46,35 @@ variable_dictionary = {
     }
 }
 
+# define thresholds
+
+threshold_dictionary = {
+    "frost": {
+        "variable": 'tasmin',
+        "variablename": '2m daily minimum air temperature (K)',
+        "value": 273.15,
+        "threshold_sign": 'lower',
+        "name": 'Frost days'
+    },
+    "mean_warm_day": {
+        "variable": 'tas',
+        "variablename": '2m daily mean air temperature (K)',
+        "value": 295,
+        "threshold_sign": 'higher',
+        "name": 'Warm days (mean)'
+    },
+    "mean_cold_day": {
+        "variable": 'tas',
+        "variablename": '2m daily mean air temperature (K)',
+        "value": 273,
+        "threshold_sign": 'lower',
+        "name": 'Cold days (mean)'
+    }
+}
 
 
-def calculate_matrix(dataset, threshold, thresholdtype):
+
+def calculate_matrix(dataset, thresholdname):
     
     """
     Converts data into 1-0 matrix of same dimensions, 1 if the value at this time and location is below / above 
@@ -61,15 +87,17 @@ def calculate_matrix(dataset, threshold, thresholdtype):
     thresholdtype: '>' if values above threshold are to be analysed, '<' values below threshold are to be analysed.
     """
     
+    # TO-DO: show error if thresholdname specified and dataset don't match  
+    
     thresholds = np.copy(dataset)
 
-    if thresholdtype=='>':
+    if threshold_dictionary.get(thresholdname).get('threshold_sign')=='higher':
 
-      thresholds = (thresholds > threshold).astype(int)
+      thresholds = (thresholds > threshold_dictionary.get(thresholdname).get('value')).astype(int)
 
-    elif thresholdtype=='<':
+    elif threshold_dictionary.get(thresholdname).get('threshold_sign')=='lower':
 
-      thresholds = (thresholds < threshold).astype(int)
+      thresholds = (thresholds < threshold_dictionary.get(thresholdname).get('value')).astype(int)
       
     else:
       print('Invalid threshold type')
@@ -78,11 +106,9 @@ def calculate_matrix(dataset, threshold, thresholdtype):
 
 
 
-def calculate_probability_once(variable, data, thresholdname, thresholdsign):
+def calculate_probability_once(data, thresholdname):
     
-    threshold_data = calculate_matrix(dataset=data, 
-                                           threshold=variable_dictionary.get(variable).get(thresholdname), 
-                                           thresholdtype=thresholdsign)
+    threshold_data = calculate_matrix(data, thresholdname)
     
     threshold_probability = np.zeros((threshold_data.shape[1], threshold_data.shape[2]))
     
@@ -95,43 +121,30 @@ def calculate_probability_once(variable, data, thresholdname, thresholdsign):
 
 
 
-
-def calculate_marginal_bias(variable, data_obs, **kwargs):
+def calculate_marginal_bias(thresholds, data_obs, **kwargs):
     
-    high_bias = {}
-    low_bias = {}
+    threshold_obs = {}
     
-    high_obs = calculate_probability_once(variable = variable, 
-                                              data = data_obs, 
-                                              thresholdname = 'high_threshold', 
-                                              thresholdsign = '>')
-    low_obs = calculate_probability_once(variable = variable, 
-                                             data = data_obs, 
-                                             thresholdname = 'low_threshold', 
-                                             thresholdsign = '<')
+    for i in range(len(thresholds)):
     
-    for k in kwargs.keys():
-        
-        high_bias[k] = high_obs*365 - 365*calculate_probability_once(variable = variable, 
-                                                          data = kwargs[k], 
-                                                          thresholdname = 'high_threshold', 
-                                                          thresholdsign = '>')
-        low_bias[k] = low_obs*365 - 365*calculate_probability_once(variable = variable, 
-                                                  data = kwargs[k], 
-                                                  thresholdname = 'low_threshold', 
-                                                  thresholdsign = '<')
+        threshold_obs[i] = calculate_probability_once(data = data_obs, 
+                                                  thresholdname = thresholds[i])
 
     bias_array = np.empty((0, 3))
-    length = len(np.ndarray.flatten(high_bias['raw']))
-       
-    for k in ('raw', *kwargs.keys()):
-           
-        bias_array = np.append(bias_array,
-                                  np.transpose(np.array([[k]*length, ['High']*length, np.transpose(np.ndarray.flatten(high_bias[k]))])), 
+    length = len(np.ndarray.flatten(data_obs[1, : ,:]))
+    
+    for k in kwargs.keys():
+        for i in range(len(thresholds)):
+        
+            bias = threshold_obs[i]*365 - 365*calculate_probability_once(data = kwargs[k], 
+                                                          thresholdname = thresholds[i])
+
+            bias_array = np.append(bias_array,
+                                  np.transpose(np.array([[k]*length, 
+                                                         [threshold_dictionary.get(thresholds[i]).get('name')]*length, 
+                                                         np.transpose(np.ndarray.flatten(bias))])), 
                                   axis = 0)
-        bias_array = np.append(bias_array,
-                                  np.transpose(np.array([[k]*length, ['Low']*length, np.transpose(np.ndarray.flatten(low_bias[k]))])), 
-                                  axis = 0)
+
 
 
     plot_data = pd.DataFrame(bias_array, columns=['Correction Method','Threshold', 'Mean bias (days/year)'])
@@ -162,66 +175,32 @@ def plot_distribution_mean_bias_days(variable, dataset):
 
 
 
-def plot_2d_distribution_mean_bias_days(variable, data_obs, **kwargs):
+def plot_2d_distribution_mean_bias_days(thresholdname, data_obs, **kwargs):
     
-    high_bias = {}
-    low_bias = {}
-    
-    high_obs = calculate_probability_once(variable = variable, 
-                                              data = data_obs, 
-                                              thresholdname = 'high_threshold', 
-                                              thresholdsign = '>')
-    low_obs = calculate_probability_once(variable = variable, 
-                                             data = data_obs, 
-                                             thresholdname = 'low_threshold', 
-                                             thresholdsign = '<')
+    threshold_obs = calculate_probability_once(data = data_obs, thresholdname = thresholdname)
+    bias = {}
     
     for k in kwargs.keys():
         
-        high_bias[k] = high_obs*365 - 365*calculate_probability_once(variable = variable, 
-                                                          data = kwargs[k], 
-                                                          thresholdname = 'high_threshold', 
-                                                          thresholdsign = '>')
-        low_bias[k] = low_obs*365 - 365*calculate_probability_once(variable = variable, 
-                                                  data = kwargs[k], 
-                                                  thresholdname = 'low_threshold', 
-                                                  thresholdsign = '<')
-        
-        
-    arrays_max = max(max(np.ndarray.flatten(np.vstack(list(chain(*high_bias.values()))))),
-                   max(np.ndarray.flatten(np.vstack(list(chain(*low_bias.values()))))))
-    
-    arrays_min = min(min(np.ndarray.flatten(np.vstack(list(chain(*high_bias.values()))))),
-                   min(np.ndarray.flatten(np.vstack(list(chain(*low_bias.values()))))))
-    
-    axis_max = max(abs(arrays_max), abs(arrays_min))
+        bias[k] = threshold_obs*365 - 365*calculate_probability_once(data = kwargs[k], 
+                                                          thresholdname = thresholdname)
+            
+    axis_max = max(abs(max(np.ndarray.flatten(np.vstack(list(chain(*bias.values())))))), 
+                   abs(min(np.ndarray.flatten(np.vstack(list(chain(*bias.values())))))))
     axis_min = -axis_max
     
-    number_biascorrections = len(kwargs.keys())
-    fig_width = 6*number_biascorrections
-    
-    fig, ax = plt.subplots(2, number_biascorrections, figsize=(fig_width, 10))
-
-    fig.suptitle("{} - mean days/year bias of EOT".format(variable_dictionary.get(variable).get('name')))
+    fig_width = 6*len(kwargs.keys())
+    fig, ax = plt.subplots(1, len(kwargs.keys()), figsize=(fig_width, 5))
+    fig.suptitle("{} - bias in days/year".format(threshold_dictionary.get(thresholdname).get('name')))
     
     i=0
-    
     for k in kwargs.keys():
         
-        plot1 = ax[0, i].imshow(high_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[0, i].set_title('{} \n {} > {} {}'.format(k, variable_dictionary.get(variable).get('name'),
-                                                  variable_dictionary.get(variable).get('high_threshold'),
-                                                  variable_dictionary.get(variable).get('unit')))
-        fig.colorbar(plot1, ax=ax[0, i])
-        
-        plot2 = ax[1, i].imshow(low_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[1, i].set_title('{} \n {} < {} {}'.format(k, variable_dictionary.get(variable).get('name'),
-                                                  variable_dictionary.get(variable).get('low_threshold'),
-                                                  variable_dictionary.get(variable).get('unit')))
-        fig.colorbar(plot2, ax=ax[1, i])
-        
+        plot = ax[i].imshow(bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[i].set_title('{}'.format(k))
+        fig.colorbar(plot, ax=ax[i])
         i = i+1
-
+        
     return(fig)
 
 
@@ -230,54 +209,31 @@ def plot_2d_distribution_mean_bias_days(variable, data_obs, **kwargs):
 
 
 
-def compute_spell_length(variable, min_length, **kwargs):
-    
-    spell_length_low = {}
-    spell_length_high = {}
+def compute_spell_length(thresholdname, min_length, **kwargs):
     
     spell_length_array = np.empty((0, 3))
     
     for k in kwargs.keys():
         
-        threshold_data_low = calculate_matrix(kwargs[k],  variable_dictionary.get(variable).get('low_threshold'), '<')
-        threshold_data_high = calculate_matrix(kwargs[k], variable_dictionary.get(variable).get('high_threshold'), '>')
+        threshold_data = calculate_matrix(kwargs[k],  thresholdname)
+        spell_length = np.array([])
         
-        spell_length_once_low = np.array([])
-        spell_length_once_high = np.array([])
-        
-        for i in range(threshold_data_low.shape[1]):
-          for j in range(threshold_data_low.shape[2]):
+        for i in range(threshold_data.shape[1]):
+          for j in range(threshold_data.shape[2]):
             N=0
-            for t in range(threshold_data_low.shape[0]):
-              if threshold_data_low[t, i, j]==1:
+            for t in range(threshold_data.shape[0]):
+              if threshold_data[t, i, j]==1:
                   N=N+1
-              elif (threshold_data_low[t, i, j]==0) and (N!=0):
-                  spell_length_once_low = np.append(spell_length_once_low, N)
+              elif (threshold_data[t, i, j]==0) and (N!=0):
+                  spell_length = np.append(spell_length, N)
                   N=0
-                  
-        for i in range(threshold_data_high.shape[1]):
-          for j in range(threshold_data_high.shape[2]):
-            N=0
-            for t in range(threshold_data_high.shape[0]):
-              if threshold_data_high[t, i, j]==1:
-                  N=N+1
-              elif (threshold_data_high[t, i, j]==0) and (N!=0):
-                  spell_length_once_high = np.append(spell_length_once_high, N)
-                  N=0
-                
-        spell_length_once_low = spell_length_once_low[spell_length_once_low>min_length]
-        spell_length_once_high = spell_length_once_high[spell_length_once_high>min_length]
-        spell_length_high[k] = spell_length_once_high
-        spell_length_low[k] = spell_length_once_low
-        
-        length_low = len(spell_length_once_low)
-        length_high = len(spell_length_once_high)
+  
+        spell_length = spell_length[spell_length>min_length]
         
         spell_length_array = np.append(spell_length_array,
-                               np.transpose(np.array([[k]*length_high, ['High']*length_high, np.transpose(spell_length_high[k])])), 
-                               axis = 0)
-        spell_length_array = np.append(spell_length_array,
-                               np.transpose(np.array([[k]*length_low, ['Low']*length_low, np.transpose(spell_length_low[k])])), 
+                               np.transpose(np.array([[k]*len(spell_length), 
+                                                      [threshold_dictionary.get(thresholdname).get('name')]*len(spell_length), 
+                                                      np.transpose(spell_length)])), 
                                axis = 0)
         
     plot_data = pd.DataFrame(spell_length_array, columns=['Correction Method','Threshold', 'Spell length'])
@@ -287,35 +243,21 @@ def compute_spell_length(variable, min_length, **kwargs):
         
         
 
-
-def calculate_spatiotemporal_clusters(variable, **kwargs):
+def calculate_spatiotemporal_clusters(thresholdname, **kwargs):
     
     clusters_array = np.empty((0, 3))
     
     for k in kwargs.keys():
         
-        high = calculate_matrix(dataset = kwargs[k], 
-                                threshold = variable_dictionary.get(variable).get('high_threshold'),
-                                thresholdtype = '>')
-        high_lw, high_num = measurements.label(high)
-        area_high = measurements.sum(high, high_lw, index=arange(high_lw.max() + 1))
-        
-        low = calculate_matrix(dataset = kwargs[k], 
-                                threshold = variable_dictionary.get(variable).get('low_threshold'),
-                                thresholdtype = '<')
-        low_lw, low_num = measurements.label(low)
-        area_low = measurements.sum(low, low_lw, index=arange(low_lw.max() + 1))
-        
-        length_low = len(area_low)
-        length_high = len(area_high)
-    
-        clusters_array = np.append(clusters_array,
-                               np.transpose(np.array([[k]*length_high, ['High']*length_high, np.transpose(area_high)])), 
-                               axis = 0)
-        clusters_array = np.append(clusters_array,
-                               np.transpose(np.array([[k]*length_low, ['Low']*length_low, np.transpose(area_low)])), 
-                               axis = 0)
+        threshold_data = calculate_matrix(dataset = kwargs[k], 
+                                thresholdname = thresholdname)
+        threshold_data_lw, threshold_data_num = measurements.label(threshold_data)
+        area = measurements.sum(threshold_data, threshold_data_lw, index=arange(threshold_data_lw.max() + 1))
 
+        clusters_array = np.append(clusters_array,
+                               np.transpose(np.array([[k]*len(area), 
+                                            [threshold_dictionary.get(thresholdname).get('name')]*len(area), 
+                                            np.transpose(area)])), axis = 0)
 
     spatiotemporal_clusters = pd.DataFrame(clusters_array, columns=['Correction Method','Threshold', 'Cluster size'])
     spatiotemporal_clusters["Cluster size"] = pd.to_numeric(spatiotemporal_clusters["Cluster size"])
@@ -324,48 +266,29 @@ def calculate_spatiotemporal_clusters(variable, **kwargs):
 
 
 
-def calculate_spatial_count_once(variable, data, thresholdname, thresholdsign):
-    
-    spatial_count = np.array([])
-
-    number_gridpoints = data.shape[1]*data.shape[2]
-
-    threshold_data = calculate_matrix(dataset=data, 
-                                               threshold=variable_dictionary.get(variable).get(thresholdname), 
-                                               thresholdtype=thresholdsign)
-
-    for i in range(threshold_data.shape[0]):
-
-        count = np.sum(threshold_data[i, :, :])/number_gridpoints
-        spatial_count = np.append(spatial_count, count)
-
-    spatial_count = spatial_count[spatial_count!=0]
-
-    return(spatial_count)
-
-
-def calculate_spatial_clusters(variable, **kwargs):
+def calculate_spatial_clusters(thresholdname, **kwargs):
     
     clusters_array = np.empty((0, 3))
     
     for k in kwargs.keys():
         
-        high = calculate_spatial_count_once(variable = 'tas', data = kwargs[k], 
-                                                              thresholdname = 'high_threshold', 
-                                                              thresholdsign = '>')
-        low = calculate_spatial_count_once(variable = 'tas', data = kwargs[k], 
-                                                              thresholdname = 'low_threshold', 
-                                                              thresholdsign = '<')
-        
-        length_low = len(low)
-        length_high = len(high)
+        spatial_count = np.array([])
+
+        number_gridpoints = kwargs[k].shape[1]*kwargs[k].shape[2]
+
+        threshold_data = calculate_matrix(dataset=kwargs[k], thresholdname=thresholdname)
+
+        for i in range(threshold_data.shape[0]):
+
+            count = np.sum(threshold_data[i, :, :])/number_gridpoints
+            spatial_count = np.append(spatial_count, count)
+
+        spatial_count = spatial_count[spatial_count!=0]
         
         clusters_array = np.append(clusters_array,
-                               np.transpose(np.array([[k]*length_high, ['High']*length_high, np.transpose(high)])), 
-                               axis = 0)
-        clusters_array = np.append(clusters_array,
-                               np.transpose(np.array([[k]*length_low, ['Low']*length_low, np.transpose(low)])), 
-                               axis = 0)
+                               np.transpose(np.array([[k]*len(spatial_count), 
+                                                      [threshold_dictionary.get(thresholdname).get('name')]*len(spatial_count), 
+                                                      np.transpose(spatial_count)])), axis = 0)
 
     spatial_clusters = pd.DataFrame(clusters_array, columns=['Correction Method','Threshold', 'Percent of area'])
     spatial_clusters["Percent of area"] = pd.to_numeric(spatial_clusters["Percent of area"])
@@ -374,39 +297,14 @@ def calculate_spatial_clusters(variable, **kwargs):
 
 
 
+def plot_clusters_distribution(thresholdname, plot_data, clustertype):
 
-def plot_clusters_distribution(variable, plot_data, clustertype):
-
-    #fig, ax = plt.subplots(1,1, figsize=(8,6))
-    fig = plt.figure(figsize=(14,10))
-    
-    
-    #plot_data_subset = plot_data[plot_data['Threshold']==thresholdtype]
-    seaborn.set(font_scale=1.4)
-    seaborn.set_style('whitegrid')
+    seaborn.set_style('white')
     p = seaborn.displot(x=plot_data.keys()[2], 
-                     col='Correction Method',
                      data=plot_data, 
-                     row='Threshold',
-                     #kind = 'kde',
-                     #common_norm = True,
-                     #hist = False,
-                     #kde = True,
-                     #fill = False,
-                     #color=selected_color,
+                     kind = 'kde',
                      palette="colorblind",
                      hue='Correction Method'
-                     #element="step"
                      )
-    p.fig.subplots_adjust(top=0.85)
-    #p.set_titles(fontsize = 18)
-    p.set_axis_labels('Spell length','Count', fontsize=18)
-    p.fig.suptitle("{} \n {} clusters of days above high ({}{}) and low ({}{}) threshold".format(variable_dictionary.get(variable).get('name'),
-                                                                                                 clustertype,
-                                                                                                 variable_dictionary.get(variable).get('high_threshold'),
-                                                                                                 variable_dictionary.get(variable).get('unit'),
-                                                                                                 variable_dictionary.get(variable).get('low_threshold'),
-                                                                                                 variable_dictionary.get(variable).get('unit')),
-                  fontsize = 20)
-
-    return(fig)
+    p.fig.subplots_adjust(top=0.9)
+    p.fig.suptitle("{} - {} distribution".format(threshold_dictionary.get(thresholdname).get('name'), clustertype))
