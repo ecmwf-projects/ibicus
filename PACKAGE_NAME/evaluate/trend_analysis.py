@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn
 import pandas as pd
+import math
 
 
 variable_dictionary = {
@@ -34,45 +35,45 @@ variable_dictionary = {
 }
 
 
-def calculate_trend(data_hist, data_future, datatype):
+def calculate_trend_once(data_hist, data_future, datatype):
 
     trend_additive = np.empty((0, 3))
-    trend_multiplicative = np.empty((0, 3))
-    
     
     for i in range(data_hist.shape[1]):
         for j in range(data_hist.shape[2]):
-            
-            for q in range(1, 10):
                 
-              trend_additive = np.append(trend_additive, 
-                                         [[datatype, q/10,np.quantile(data_future[:, i, j], q/10) - np.quantile(data_hist[:, i, j], q/10)]],
+            trend_additive = np.append(trend_additive, 
+                                         [[datatype, '10% qn',np.quantile(data_future[:, i, j], 0.1) - np.quantile(data_hist[:, i, j], 0.1)]],
                                                                      axis = 0)
-              trend_multiplicative = np.append(trend_additive, 
-                                         [[datatype, q/10,np.quantile(data_future[:, i, j], q/10) / np.quantile(data_hist[:, i, j], q/10)]],
+            trend_additive = np.append(trend_additive, 
+                                         [[datatype, '90% qn',np.quantile(data_future[:, i, j], 0.9) - np.quantile(data_hist[:, i, j], 0.9)]],
                                                                      axis = 0)
-                                         
-    return(trend_additive, trend_multiplicative)
+            trend_additive = np.append(trend_additive, 
+                                         [[datatype, 'Mean',np.mean(data_future[:, i, j]) - np.mean(data_hist[:, i, j])]],
+                                                                     axis = 0)
+    return(trend_additive)
 
-def calculate_full_trend_matrix(variable, data_obs_hist, data_obs_future, data_raw_hist, data_raw_future, data_bc_hist, data_bc_future, trendtype, trendtype_number):
+
+def calculate_trend_bias(variable, **kwargs):
     
-    trend_obs = calculate_trend(data_obs_hist, data_obs_future, 'Observations')[trendtype_number]
-    trend_raw = calculate_trend(data_raw_hist, data_raw_future, 'Raw')[trendtype_number]
-    trend_bc = calculate_trend(data_bc_hist, data_bc_future, 'QM')[trendtype_number]
+    trend_data = np.empty((0, 3))
     
-    trend = np.concatenate((trend_obs, trend_raw, trend_bc))
+    for k in kwargs.keys():
     
-    boxplot_data = pd.DataFrame(trend, columns=['Correction Method','Quantile', trendtype])
-    boxplot_data[trendtype] = pd.to_numeric(boxplot_data[trendtype])
+        trend = calculate_trend_once(*kwargs[k],k)
+        trend_data = np.append(trend_data, trend, axis=0)
+    
+    boxplot_data = pd.DataFrame(trend_data, columns=['Correction Method','Metric', 'Additive Trend'])
+    boxplot_data['Additive Trend'] = pd.to_numeric(boxplot_data['Additive Trend'])
 
     fig = plt.figure(figsize=(10, 6))
-    seaborn.boxplot(y=trendtype, x='Quantile', 
+    seaborn.boxplot(y='Additive Trend', x='Metric', 
                  data=boxplot_data, 
                  palette="colorblind",
                  hue='Correction Method')
-    fig.suptitle('{} - {}'.format(variable_dictionary.get(variable).get('name'), trendtype))
+    fig.suptitle('{} - additive trend'.format(variable_dictionary.get(variable).get('name')))
 
-    return(fig)    
-        
+    return(fig)  
+
         
 

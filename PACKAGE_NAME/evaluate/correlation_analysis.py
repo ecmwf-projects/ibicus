@@ -52,7 +52,7 @@ variable_dictionary = {
 
 
 
-def calculate_moransi_spatial(dataset):
+'''def calculate_moransi_spatial(dataset):
     
     moransi = np.zeros(dataset.shape[0])
     
@@ -67,48 +67,54 @@ def calculate_moransi_spatial(dataset):
         mi = Moran(Z, w)
         moransi[i] = mi.I
 
-    return(moransi)
+    return(moransi)'''
 
 
 
-def rmse_spatial_correlation(variable, name_BC, data_obs, data_raw, data_bc):
+import math
+import sklearn
 
-  rmsd_raw = np.zeros((data_obs.shape[1], data_obs.shape[2]))
-  rmsd_bc = np.zeros((data_obs.shape[1], data_obs.shape[2]))
-
-  for a in range(data_obs.shape[1]):
-    for b in range(data_obs.shape[2]):
-
-        corr_matrix_obs = np.zeros((data_obs.shape[1], data_obs.shape[2]))
-        corr_matrix_raw = np.zeros((data_raw.shape[1], data_raw.shape[2]))
-        corr_matrix_bc = np.zeros((data_bc.shape[1], data_bc.shape[2]))
-
-        for i in range(data_obs.shape[1]):
-          for j in range(data_obs.shape[2]):
-            corr_matrix_obs[i,j] = np.corrcoef(data_obs[:,a,b], data_obs[:,i,j])[0,1]
-            corr_matrix_raw[i,j] = np.corrcoef(data_raw[:,a,b], data_raw[:,i,j])[0,1]
-            corr_matrix_bc[i,j] = np.corrcoef(data_bc[:,a,b], data_bc[:,i,j])[0,1]
-
-        rmsd_raw[a,b] = sqrt(mean_squared_error(corr_matrix_obs, corr_matrix_raw))
-        rmsd_bc[a,b] = sqrt(mean_squared_error(corr_matrix_obs, corr_matrix_bc))
+def rmse_spatial_correlation_distribution(variable, data_obs, **kwargs):
     
-    array1 = np.transpose(np.array([['Raw']*len(np.ndarray.flatten(rmsd_raw)), 
-                                    np.transpose(np.ndarray.flatten(rmsd_raw))]))
-    array2 = np.transpose(np.array([[name_BC]*len(np.ndarray.flatten(rmsd_bc)), 
-                                    np.transpose(np.ndarray.flatten(rmsd_bc))]))
+    rmsd_array = np.empty((0, 2))
     
-    arrays = np.concatenate((array1, array2))
+    for k in kwargs.keys():
+        
+        rmsd = np.zeros((data_obs.shape[1], data_obs.shape[2]))
+        
+        for a in range(data_obs.shape[1]):
+            for b in range(data_obs.shape[2]):
+
+                corr_matrix_obs = np.zeros((data_obs.shape[1], data_obs.shape[2]))
+                corr_matrix_cm = np.zeros((data_obs.shape[1], data_obs.shape[2]))
+
+
+                for i in range(data_obs.shape[1]):
+                      for j in range(data_obs.shape[2]):
+                            
+                            corr_matrix_obs[i,j] = np.corrcoef(data_obs[:,a,b], data_obs[:,i,j])[0,1]
+                            corr_matrix_cm[i,j] = np.corrcoef(kwargs[k][:,a,b], kwargs[k][:,i,j])[0,1]
+
+                rmsd[a,b] = math.sqrt(sklearn.metrics.mean_squared_error(corr_matrix_obs, corr_matrix_cm))
+
+        array = np.transpose(np.array([[k]*len(np.ndarray.flatten(rmsd)), 
+                                    np.transpose(np.ndarray.flatten(rmsd))]))
+        
+        rmsd_array = np.append(rmsd_array, array, axis = 0)
     
-    spatial_corr = pd.DataFrame(arrays, columns=['Correction Method', 'RMSE spatial correlation'])
-    spatial_corr["RMSE spatial correlation"] = pd.to_numeric(spatial_corr["RMSE spatial correlation"])
+
     
-    return(spatial_corr)
+    rmsd_data = pd.DataFrame(rmsd_array, columns=['Correction Method', 'RMSE spatial correlation'])
+    rmsd_data["RMSE spatial correlation"] = pd.to_numeric(rmsd_data["RMSE spatial correlation"])
+    
+    return(rmsd_data)
 
 
 def rmse_spatial_correlation_boxplot(variable, dataset):
     
     fig = plt.figure(figsize=(8, 6))
-    seaborn.violinplot(y='RMSE spatial correlation', x='RMSE spatial correlation', 
+    seaborn.boxplot(y='RMSE spatial correlation',
+                    x='Correction Method',
                    data=dataset, 
                    palette="colorblind")
 
