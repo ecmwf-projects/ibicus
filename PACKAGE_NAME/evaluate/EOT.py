@@ -198,9 +198,9 @@ def plot_2d_distribution_mean_bias_days(variable, data_obs, **kwargs):
     axis_min = -axis_max
     
     number_biascorrections = len(kwargs.keys())
-    fig_length = 6*number_biascorrections
+    fig_width = 6*number_biascorrections
     
-    fig, ax = plt.subplots(number_biascorrections ,2, figsize=(12,fig_length))
+    fig, ax = plt.subplots(2, number_biascorrections, figsize=(fig_width, 10))
 
     fig.suptitle("{} - mean days/year bias of EOT".format(variable_dictionary.get(variable).get('name')))
     
@@ -208,17 +208,17 @@ def plot_2d_distribution_mean_bias_days(variable, data_obs, **kwargs):
     
     for k in kwargs.keys():
         
-        plot1 = ax[i, 0].imshow(high_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[i, 0].set_title('{} \n {} > {} {}'.format(k, variable_dictionary.get(variable).get('name'),
+        plot1 = ax[0, i].imshow(high_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[0, i].set_title('{} \n {} > {} {}'.format(k, variable_dictionary.get(variable).get('name'),
                                                   variable_dictionary.get(variable).get('high_threshold'),
                                                   variable_dictionary.get(variable).get('unit')))
-        fig.colorbar(plot1, ax=ax[i, 0])
+        fig.colorbar(plot1, ax=ax[0, i])
         
-        plot2 = ax[i, 1].imshow(low_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[i, 1].set_title('{} \n {} < {} {}'.format(k, variable_dictionary.get(variable).get('name'),
+        plot2 = ax[1, i].imshow(low_bias[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
+        ax[1, i].set_title('{} \n {} < {} {}'.format(k, variable_dictionary.get(variable).get('name'),
                                                   variable_dictionary.get(variable).get('low_threshold'),
                                                   variable_dictionary.get(variable).get('unit')))
-        fig.colorbar(plot2, ax=ax[i, 1])
+        fig.colorbar(plot2, ax=ax[1, i])
         
         i = i+1
 
@@ -375,22 +375,38 @@ def calculate_spatial_clusters(variable, **kwargs):
 
 
 
-def clusters_distribution(variable, plot_data, clustertype):
+def plot_clusters_distribution(variable, plot_data, clustertype):
 
     #fig, ax = plt.subplots(1,1, figsize=(8,6))
-    fig = plt.figure(figsize=(8,6))
-    #fig.suptitle('This is a somewhat long figure title', fontsize=16)
-
-    seaborn.displot(x=plot_data.keys()[2], 
-                     col='Threshold',
+    fig = plt.figure(figsize=(14,10))
+    
+    
+    #plot_data_subset = plot_data[plot_data['Threshold']==thresholdtype]
+    seaborn.set(font_scale=1.4)
+    seaborn.set_style('whitegrid')
+    p = seaborn.displot(x=plot_data.keys()[2], 
+                     col='Correction Method',
                      data=plot_data, 
+                     row='Threshold',
                      #kind = 'kde',
                      #common_norm = True,
                      #hist = False,
                      #kde = True,
                      #fill = False,
+                     #color=selected_color,
                      palette="colorblind",
-                     hue='Correction Method',
-                     element="step"
+                     hue='Correction Method'
+                     #element="step"
                      )
+    p.fig.subplots_adjust(top=0.85)
+    #p.set_titles(fontsize = 18)
+    p.set_axis_labels('Spell length','Count', fontsize=18)
+    p.fig.suptitle("{} \n {} clusters of days above high ({}{}) and low ({}{}) threshold".format(variable_dictionary.get(variable).get('name'),
+                                                                                                 clustertype,
+                                                                                                 variable_dictionary.get(variable).get('high_threshold'),
+                                                                                                 variable_dictionary.get(variable).get('unit'),
+                                                                                                 variable_dictionary.get(variable).get('low_threshold'),
+                                                                                                 variable_dictionary.get(variable).get('unit')),
+                  fontsize = 20)
+
     return(fig)
