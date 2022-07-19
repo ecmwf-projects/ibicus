@@ -24,6 +24,7 @@ from ..utils import (
     interp_sorted_cdf_vals_on_given_length,
     month,
     quantile_map_non_parametically,
+    quantile_map_x_on_y_non_parametically,
     sort_array_like_another_one,
     threshold_cdf_vals,
     year,
@@ -79,6 +80,7 @@ class ISIMIP(Debiaser):
     event_likelihood_adjustment: bool = attrs.field(
         default=False, validator=attrs.validators.instance_of(bool)
     )  # step 6
+    nonparametric_qm: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))  # step6
 
     # math functions
     ecdf_method: str = attrs.field(
@@ -262,15 +264,36 @@ class ISIMIP(Debiaser):
             a = self.lower_bound
             b = self.upper_bound
 
-            # Formula 8
-            condition1 = q_cm_hist > q_cm_future
-            condition2 = np.isclose(q_cm_hist, q_cm_future)
-
-            return_vals = b - (b - obs_hist) * (b - q_cm_future) / (b - q_cm_hist)
-            return_vals[condition1] = a + (obs_hist[condition1] - a) * (q_cm_future[condition1] - a) / (
-                q_cm_hist[condition1] - a
+            mask_negative_bias = q_cm_hist < q_obs_hist
+            mask_zero_bias = np.isclose(q_cm_hist, q_obs_hist)
+            mask_positive_bias = q_cm_hist > q_obs_hist
+            mask_additive_correction = np.logical_or(
+                np.logical_and(mask_negative_bias, q_cm_future < q_cm_hist),
+                np.logical_and(mask_positive_bias, q_cm_future > q_cm_hist),
             )
-            return_vals[condition2] = obs_hist[condition2]
+
+            return_vals = np.empty_like(q_cm_future)
+
+            # New and updated formula for climate change transfer to observations for bounded variables, >= isimipv2.3
+            return_vals[mask_negative_bias] = b - (b - q_obs_hist[mask_negative_bias]) * (
+                b - q_cm_future[mask_negative_bias]
+            ) / (b - q_cm_hist[mask_negative_bias])
+
+            return_vals[mask_zero_bias] = q_cm_future[mask_zero_bias]
+
+            return_vals[mask_positive_bias] = a + (q_obs_hist[mask_positive_bias] - a) * (
+                q_cm_future[mask_positive_bias] - a
+            ) / (q_cm_hist[mask_positive_bias] - a)
+
+            return_vals[mask_additive_correction] = (
+                q_obs_hist[mask_additive_correction]
+                + q_cm_future[mask_additive_correction]
+                - q_cm_hist[mask_additive_correction]
+            )
+
+            # Enforce bounds:
+            return_vals = np.maximum(a, np.minimum(return_vals, b))
+
             return return_vals
         else:
             raise ValueError(
@@ -368,12 +391,21 @@ class ISIMIP(Debiaser):
 
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
         if self.has_threshold:
-            cm_future_sorted_entries_not_sent_to_bound = quantile_map_non_parametically(
-                cm_future_sorted_entries_not_sent_to_bound,
-                cm_future_sorted_entries_between_thresholds,
-                self.mode_non_parametric_quantile_mapping,
-                self.ecdf_method,
-                self.iecdf_method,
+            cm_future_sorted_entries_not_sent_to_bound = quantile_map_x_on_y_non_parametically(
+                x=cm_future_sorted_entries_not_sent_to_bound,
+                y=cm_future_sorted_entries_between_thresholds,
+                mode=self.mode_non_parametric_quantile_mapping,
+                ecdf_method=self.ecdf_method,
+                iecdf_method=self.iecdf_method,
+            )
+
+        if self.nonparametric_qm:
+            return quantile_map_non_parametically(
+                x=cm_hist_sorted_entries_between_thresholds,
+                y=obs_future_sorted_entries_between_thresholds,
+                vals=cm_future_sorted_entries_not_sent_to_bound,
+                ecdf_method=self.ecdf_method,
+                iecdf_method=self.iecdf_method,
             )
 
         # ISIMIP v2.5: fix location and scale as function of upper and lower threshold

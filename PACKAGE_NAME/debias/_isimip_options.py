@@ -33,6 +33,7 @@ isimip_2_5 = {
             "trend_preservation_method": "bounded",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": True,  # >= v2.4.1 step 6
         },
         "pr": {
             "lower_bound": 0,
@@ -43,6 +44,7 @@ isimip_2_5 = {
             "trend_preservation_method": "mixed",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "prsnratio": {
             "lower_bound": 0,
@@ -53,6 +55,7 @@ isimip_2_5 = {
             "trend_preservation_method": "bounded",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": True,  # >= v2.4.1 step 6
         },
         "psl": {
             "lower_bound": -np.inf,
@@ -63,6 +66,7 @@ isimip_2_5 = {
             "trend_preservation_method": "additive",
             "detrending": True,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "rsds": {
             "lower_bound": 0,
@@ -73,6 +77,7 @@ isimip_2_5 = {
             "trend_preservation_method": "bounded",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": True,  # >= v2.4.1 step 6
         },
         "rlds": {
             "lower_bound": -np.inf,
@@ -83,6 +88,7 @@ isimip_2_5 = {
             "trend_preservation_method": "additive",
             "detrending": True,
             "event_likelihood_adjustment": False,
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "sfcWind": {
             "lower_bound": 0,
@@ -93,6 +99,7 @@ isimip_2_5 = {
             "trend_preservation_method": "mixed",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "tas": {
             "lower_bound": -np.inf,
@@ -104,6 +111,7 @@ isimip_2_5 = {
             "detrending": True,
             "event_likelihood_adjustment": False,
             "reasonable_physical_range": [0, 400],  # TODO: needs to appear everywhere
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "tasrange": {
             "lower_bound": 0,
@@ -114,6 +122,7 @@ isimip_2_5 = {
             "trend_preservation_method": "mixed",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": False,  # >= v2.4.1 step 6
         },
         "tasskew": {
             "lower_bound": 0,
@@ -124,6 +133,7 @@ isimip_2_5 = {
             "trend_preservation_method": "bounded",
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
+            "nonparametric_qm": True,  # >= v2.4.1 step 6
         },
     },
 }
