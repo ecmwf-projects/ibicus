@@ -19,7 +19,7 @@ from PACKAGE_NAME.utils import (
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
     iecdf,
-    quantile_map_non_parametically,
+    quantile_map_x_on_y_non_parametically,
 )
 
 
@@ -66,16 +66,16 @@ class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
                 < self.min_distance
             )
 
-    def test_quantile_map_non_parametically_same_vector(self):
+    def test_quantile_map_x_on_y_non_parametically_same_vector(self):
         x = np.random.random(1000)
 
-        assert all(np.isclose(x, quantile_map_non_parametically(x, x)))
+        assert all(np.isclose(x, quantile_map_x_on_y_non_parametically(x, x)))
 
-    def test_quantile_map_non_parametically_translation(self):
+    def test_quantile_map_x_on_y_non_parametically_translation(self):
         x = np.random.random(1000)
         y = x + 100
 
-        assert all(np.isclose(y, quantile_map_non_parametically(x, y)))
+        assert all(np.isclose(y, quantile_map_x_on_y_non_parametically(x, y)))
 
 
 class Testgen_PrecipitationGammaLeftCensoredModel(unittest.TestCase):
