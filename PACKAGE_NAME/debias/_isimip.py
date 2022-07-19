@@ -207,11 +207,19 @@ class ISIMIP(Debiaser):
 
     # ----- Non public helpers: ISIMIP-steps ----- #
 
-    @staticmethod
-    def _step2_impute_values(x):
-        if all(np.isnan(x)):
-            raise ValueError("Step2: Imputation not possible because all values are Nan.")
-        return np.where(np.isnan(x), iecdf(x=x, p=np.random.uniform(size=x.size)), x)
+    def _needs_imputation(self, x):
+        return (np.isnan(x)) | (x < self.lower_bound) | (x > self.upper_bound)
+
+    def _step2_impute_values(self, x):
+        if all(mask_values_to_impute := self._needs_imputation(x)):
+            raise ValueError("Step2: Imputation not possible because all values are not defined.")
+
+        x[mask_values_to_impute] = iecdf(
+            x=x[np.logical_not(mask_values_to_impute)],
+            p=np.random.uniform(size=mask_values_to_impute.sum()),
+            method=self.iecdf_method,
+        )
+        return x
 
     def _step3_remove_trend(self, x, years):
 
@@ -390,7 +398,7 @@ class ISIMIP(Debiaser):
     ):
 
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
-        if self.has_threshold:
+        if self.has_threshold and not self.nonparametric_qm:
             cm_future_sorted_entries_not_sent_to_bound = quantile_map_x_on_y_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
                 y=cm_future_sorted_entries_between_thresholds,
@@ -401,7 +409,7 @@ class ISIMIP(Debiaser):
 
         if self.nonparametric_qm:
             return quantile_map_non_parametically(
-                x=cm_hist_sorted_entries_between_thresholds,
+                x=cm_future_sorted_entries_not_sent_to_bound,
                 y=obs_future_sorted_entries_between_thresholds,
                 vals=cm_future_sorted_entries_not_sent_to_bound,
                 ecdf_method=self.ecdf_method,
@@ -589,9 +597,9 @@ class ISIMIP(Debiaser):
         Step 2: impute values for prsnratio which are missing on days where there is no precipitation. They are imputed by effectively sampling the iecdf (see Lange 2019 and ISIMIP3b factsheet for the method).
         """
         if self.variable == "prsnratio":
-            obs_hist = ISIMIP._step2_impute_values(obs_hist)
-            cm_hist = ISIMIP._step2_impute_values(cm_hist)
-            cm_future = ISIMIP._step2_impute_values(cm_future)
+            obs_hist = self._step2_impute_values(obs_hist)
+            cm_hist = self._step2_impute_values(cm_hist)
+            cm_future = self._step2_impute_values(cm_future)
 
         return obs_hist, cm_hist, cm_future
 
@@ -868,7 +876,7 @@ class ISIMIP(Debiaser):
                 obs[:, i, j],
                 cm_hist[:, i, j],
                 cm_future[:, i, j],
-                **kwargs,  # **ISIMIP._unpack_kwargs_and_get_locationwise_info(i, j, **kwargs),
+                **kwargs,
             )
 
         return output
