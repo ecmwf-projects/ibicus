@@ -13,7 +13,6 @@ isimip_2_5 = {
     "isimip_run": {
         # ISIMIP behavior
         "trend_removal_with_significance_test": True,  # >= v2.1, step 3
-        "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
         # math_helpers
         "ecdf_method": "linear_interpolation",
         "iecdf_method": "linear",
@@ -34,6 +33,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": True,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": False,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": False,  # v >= 2.5, step 6
         },
         "pr": {
             "lower_bound": 0,
@@ -45,6 +46,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "prsnratio": {
             "lower_bound": 0,
@@ -56,6 +59,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": True,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "psl": {
             "lower_bound": -np.inf,
@@ -67,6 +72,8 @@ isimip_2_5 = {
             "detrending": True,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "rsds": {
             "lower_bound": 0,
@@ -78,6 +85,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": True,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "rlds": {
             "lower_bound": -np.inf,
@@ -89,6 +98,8 @@ isimip_2_5 = {
             "detrending": True,
             "event_likelihood_adjustment": False,
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "sfcWind": {
             "lower_bound": 0,
@@ -100,6 +111,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "tas": {
             "lower_bound": -np.inf,
@@ -112,6 +125,8 @@ isimip_2_5 = {
             "event_likelihood_adjustment": False,
             "reasonable_physical_range": [0, 400],  # TODO: needs to appear everywhere
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "tasrange": {
             "lower_bound": 0,
@@ -123,6 +138,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": False,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
         "tasskew": {
             "lower_bound": 0,
@@ -134,6 +151,8 @@ isimip_2_5 = {
             "detrending": False,
             "event_likelihood_adjustment": False,  # >= v2.5 step 6
             "nonparametric_qm": True,  # >= v2.4.1 step 6
+            "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+            "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
     },
 }

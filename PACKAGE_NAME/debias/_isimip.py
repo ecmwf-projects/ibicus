@@ -77,6 +77,9 @@ class ISIMIP(Debiaser):
     trend_transfer_only_for_values_within_threshold: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )  # step 5
+    adjust_frequencies_of_values_beyond_thresholds: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )  # step 6
     event_likelihood_adjustment: bool = attrs.field(
         default=False, validator=attrs.validators.instance_of(bool)
     )  # step 6
@@ -551,10 +554,12 @@ class ISIMIP(Debiaser):
         """
         if window_center == 366:
             indices_center = np.where(days_of_years == 365)[0] + 1
+            years_indices_center = years[indices_center - 1]
         else:
             indices_center = np.where(days_of_years == window_center)[0]
+            years_indices_center = years[indices_center]
 
-        if (unique_years := np.unique(years)).size == 1:
+        if np.unique(years).size == 1:
             # If timeseries spans only one year then we only circle through this year anyway and do not need to match running windows together
             indices = np.concatenate(
                 [
@@ -565,19 +570,21 @@ class ISIMIP(Debiaser):
             indices = indices[(indices <= days_of_years.size) & (indices >= 0)]
         else:
             # If timeseries spans multiple year make sure that indices in window-center that get bc-values are only always in one year.
+            years_indices_center = np.unique(years_indices_center)
             indices = np.array(
                 [
                     index
-                    for index_nr, i in enumerate(indices_center)
+                    for index_nr, index_window_center, in enumerate(indices_center)
                     # Compute indices in window-center to store bc values inside
                     for index in np.mod(
                         np.arange(
-                            i - self.running_window_step_length // 2, i + self.running_window_step_length // 2 + 1
+                            index_window_center - self.running_window_step_length // 2,
+                            index_window_center + self.running_window_step_length // 2 + 1,
                         ),
                         days_of_years.size,
                     )
                     # Make sure these indices are in the respective year
-                    if years[index] == unique_years[index_nr]
+                    if years[index] == years_indices_center[index_nr]
                 ]
             )
 
@@ -696,15 +703,23 @@ class ISIMIP(Debiaser):
         # Calculate values that are set to lower bound for bounded/thresholded variables
         mask_for_entries_to_set_to_lower_bound = np.zeros_like(cm_future_sorted, dtype=bool)
         if self.has_lower_threshold:
-            mask_for_entries_to_set_to_lower_bound = self._step6_get_mask_for_entries_to_set_to_lower_bound(
-                obs_hist_sorted, cm_hist_sorted, cm_future_sorted
+            mask_for_entries_to_set_to_lower_bound = (
+                self._step6_get_mask_for_entries_to_set_to_lower_bound(
+                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
+                )
+                if self.adjust_frequencies_of_values_beyond_thresholds
+                else self._get_mask_for_values_beyond_lower_threshold(obs_hist_sorted)
             )
 
         # Calculate values that are set to lower bound for bounded/thresholded variables
         mask_for_entries_to_set_to_upper_bound = np.zeros_like(cm_future_sorted, dtype=bool)
         if self.has_upper_threshold:
-            mask_for_entries_to_set_to_upper_bound = self._step6_get_mask_for_entries_to_set_to_upper_bound(
-                obs_hist_sorted, cm_hist_sorted, cm_future_sorted
+            mask_for_entries_to_set_to_upper_bound = (
+                self._step6_get_mask_for_entries_to_set_to_upper_bound(
+                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
+                )
+                if self.adjust_frequencies_of_values_beyond_thresholds
+                else self._get_mask_for_values_beyond_upper_threshold(obs_hist_sorted)
             )
         # Set values to upper or lower bound for bounded/thresholded variables
         mapped_vals[mask_for_entries_to_set_to_lower_bound] = self.lower_bound
