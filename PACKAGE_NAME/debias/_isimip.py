@@ -241,6 +241,36 @@ class ISIMIP(Debiaser):
         x = x - trend
         return x, trend
 
+    def _step4_randomize_values_between_lower_threshold_and_bound(self, vals):
+        mask_vals_beyond_lower_threshold = self._get_mask_for_values_beyond_lower_threshold(vals)
+        randomised_values_between_threshold_and_bound = np.sort(
+            np.random.uniform(
+                size=mask_vals_beyond_lower_threshold.sum(),
+                low=self.lower_bound,
+                high=self.lower_threshold,
+            )
+        )
+        vals[mask_vals_beyond_lower_threshold] = sort_array_like_another_one(
+            randomised_values_between_threshold_and_bound,
+            vals[mask_vals_beyond_lower_threshold],
+        )
+        return vals
+
+    def _step4_randomize_values_between_upper_threshold_and_bound(self, vals):
+        mask_vals_beyond_upper_threshold = self._get_mask_for_values_beyond_upper_threshold(vals)
+        randomised_values_between_threshold_and_bound = np.sort(
+            np.random.uniform(
+                size=mask_vals_beyond_upper_threshold.sum(),
+                low=self.upper_threshold,
+                high=self.upper_bound,
+            )
+        )
+        vals[mask_vals_beyond_upper_threshold] = sort_array_like_another_one(
+            randomised_values_between_threshold_and_bound,
+            vals[mask_vals_beyond_upper_threshold],
+        )
+        return vals
+
     def _step5_transfer_trend(self, obs_hist, cm_hist, cm_future):
         # Compute p = F_obs_hist(x) with x in obs_hist
         p = ecdf(obs_hist, obs_hist, method=self.ecdf_method)
@@ -627,40 +657,22 @@ class ISIMIP(Debiaser):
             cm_future, trend_cm_future = self._step3_remove_trend(cm_future, years_cm_future)
         return obs_hist, cm_hist, cm_future, trend_cm_future
 
-    def step4(self, cm_future):
+    def step4(self, obs_hist, cm_hist, cm_future):
         """
         Step4: If the variable is bounded then values between the threshold and corresponding bound (including values equal to the bound) are
         randomized uniformly between the threshold and bound and resorted according to the order in which they were before.
         """
         if self.has_lower_bound and self.has_lower_threshold:
-            mask_cm_future_values_beyond_lower_threshold = self._get_mask_for_values_beyond_lower_threshold(cm_future)
-            randomised_values_between_threshold_and_bound = np.sort(
-                np.random.uniform(
-                    size=mask_cm_future_values_beyond_lower_threshold.sum(),
-                    low=self.lower_bound,
-                    high=self.lower_threshold,
-                )
-            )
-            cm_future[mask_cm_future_values_beyond_lower_threshold] = sort_array_like_another_one(
-                randomised_values_between_threshold_and_bound,
-                cm_future[mask_cm_future_values_beyond_lower_threshold],
-            )
+            obs_hist = self._step4_randomize_values_between_lower_threshold_and_bound(obs_hist)
+            cm_hist = self._step4_randomize_values_between_lower_threshold_and_bound(cm_hist)
+            cm_future = self._step4_randomize_values_between_lower_threshold_and_bound(cm_future)
 
         if self.has_upper_bound and self.has_upper_threshold:
-            mask_cm_future_values_beyond_upper_threshold = self._get_mask_for_values_beyond_upper_threshold(cm_future)
-            randomised_values_between_threshold_and_bound = np.sort(
-                np.random.uniform(
-                    size=mask_cm_future_values_beyond_upper_threshold.sum(),
-                    low=self.upper_threshold,
-                    high=self.upper_bound,
-                )
-            )
-            cm_future[mask_cm_future_values_beyond_upper_threshold] = sort_array_like_another_one(
-                randomised_values_between_threshold_and_bound,
-                cm_future[mask_cm_future_values_beyond_upper_threshold],
-            )
+            obs_hist = self._step4_randomize_values_between_upper_threshold_and_bound(obs_hist)
+            cm_hist = self._step4_randomize_values_between_upper_threshold_and_bound(cm_hist)
+            cm_future = self._step4_randomize_values_between_upper_threshold_and_bound(cm_future)
 
-        return cm_future
+        return obs_hist, cm_hist, cm_future
 
     # Generate pseudo future observations and transfer trends
     def step5(self, obs_hist, cm_hist, cm_future):
@@ -772,7 +784,7 @@ class ISIMIP(Debiaser):
         obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(
             obs_hist, cm_hist, cm_future, years_obs_hist, years_cm_hist, years_cm_future
         )
-        cm_future = self.step4(cm_future)
+        obs_hist, cm_hist, cm_future = self.step4(obs_hist, cm_hist, cm_future)
         obs_future = self.step5(obs_hist, cm_hist, cm_future)
         cm_future = self.step6(obs_hist, obs_future, cm_hist, cm_future)
         cm_future = self.step7(cm_future, trend_cm_future)
