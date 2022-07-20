@@ -251,7 +251,7 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         p0 = fit[0]
         fit_rainy_days = fit[1]
 
-        if not self.randomization:
+        if not self.cdf_randomization:
             return np.where(x == 0, p0, p0 + (1 - p0) * self.distribution.cdf(x, *fit_rainy_days))
         else:
             return np.where(
