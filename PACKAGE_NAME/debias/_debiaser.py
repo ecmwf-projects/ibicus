@@ -57,10 +57,10 @@ class Debiaser:
 
     # Helpers
     @staticmethod
-    def map_over_locations(func, output_size, obs, cm_hist, cm_future):
+    def map_over_locations(func, output_size, obs, cm_hist, cm_future, **kwargs):
         output = np.empty(output_size, dtype=cm_future.dtype)
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
+            output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs)
         return output
 
     # Apply functions:
@@ -74,6 +74,6 @@ class Debiaser:
         Debiaser.check_inputs(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
-            self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
+            self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future, **kwargs
         )
         return output

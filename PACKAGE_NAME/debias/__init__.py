@@ -11,6 +11,7 @@
 debias-module: provides functionality to debias climate models
 """
 
+from ._cdft import CDFt
 from ._debiaser import *
 from ._delta_change import DeltaChange
 from ._equidistant_cdf_matching import EquidistantCDFMatching

@@ -471,7 +471,7 @@ def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
         return np.quantile(x, p, method=method, **kwargs)
 
 
-def ecdf(x: np.array, y: np.array, method: str = "step_function") -> np.array:
+def ecdf(x: np.ndarray, y: np.ndarray, method: str = "step_function") -> np.ndarray:
     """
     Return the values of the empirical cdf of x evaluated at y:
 
