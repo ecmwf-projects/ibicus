@@ -11,10 +11,13 @@ from typing import Union
 import attrs
 import numpy as np
 import scipy
-from statsmodels.distributions.empirical_distribution import ECDF
 
-from ..utils import StatisticalModel, gen_PrecipitationGammaLeftCensoredModel
-from ..variable_distribution_match import standard_distributions
+from ..utils import (
+    StatisticalModel,
+    ecdf,
+    gen_PrecipitationGammaLeftCensoredModel,
+    threshold_cdf_vals,
+)
 from ..variables import (
     Precipitation,
     Temperature,
@@ -42,6 +45,13 @@ class QuantileDeltaMapping(Debiaser):
     )
     time_window_length: int = attrs.field(validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)])
     variable: str = attrs.field(default="unknown", eq=False)
+
+    # Calculation parameters
+    ecdf_method: str = attrs.field(
+        default="linear_interpolation",
+        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
+    )
+    cdf_threshold: int = attrs.field(default="1e-10", validator=attrs.validators.instance_of(float))
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], time_window_length: int = 50, **kwargs):
@@ -122,8 +132,10 @@ class QuantileDeltaMapping(Debiaser):
         # Test: time measurements are quite variable. More testing necessary. Which solution is cleaner?
         debiased_cm_list_of_time_windows = []
         for cm_future_time_window in np.array_split(cm_future, self.time_window_length, axis=0):
-            ecdf_cm_future_time_window = ECDF(cm_future_time_window)
-            tau_t = ecdf_cm_future_time_window(cm_future_time_window)
+            tau_t = threshold_cdf_vals(
+                ecdf(cm_future_time_window, cm_future_time_window, method=self.ecdf_method),
+                cdf_threshold=self.cdf_threshold,
+            )
             debiased_cm_list_of_time_windows.append(
                 cm_future_time_window
                 * self.distribution.ppf(tau_t, *fit_obs)
