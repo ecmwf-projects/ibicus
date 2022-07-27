@@ -121,7 +121,7 @@ class EquidistantCDFMatching(Debiaser):
         return cls(**{**parameters, **kwargs})
 
     def apply_location(self, obs, cm_hist, cm_future):
-        fit_obs = self.distribution.fit(cm_hist)
+        fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)
 
