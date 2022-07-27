@@ -51,7 +51,7 @@ class QuantileDeltaMapping(Debiaser):
         default="linear_interpolation",
         validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
     )
-    cdf_threshold: int = attrs.field(default="1e-10", validator=attrs.validators.instance_of(float))
+    cdf_threshold: int = attrs.field(default=1e-10, validator=attrs.validators.instance_of(float))
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], time_window_length: int = 50, **kwargs):
