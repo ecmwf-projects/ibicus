@@ -78,6 +78,20 @@ def plot_histogram(variable, data_obs, data_raw, bin_number=100, **kwargs):
 
 
 def plot_bias_spatial(variable, data_obs, data_raw, **kwargs):
+    
+    """
+    Calculates the bias of the mean, 10th percentile and 90th percentile between the 
+    observational and climate model data at each location and plots their spatial distribution. Function is intended to be applied to data in the validation
+    period.
+
+    Parameters
+    ----------
+    variable : str, variable name is standard form (i.e. 'tas', 'pr', etc)
+    data_obs : three-dimensional array (time, latitude, longitude) of observational data in validation period, numeric entries expected
+    data_raw : three-dimensional array (time, latitude, longitude) of raw (i.e. not bias corrected) climate model data in validation period, numeric entries expected
+    **kwargs: three-dimensional array (time, latitude, longitude) of bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, 
+    the latter being of the same form as data_obs and data_raw, numeric entries expected.
+    """
 
     number_biascorrections = len(kwargs.keys())
     fig_length = 5 + 5*number_biascorrections
@@ -141,7 +155,22 @@ def plot_bias_spatial(variable, data_obs, data_raw, **kwargs):
 
 
 
+
 def plot_bias_distribution(variable, data_obs, data_raw, **kwargs):
+    
+    """
+    Calculates the bias of the mean, 10th percentile and 90th percentile between the 
+    observational and climate model data at each location and plots the distribution of this bias across locations. 
+    Function is intended to be applied to data in the validation period.
+
+    Parameters
+    ----------
+    variable : str, variable name is standard form (i.e. 'tas', 'pr', etc)
+    data_obs : three-dimensional array (time, latitude, longitude) of observational data in validation period, numeric entries expected
+    data_raw : three-dimensional array (time, latitude, longitude) of raw (i.e. not bias corrected) climate model data in validation period, numeric entries expected
+    **kwargs: three-dimensional array (time, latitude, longitude) of bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, 
+    the latter being of the same form as data_obs and data_raw, numeric entries expected.
+    """
 
     mean_obs = np.mean(data_obs, axis=0)
     lowpc_obs = np.quantile(data_obs, 0.1, axis=0)
@@ -155,24 +184,32 @@ def plot_bias_distribution(variable, data_obs, data_raw, **kwargs):
     bias_lowpc['raw'] = 100*(lowpc_obs - np.quantile(data_raw, 0.1, axis=0))/lowpc_obs
     bias_highpc['raw'] = 100*(highpc_obs - np.quantile(data_raw, 0.9, axis=0))/highpc_obs
 
+    bias_array = np.empty((0, 3))
+    
     for k in kwargs.keys():
         
-        bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
-        bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
-        bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
+            bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
 
-    bias_array = np.empty((0, 3))
-    length = len(np.ndarray.flatten(bias_mean['raw']))
-    
+            if np.any(lowpc_obs)==0:
+                bias_lowpc[str(k)]=lowpc_obs # TODO think of what to do here
+            else:
+                bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
+
+            bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
+            
+
     for k in ('raw', *kwargs.keys()):
+    
+            length = len(np.ndarray.flatten(bias_mean['raw']))
+    
         
-        bias_array = np.append(bias_array,
+            bias_array = np.append(bias_array,
                                np.transpose(np.array([[k]*length, ['Mean']*length, np.transpose(np.ndarray.flatten(bias_mean[k]))])), 
                                axis = 0)
-        bias_array = np.append(bias_array,
+            bias_array = np.append(bias_array,
                                np.transpose(np.array([[k]*length, ['10pc']*length, np.transpose(np.ndarray.flatten(bias_lowpc[k]))])), 
                                axis = 0)
-        bias_array = np.append(bias_array,
+            bias_array = np.append(bias_array,
                                np.transpose(np.array([[k]*length, ['90pc']*length, np.transpose(np.ndarray.flatten(bias_highpc[k]))])), 
                                axis = 0)
         

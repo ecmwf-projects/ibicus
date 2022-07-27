@@ -69,6 +69,13 @@ threshold_dictionary = {
         "value": 273,
         "threshold_sign": 'lower',
         "name": 'Cold days (mean)'
+    },
+        "dry": {
+        "variable": 'pr',
+        "variablename": 'Precipitation',
+        "value": 0.000001,
+        "threshold_sign": 'lower',
+        "name": 'Dry days (mean)'
     }
 }
 
@@ -83,8 +90,7 @@ def calculate_matrix(dataset, thresholdname):
     Parameters
     ----------
     dataset : dataset to be analysed, numeric entries expected
-    threshold: numeric threshold value
-    thresholdtype: '>' if values above threshold are to be analysed, '<' values below threshold are to be analysed.
+    thresholdname: name of threshold specified in the threshold dictionary
     """
     
     # TO-DO: show error if thresholdname specified and dataset don't match  
@@ -107,6 +113,15 @@ def calculate_matrix(dataset, thresholdname):
 
 
 def calculate_probability_once(data, thresholdname):
+    
+    """
+    Calculates the probability of exceeding the specified threshold, using the function calculate_matrix to calculate array of 1-0 entries first 
+      
+    Parameters
+    ----------
+    dataset : dataset to be analysed, numeric entries expected
+    thresholdname: name of threshold specified in the threshold dictionary
+    """
     
     threshold_data = calculate_matrix(data, thresholdname)
     
@@ -147,7 +162,7 @@ def calculate_marginal_bias(thresholds, data_obs, **kwargs):
 
 
 
-    plot_data = pd.DataFrame(bias_array, columns=['Correction Method','Threshold', 'Mean bias (days/year)'])
+    plot_data = pd.DataFrame(bias_array, columns=['Correction Method','Metric', 'Mean bias (days/year)'])
     plot_data["Mean bias (days/year)"] = pd.to_numeric(plot_data["Mean bias (days/year)"])
     
     return(plot_data)
@@ -157,19 +172,16 @@ def calculate_marginal_bias(thresholds, data_obs, **kwargs):
 def plot_distribution_mean_bias_days(variable, dataset):
     
     fig = plt.figure(figsize=(10, 6))
-    seaborn.violinplot(y='Mean bias (days/year)', x='Threshold', 
+    seaborn.violinplot(y='Mean bias (days/year)', x='Metric', 
                    data=dataset, 
                    palette="colorblind",
                    hue='Correction Method')
 
 
-    fig.suptitle('{} - Bias \n (high threshold = {}{}, low threshold = {}{})'.format(variable_dictionary.get(variable).get('name'), 
-                                                                              variable_dictionary.get(variable).get('high_threshold'),
-                                                                              variable_dictionary.get(variable).get('unit'),    
-                                                                              variable_dictionary.get(variable).get('low_threshold'),
-                                                                              variable_dictionary.get(variable).get('unit')))
+    fig.suptitle('Distribution of exceedance over threshold bias \n Variable: {}'.format(variable_dictionary.get(variable).get('name')))
+    return(fig)
 
-    return fig
+
 
 
 
