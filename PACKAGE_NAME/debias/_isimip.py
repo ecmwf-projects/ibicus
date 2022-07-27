@@ -87,11 +87,11 @@ class ISIMIP(Debiaser):
 
     # math functions
     ecdf_method: str = attrs.field(
-        default="inverted_cdf",
+        default="step_function",
         validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
     )
     iecdf_method: str = attrs.field(
-        default="step_function",
+        default="inverted_cdf",
         validator=attrs.validators.in_(
             [
                 "inverted_cdf",
