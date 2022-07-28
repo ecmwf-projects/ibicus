@@ -9,6 +9,7 @@
 """math_helpers module - helpers used by different debiasers"""
 
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import attrs
 import numpy as np
@@ -113,7 +114,7 @@ class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
         default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
     )
 
-    def fit(self, data: np.ndarray) -> np.ndarray:
+    def fit(self, data: np.ndarray) -> tuple:
         """
         Fits a precipitation model to the amounts (ignoring zero values).
 
@@ -205,9 +206,12 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
     distribution: scipy.stats.rv_continuous = attrs.field(
         default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
     )
+    fit_kwds: Optional[dict] = attrs.field(
+        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, None))
+    )
     cdf_randomization: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
 
-    def fit(self, data: np.ndarray) -> np.ndarray:
+    def fit(self, data: np.ndarray) -> tuple:
         """
         Fits a precipitation hurdle model and returns parameter estimates.
 
@@ -225,7 +229,7 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         rainy_days = data[data != 0]
 
         p0 = 1 - rainy_days.shape[0] / data.shape[0]
-        fit_rainy_days = self.distribution.fit(rainy_days)
+        fit_rainy_days = self.distribution.fit(rainy_days, **self.fit_kwds)
 
         return (p0, fit_rainy_days)
 

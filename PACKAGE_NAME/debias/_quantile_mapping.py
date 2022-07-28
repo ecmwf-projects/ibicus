@@ -42,6 +42,12 @@ class QuantileMapping(Debiaser):
     )
     variable: str = attrs.field(default="unknown", eq=False)
 
+    # Calculation parameters
+    ecdf_method: str = attrs.field(
+        default="linear_interpolation",
+        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
+    )
+
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         """
@@ -65,11 +71,11 @@ class QuantileMapping(Debiaser):
     @classmethod
     def for_precipitation(
         cls,
-        delta_type,
         precipitation_model_type: str = "censored",
-        precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
+        precipitation_amounts_distribution=scipy.stats.gamma,
         precipitation_censoring_value: float = 0.1,
         precipitation_hurdle_model_randomization: bool = True,
+        precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
     ):
         """
@@ -87,6 +93,8 @@ class QuantileMapping(Debiaser):
             The censoring-value if a censored precipitation model is used.
         precipitation_hurdle_model_randomization: bool
             Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details
+        precipitation_hurdle_model_kwds_for_distribution_fit: dict
+            Dict of parameters used for the distribution fit inside a hurdle model. Standard: location of distribution is fixed at zero (floc = 0) to stabilise Gamma distribution fits in scipy.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
@@ -98,8 +106,13 @@ class QuantileMapping(Debiaser):
             precipitation_amounts_distribution,
             precipitation_censoring_value,
             precipitation_hurdle_model_randomization,
+            precipitation_hurdle_model_kwds_for_distribution_fit,
         )
-        parameters = {"delta_type": delta_type, "distribution": variable.method, "variable": variable.name}
+        parameters = {
+            **default_settings[variable],
+            "distribution": variable.method,
+            "variable": variable.name,
+        }
         return cls(**{**parameters, **kwargs})
 
     def _standard_qm(self, x, fit_cm_hist, fit_obs):

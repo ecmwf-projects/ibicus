@@ -85,6 +85,7 @@ class QuantileDeltaMapping(Debiaser):
         precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
         precipitation_censoring_value: float = 0.1,
         precipitation_hurdle_model_randomization: bool = True,
+        precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
     ):
         """
@@ -101,7 +102,9 @@ class QuantileDeltaMapping(Debiaser):
         precipitation_censoring_value: float
             The censoring-value if a censored precipitation model is used.
         precipitation_hurdle_model_randomization: bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details.
+        precipitation_hurdle_model_kwds_for_distribution_fit: dict
+            Dict of parameters used for the distribution fit inside a hurdle model. Standard: location of distribution is fixed at zero (floc = 0) to stabilise Gamma distribution fits in scipy.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
@@ -113,6 +116,7 @@ class QuantileDeltaMapping(Debiaser):
             precipitation_amounts_distribution,
             precipitation_censoring_value,
             precipitation_hurdle_model_randomization,
+            precipitation_hurdle_model_kwds_for_distribution_fit,
         )
         parameters = {
             **default_settings[variable],
