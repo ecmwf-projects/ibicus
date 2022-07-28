@@ -62,6 +62,7 @@ def map_standard_precipitation_method(
     precipitation_amounts_distribution=scipy.stats.gamma,
     precipitation_censoring_value: float = 0.1,
     precipitation_hurdle_model_randomization: bool = True,
+    precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
 ):
     if precipitation_model_type == "censored":
         if precipitation_model_type == "censored" and precipitation_amounts_distribution != scipy.stats.gamma:
@@ -71,7 +72,9 @@ def map_standard_precipitation_method(
         method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_value=precipitation_censoring_value)
     elif precipitation_model_type == "hurdle":
         method = utils.gen_PrecipitationHurdleModel(
-            precipitation_amounts_distribution, precipitation_hurdle_model_randomization
+            distribution=precipitation_amounts_distribution,
+            fit_kwds=precipitation_hurdle_model_kwds_for_distribution_fit,
+            cdf_randomization=precipitation_hurdle_model_randomization,
         )
     elif precipitation_model_type == "ignore_zeros":
         method = utils.gen_PrecipitationIgnoreZeroValuesModel(precipitation_amounts_distribution)
