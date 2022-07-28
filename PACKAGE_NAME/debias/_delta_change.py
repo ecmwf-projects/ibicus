@@ -95,15 +95,6 @@ class DeltaChange(Debiaser):
         else:
             raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
 
-    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
-        """Applies delta change at one location and returns the debiased timeseries."""
-        if self.delta_type == "additive":
-            return obs + (np.mean(cm_future) - np.mean(cm_hist))
-        elif self.delta_type == "multiplicative":
-            return obs * (np.mean(cm_future) / np.mean(cm_hist))
-        else:
-            raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
-
     def apply(self, obs, cm_hist, cm_future):
         print("----- Running debiasing -----")
         Debiaser.check_inputs(obs, cm_hist, cm_future)
