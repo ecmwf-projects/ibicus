@@ -82,7 +82,7 @@ class EquidistantCDFMatching(Debiaser):
     @classmethod
     def for_precipitation(
         cls,
-        precipitation_model_type: str = "censored",
+        precipitation_model_type: str = "hurdle",
         precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
         precipitation_censoring_value: float = 0.1,
         precipitation_hurdle_model_randomization: bool = True,
