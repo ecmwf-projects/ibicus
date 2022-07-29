@@ -13,6 +13,8 @@ Debiasers implemented:
 - [x] Equidistant CDF Matching following Li et al. 2010
 - [ ] Scaled Distribution Mapping following Switanek 2017
 - [ ] ISIMIP
+- [ ] CDFt
+- [x] Delta Change
 
 A template repository for developing Python packages
 

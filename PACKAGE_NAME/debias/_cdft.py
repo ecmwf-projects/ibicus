@@ -6,14 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from curses import window
-from multiprocessing.sharedctypes import Value
 from typing import Optional, Union
 
 import attrs
 import numpy as np
-import scipy
-import scipy.stats
 
 from ..utils import ecdf, iecdf, month, year
 from ..variables import (
@@ -47,16 +43,30 @@ class CDFt(Debiaser):
 
     If self.SSR = True then Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is used to correct the occurrence in addition to amounts (default for Precipitation). In there all zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
     If self.apply_by_month = True (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
-    If self.running_window_mode = True then
+    If self.running_window_mode = True (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
 
 
 
     Attributes
     ----------
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
-        Method used for the fit to the historical and future climate model outputs as well as the observations. Eg. a beta-distribution for temperature, but also more complex models are possible.
+    SSR: bool
+        If Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is applied to adjust the number of zero values (only relevant for precipitation).
+    delta_shift: str
+        One of ["additive", "multiplicative", "no_shift"]. What kind of shift is applied to the data prior to fitting empirical distributions.
+    apply_by_month: bool
+        Whether CDF-t is applied month by month (default) to account for seasonality or onto the whole dataset at once.
+    running_window_mode: bool
+        Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities.
+    running_window_length_in_years: int
+        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if running_window_mode = True.
+    running_window_step_length_in_years: int
+        Step length of the running window in years: how many values are debiased inside the running window. Only relevant if running_window_mode = True.
     variable: str
         Variable for which the debiasing is done. Default: "unknown".
+    ecdf_method: str
+        One of ["kernel_density", "linear_interpolation", "step_function"], default: "linear_interpolation". Method to calculate the empirical CDF
+    iecdf_method: str
+        One of ["inverted_cdf","averaged_inverted_cdf", closest_observation","interpolated_inverted_cdf","hazen","weibull","linear","median_unbiased","normal_unbiased"], default "linear". Method to calculate the inverse empirical CDF (empirical quantile function).
 
     References:
     Michelangeli, P.-A., Vrac, M., & Loukos, H. (2009). Probabilistic downscaling approaches: Application to wind cumulative distribution functions. In Geophysical Research Letters (Vol. 36, Issue 11). American Geophysical Union (AGU). https://doi.org/10.1029/2009gl038401
