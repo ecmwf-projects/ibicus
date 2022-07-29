@@ -113,6 +113,9 @@ class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
     distribution: scipy.stats.rv_continuous = attrs.field(
         default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
     )
+    fit_kwds: Optional[dict] = attrs.field(
+        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, type(None)))
+    )
 
     def fit(self, data: np.ndarray) -> tuple:
         """
@@ -127,10 +130,13 @@ class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
         Returns
         -------
         tuple
-            Tuple containing parameter estimates: (p0, tuple of parameter estimates for the amounts-distribution).
+            Tuple containing parameter estimates for the amounts-distribution.
         """
         rainy_days = data[data != 0]
-        fit_rainy_days = self.distribution.fit(rainy_days)
+        if self.fit_kwds is None:
+            fit_rainy_days = self.distribution.fit(rainy_days)
+        else:
+            fit_rainy_days = self.distribution.fit(rainy_days, **self.fit_kwds)
 
         return fit_rainy_days
 
@@ -207,7 +213,7 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
     )
     fit_kwds: Optional[dict] = attrs.field(
-        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, None))
+        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, type(None)))
     )
     cdf_randomization: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
 
@@ -229,7 +235,10 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         rainy_days = data[data != 0]
 
         p0 = 1 - rainy_days.shape[0] / data.shape[0]
-        fit_rainy_days = self.distribution.fit(rainy_days, **self.fit_kwds)
+        if self.fit_kwds is None:
+            fit_rainy_days = self.distribution.fit(rainy_days)
+        else:
+            fit_rainy_days = self.distribution.fit(rainy_days, **self.fit_kwds)
 
         return (p0, fit_rainy_days)
 
@@ -307,7 +316,9 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         Value under which observations are censored.
     """
 
-    censoring_value: bool = attrs.field(validator=attrs.validators.instance_of((float)), converter=float)
+    censoring_value: float = attrs.field(
+        default=0.1, validator=[attrs.validators.instance_of((float)), attrs.validators.gt(0)], converter=float
+    )
 
     @staticmethod
     def _fit_censored_gamma(x: np.ndarray, nr_censored_x: int, min_x: float) -> tuple:
