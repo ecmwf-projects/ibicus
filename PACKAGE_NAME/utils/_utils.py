@@ -48,7 +48,7 @@ def sort_array_like_another_one(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 # ----- Datetime functionality -----
 
 
-def day(x):
+def _day(x):
     try:
         return x.day
     except:
@@ -57,10 +57,16 @@ def day(x):
         )
 
 
-day = np.vectorize(day)
+_day = np.vectorize(_day)
 
 
-def month(x):
+def day(x):
+    if np.issubdtype(x.dtype, np.datetime64):
+        x = x.astype(object)
+    return _day(x)
+
+
+def _month(x):
     try:
         return x.month
     except:
@@ -69,10 +75,16 @@ def month(x):
         )
 
 
-month = np.vectorize(month)
+_month = np.vectorize(_month)
 
 
-def year(x):
+def month(x):
+    if np.issubdtype(x.dtype, np.datetime64):
+        x = x.astype(object)
+    return _month(x)
+
+
+def _year(x):
     try:
         return x.year
     except:
@@ -81,9 +93,13 @@ def year(x):
         )
 
 
-year = np.vectorize(year)
+_year = np.vectorize(_year)
 
-import datetime
+
+def year(x):
+    if np.issubdtype(x.dtype, np.datetime64):
+        x = x.astype(object)
+    return _year(x)
 
 
 def day_of_year(x):
@@ -101,3 +117,9 @@ def day_of_year(x):
 
 
 day_of_year = np.vectorize(day_of_year)
+
+
+def create_array_of_consecutive_dates(array_length, start_date=np.datetime64("1950-02-25")):
+    if not isinstance(start_date, np.datetime64):
+        start_date = np.datetime64(start_date)
+    return np.arange(start_date, start_date + np.timedelta64(array_length, "D")).astype(object)

@@ -11,7 +11,7 @@ from typing import Optional, Union
 import attrs
 import numpy as np
 
-from ..utils import ecdf, iecdf, month, year
+from ..utils import create_array_of_consecutive_dates, ecdf, iecdf, month, year
 from ..variables import (
     Precipitation,
     Temperature,
@@ -131,6 +131,24 @@ class CDFt(Debiaser):
         return cls(**{**parameters, **kwargs})
 
     # ----- Helpers: running window mode -----#
+
+    @staticmethod
+    def _infer_and_create_time_arrays_if_not_given(
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        time_obs: Optional[np.ndarray] = None,
+        time_cm_hist: Optional[np.ndarray] = None,
+        time_cm_future: Optional[np.ndarray] = None,
+    ):
+        if time_obs is None:
+            time_obs = create_array_of_consecutive_dates(obs.size)
+        if time_cm_hist is None:
+            time_cm_hist = create_array_of_consecutive_dates(cm_hist.size)
+        if time_cm_future is None:
+            time_cm_future = create_array_of_consecutive_dates(cm_future.size)
+
+        return time_obs, time_cm_hist, time_cm_future
 
     @staticmethod
     def _get_if_in_chosen_years(years, chosen_years):
@@ -310,6 +328,9 @@ class CDFt(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ):
+        time_obs, time_cm_hist, time_cm_future = CDFt._infer_and_create_time_arrays_if_not_given(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         if self.running_window_mode:
             years_cm_future = year(time_cm_future)

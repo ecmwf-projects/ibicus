@@ -17,6 +17,8 @@ import numpy as np
 
 from PACKAGE_NAME.debias import CDFt
 
+np.random.seed(12345)
+
 
 def check_different_maximally_up_to_1(x, y):
     return np.abs(x - y) <= 1
@@ -235,3 +237,31 @@ class TestCDFt(unittest.TestCase):
         debiased_cm_future = tas._apply_on_window(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
 
         assert np.allclose(debiased_cm_future, cm_future - shift_cm_hist)
+
+    def test_apply_location(self):
+        tas = CDFt.from_variable("tas")
+
+        # Test perfect match up to translation, depending on season
+        obs = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
+        shift_cm_hist = np.concatenate([np.repeat(np.random.uniform(low=-5, high=5, size=1), 1000) for i in range(12)])
+        cm_hist = obs + shift_cm_hist
+        cm_future = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
+
+        time_obs = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
+        time_cm_hist = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
+        time_cm_future = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
+
+        debiased_cm_future = tas.apply_location(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+
+        assert np.allclose(debiased_cm_future, cm_future - shift_cm_hist)
+
+    def test_apply_location_without_time_specification(self):
+        tas = CDFt.from_variable("tas")
+
+        # Test perfect match
+        obs = np.random.random(20000)
+        cm_hist = obs
+        cm_future = np.random.random(2000)
+
+        debiased_cm_future = tas.apply_location(obs, cm_hist, cm_future)
+        assert np.allclose(debiased_cm_future, cm_future)
