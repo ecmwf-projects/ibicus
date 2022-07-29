@@ -102,7 +102,7 @@ def year(x):
     return _year(x)
 
 
-def day_of_year(x):
+def _day_of_year(x):
     try:
         if hasattr(x, "timetuple"):
             return x.timetuple().tm_yday
@@ -116,7 +116,13 @@ def day_of_year(x):
         )
 
 
-day_of_year = np.vectorize(day_of_year)
+_day_of_year = np.vectorize(_day_of_year)
+
+
+def day_of_year(x):
+    if np.issubdtype(x.dtype, np.datetime64):
+        x = x.astype(object)
+    return _day_of_year(x)
 
 
 def create_array_of_consecutive_dates(array_length, start_date=np.datetime64("1950-02-25")):
