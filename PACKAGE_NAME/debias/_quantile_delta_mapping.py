@@ -32,6 +32,7 @@ default_settings = {
     Precipitation: {"distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05)},
 }
 
+
 # Reference Cannon et al. 2015
 @attrs.define
 class QuantileDeltaMapping(Debiaser):

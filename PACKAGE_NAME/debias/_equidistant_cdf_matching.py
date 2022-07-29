@@ -9,8 +9,6 @@
 from typing import Union
 
 import attrs
-import numpy as np
-import scipy
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel

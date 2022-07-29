@@ -34,10 +34,10 @@ def get_min_distance_in_array(x):
 class TestCDFt(unittest.TestCase):
     def test_from_variable(self):
         tas = CDFt.from_variable("tas")
-        assert tas.SSR == False
+        assert tas.SSR is False
 
         pr = CDFt.from_variable("pr")
-        assert pr.SSR == True
+        assert pr.SSR is True
 
     def test__init__(self):
         tas_1 = CDFt.from_variable("tas")

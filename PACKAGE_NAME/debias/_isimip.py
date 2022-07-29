@@ -30,7 +30,7 @@ from ..utils import (
     year,
 )
 from ._debiaser import Debiaser
-from ._isimip_options import isimip_2_5, standard_variables_isimip
+from ._isimip_options import isimip_2_5
 
 
 # Reference TODO
@@ -236,8 +236,8 @@ class ISIMIP(Debiaser):
 
         # Map annual trend onto daily resolution
         trend = np.zeros_like(x)
-        for year_index, year in enumerate(unique_years):
-            trend[years == year] = annual_trend[year_index]
+        for index_unique_year, unique_year in enumerate(unique_years):
+            trend[years == unique_year] = annual_trend[index_unique_year]
         x = x - trend
         return x, trend
 
@@ -742,7 +742,7 @@ class ISIMIP(Debiaser):
         )
 
         # Calculate values between bounds (if any are to be calculated)
-        if any(mask_for_entries_not_set_to_either_bound == True):
+        if any(mask_for_entries_not_set_to_either_bound):
             mapped_vals[mask_for_entries_not_set_to_either_bound] = self._step6_adjust_values_between_thresholds(
                 self._get_values_between_thresholds(obs_hist_sorted),
                 self._get_values_between_thresholds(obs_future_sorted),

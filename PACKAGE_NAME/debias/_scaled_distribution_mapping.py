@@ -27,6 +27,7 @@ default_settings = {
     Precipitation: {"mapping_type": "relative"},
 }
 
+
 # Reference Switanek et al. 2017
 @attrs.define
 class ScaledDistributionMapping(Debiaser):
@@ -177,13 +178,17 @@ class ScaledDistributionMapping(Debiaser):
         # Using adapted_cdf2 as below I get different results more in line with my code.
         # Difference between my cdf_scaled and the adapted_cdf is pretty much the same
         # as between adapted_cdf and adapted_cdf2
-        """adapted_cdf2 = .5 + np.sign(obs_cdf_shift)*np.abs(.5 - 1. / (obs_inverse * sce_inverse / mod_inverse))
-        adapted_cdf2 = np.maximum(
-            np.minimum(adapted_cdf2, cdf_threshold), 1 - cdf_threshold)"""
+        adapted_cdf2 = 0.5 + np.sign(obs_cdf_shift) * np.abs(
+            0.5 - 1.0 / np.maximum(1, obs_inverse * sce_inverse / mod_inverse)
+        )
+        adapted_cdf2 = np.maximum(np.minimum(adapted_cdf2, cdf_threshold), 1 - cdf_threshold)
 
         adapted_cdf = np.sign(obs_cdf_shift) * (1.0 - 1.0 / (obs_inverse * sce_inverse / mod_inverse))
         adapted_cdf[adapted_cdf < 0] += 1.0
         adapted_cdf = np.maximum(np.minimum(adapted_cdf, cdf_threshold), 1 - cdf_threshold)
+
+        print(np.sort(np.abs(adapted_cdf - adapted_cdf2)))
+        adapted_cdf = adapted_cdf2
 
         xvals = norm.ppf(np.sort(adapted_cdf), *obs_norm) + obs_norm[-1] / mod_norm[-1] * (
             norm.ppf(sce_cdf, *sce_norm) - norm.ppf(sce_cdf, *mod_norm)
