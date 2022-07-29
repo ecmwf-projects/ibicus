@@ -31,7 +31,7 @@ from PACKAGE_NAME.utils import (
 )
 
 np.random.seed(12345)
-ESTIMATION_MAX_DIFF = 0.3
+ESTIMATION_MAX_DIFF = 0.35
 
 
 def nested_tuples_similar_up_to_diff(tuple1, tuple2, diff):
