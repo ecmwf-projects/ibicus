@@ -19,13 +19,6 @@ import PACKAGE_NAME.utils as utils
 
 @attrs.define(eq=False)
 class Variable:
-    method: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, utils.StatisticalModel
-    ] = attrs.field(
-        validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, utils.StatisticalModel)
-        )
-    )
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     reasonable_physical_range: list = attrs.field(default=None)
 
@@ -40,10 +33,8 @@ class Variable:
                 raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
 
-Temperature = Variable(name="Temperature", method=scipy.stats.norm, reasonable_physical_range=[0, 400])
-Precipitation = Variable(
-    name="Precipitation", method=utils.PrecipitationPlaceholder, reasonable_physical_range=[0, np.inf]
-)
+Temperature = Variable(name="Temperature", reasonable_physical_range=[0, 400])
+Precipitation = Variable(name="Precipitation", reasonable_physical_range=[0, np.inf])
 
 
 str_to_variable_class = {

@@ -84,20 +84,6 @@ class StatisticalModel(ABC):
 """----- Precipitation helpers -----"""
 
 
-class _gen_PrecipitationPlaceholder(StatisticalModel):
-    def ppf(self, q: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
-        raise NotImplementedError("A concrete precipitation statistical modle needs to be implemented")
-
-    def cdf(self, x: np.ndarray, *fit: tuple, **kwargs) -> np.ndarray:
-        raise NotImplementedError("A concrete precipitation statistical modle needs to be implemented")
-
-    def fit(self, data: np.ndarray, **kwargs) -> tuple:
-        raise NotImplementedError("A concrete precipitation statistical modle needs to be implemented")
-
-
-PrecipitationPlaceholder = _gen_PrecipitationPlaceholder()
-
-
 @attrs.define
 class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
     """
