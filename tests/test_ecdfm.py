@@ -15,7 +15,7 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import EquidistantCDFMatching
+from PACKAGE_NAME.debias import ECDFM
 from PACKAGE_NAME.utils import (
     PrecipitationHurdleModelGamma,
     gen_PrecipitationGammaLeftCensoredModel,
@@ -42,35 +42,35 @@ def gen_precip_data(p0, n, *gamma_args):
     return np.concatenate([np.repeat(0, nr_of_dry_days), scipy.stats.gamma.rvs(size=n - nr_of_dry_days, *gamma_args)])
 
 
-class TestEquidistantCDFMatching(unittest.TestCase):
+class TestECDFM(unittest.TestCase):
     def test_from_variable(self):
-        tas = EquidistantCDFMatching.from_variable("tas")
+        tas = ECDFM.from_variable("tas")
         assert tas.distribution == scipy.stats.beta
 
-        pr = EquidistantCDFMatching.from_variable("pr")
+        pr = ECDFM.from_variable("pr")
         assert pr.distribution == PrecipitationHurdleModelGamma
 
     def test__init__(self):
-        tas_1 = EquidistantCDFMatching.from_variable("tas")
-        tas_2 = EquidistantCDFMatching(distribution=scipy.stats.beta)
+        tas_1 = ECDFM.from_variable("tas")
+        tas_2 = ECDFM(distribution=scipy.stats.beta)
         assert tas_1 == tas_2
 
-        tas_1 = EquidistantCDFMatching.from_variable("tas", distribution=scipy.stats.norm)
-        tas_2 = EquidistantCDFMatching(distribution=scipy.stats.norm)
+        tas_1 = ECDFM.from_variable("tas", distribution=scipy.stats.norm)
+        tas_2 = ECDFM(distribution=scipy.stats.norm)
         assert tas_1 == tas_2
 
-        pr_1 = EquidistantCDFMatching.from_variable("pr")
-        pr_2 = EquidistantCDFMatching(distribution=PrecipitationHurdleModelGamma)
+        pr_1 = ECDFM.from_variable("pr")
+        pr_2 = ECDFM(distribution=PrecipitationHurdleModelGamma)
         assert pr_1 == pr_2
 
     def test_for_precipitation(self):
-        pr_1 = EquidistantCDFMatching.from_variable("pr")
-        pr_2 = EquidistantCDFMatching.for_precipitation()
+        pr_1 = ECDFM.from_variable("pr")
+        pr_2 = ECDFM.for_precipitation()
 
         assert pr_1 == pr_2
 
-        pr_1 = EquidistantCDFMatching(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
-        pr_2 = EquidistantCDFMatching.for_precipitation(
+        pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
+        pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="censored",
             precipitation_censoring_value=0.2,
             precipitation_hurdle_model_randomization=False,
@@ -78,15 +78,13 @@ class TestEquidistantCDFMatching(unittest.TestCase):
 
         assert pr_1 == pr_2
 
-        pr_1 = EquidistantCDFMatching(distribution=gen_PrecipitationGammaLeftCensoredModel(0.1))
-        pr_2 = EquidistantCDFMatching.for_precipitation(
-            precipitation_model_type="censored", precipitation_censoring_value=0.2
-        )
+        pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.1))
+        pr_2 = ECDFM.for_precipitation(precipitation_model_type="censored", precipitation_censoring_value=0.2)
 
         assert pr_1 != pr_2
 
-        pr_1 = EquidistantCDFMatching.for_precipitation(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
-        pr_2 = EquidistantCDFMatching.for_precipitation(
+        pr_1 = ECDFM.for_precipitation(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
+        pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="censored",
             precipitation_censoring_value=0.2,
             precipitation_hurdle_model_randomization=False,
@@ -94,8 +92,8 @@ class TestEquidistantCDFMatching(unittest.TestCase):
 
         assert pr_1 == pr_2
 
-        pr_1 = EquidistantCDFMatching.for_precipitation(distribution=PrecipitationHurdleModelGamma)
-        pr_2 = EquidistantCDFMatching.for_precipitation(
+        pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
+        pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="hurdle",
             precipitation_censoring_value=0.2,
             precipitation_hurdle_model_randomization=True,
@@ -103,8 +101,8 @@ class TestEquidistantCDFMatching(unittest.TestCase):
 
         assert pr_1 == pr_2
 
-        pr_1 = EquidistantCDFMatching.for_precipitation(distribution=PrecipitationHurdleModelGamma)
-        pr_2 = EquidistantCDFMatching.for_precipitation(
+        pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
+        pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="hurdle",
             precipitation_censoring_value=0.2,
             precipitation_hurdle_model_randomization=False,
@@ -113,7 +111,7 @@ class TestEquidistantCDFMatching(unittest.TestCase):
         assert pr_1 != pr_2
 
     def test_apply_location_tas(self):
-        tas = EquidistantCDFMatching.from_variable("tas")
+        tas = ECDFM.from_variable("tas")
 
         # Test: perfect match between obs and cm_hist
         obs = np.random.beta(5, 2, size=1000)
@@ -144,7 +142,7 @@ class TestEquidistantCDFMatching(unittest.TestCase):
 
     def test_apply_location_pr(self):
         # Compare all values
-        pr = EquidistantCDFMatching.for_precipitation(precipitation_hurdle_model_randomization=False)
+        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=False)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
@@ -168,7 +166,7 @@ class TestEquidistantCDFMatching(unittest.TestCase):
         assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Compare non-zero values
-        pr = EquidistantCDFMatching.for_precipitation(precipitation_hurdle_model_randomization=True)
+        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=True)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
@@ -201,7 +199,7 @@ class TestEquidistantCDFMatching(unittest.TestCase):
         )
 
         # Test: corrects mean difference
-        pr = EquidistantCDFMatching.for_precipitation(precipitation_hurdle_model_randomization=False)
+        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=False)
 
         obs = gen_precip_data(0.4, 1000, 5, 2)
         cm_hist = gen_precip_data(0.4, 1000, 5, 2) + 5

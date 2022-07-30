@@ -28,9 +28,9 @@ default_settings = {
 
 
 @attrs.define
-class EquidistantCDFMatching(Debiaser):
+class ECDFM(Debiaser):
     """
-    Implements equidistant cdf matching following Li et al. 2010.
+    Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math: `F_{\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math: `x_{\text{cm_fut}}`are then mapped to:
 
