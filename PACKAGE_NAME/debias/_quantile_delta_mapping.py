@@ -18,13 +18,7 @@ from ..utils import (
     gen_PrecipitationGammaLeftCensoredModel,
     threshold_cdf_vals,
 )
-from ..variables import (
-    Variable,
-    map_standard_precipitation_method,
-    map_variable_str_to_variable_class,
-    pr,
-    tas,
-)
+from ..variables import Variable, map_standard_precipitation_method, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {

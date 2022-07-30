@@ -14,7 +14,7 @@ from scipy.signal import detrend
 from scipy.stats import norm
 
 from ..utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
-from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
+from ..variables import Variable, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {

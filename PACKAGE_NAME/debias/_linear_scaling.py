@@ -11,7 +11,7 @@ from typing import Union
 import attrs
 import numpy as np
 
-from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
+from ..variables import Variable, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {

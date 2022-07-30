@@ -12,7 +12,7 @@ import attrs
 import numpy as np
 
 from ..utils import create_array_of_consecutive_dates, ecdf, iecdf, month, year
-from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
+from ..variables import Variable, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {

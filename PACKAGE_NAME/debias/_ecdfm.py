@@ -12,13 +12,7 @@ import attrs
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
-from ..variables import (
-    Variable,
-    map_standard_precipitation_method,
-    map_variable_str_to_variable_class,
-    pr,
-    tas,
-)
+from ..variables import Variable, map_standard_precipitation_method, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {
