@@ -109,21 +109,7 @@ class CDFt(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        """
-        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
-
-        Parameters
-        ----------
-        variable : Union[str, Variable]
-            String or Variable object referring to standard meteorological variable for which default settings can be used.
-        **kwargs:
-            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
-        """
-        if not isinstance(variable, Variable):
-            variable = map_variable_str_to_variable_class(variable)
-
-        parameters = {**default_settings[variable], "variable": variable.name}
-        return cls(**{**parameters, **kwargs})
+        return super().from_variable(cls, default_settings, variable, **kwargs)
 
     # ----- Helpers: running window mode -----#
 

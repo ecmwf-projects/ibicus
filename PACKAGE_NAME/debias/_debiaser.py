@@ -6,8 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from typing import Union
+
 import numpy as np
 from tqdm import tqdm
+
+from ..variables import Variable, map_variable_str_to_variable_class
 
 
 class Debiaser:
@@ -62,6 +66,34 @@ class Debiaser:
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
             output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs)
         return output
+
+    # Constructor
+    def from_variable(child_class, default_settings: dict, variable: Union[str, Variable], **kwargs):
+        """
+        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+
+        Parameters
+        ----------
+        variable : Union[str, Variable]
+            String or Variable object referring to standard meteorological variable for which default settings can be used.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
+        """
+
+        if not isinstance(variable, Variable):
+            variable_object = map_variable_str_to_variable_class(variable)
+        else:
+            variable_object = variable
+
+        if variable_object not in default_settings.keys():
+            raise ValueError("No default settings exist for %s in debiaser %s" % (variable, child_class.__name__))
+
+        parameters = {
+            **default_settings[variable_object],
+            "variable": variable_object.name,
+        }
+
+        return child_class(**{**parameters, **kwargs})
 
     # Apply functions:
     def apply_location(self, obs, cm_hist, cm_future):

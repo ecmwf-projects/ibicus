@@ -44,7 +44,9 @@ class QuantileDeltaMapping(Debiaser):
             (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
         )
     )
-    time_window_length: int = attrs.field(validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)])
+    time_window_length: int = attrs.field(
+        default=50, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+    )
     variable: str = attrs.field(default="unknown", eq=False)
 
     # Calculation parameters
@@ -55,28 +57,8 @@ class QuantileDeltaMapping(Debiaser):
     cdf_threshold: int = attrs.field(default=1e-10, validator=attrs.validators.instance_of(float))
 
     @classmethod
-    def from_variable(cls, variable: Union[str, Variable], time_window_length: int = 50, **kwargs):
-        """
-        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
-
-        Parameters
-        ----------
-        variable : Union[str, Variable]
-            String or Variable object referring to standard meteorological variable for which default settings can be used.
-        time_window_length: int
-            Length of moving time window to fit ECDFs.
-        **kwargs:
-            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
-        """
-        if not isinstance(variable, Variable):
-            variable = map_variable_str_to_variable_class(variable)
-
-        parameters = {
-            **default_settings[variable],
-            "time_window_length": time_window_length,
-            "variable": variable.name,
-        }
-        return cls(**{**parameters, **kwargs})
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        return super().from_variable(cls, default_settings, variable, **kwargs)
 
     @classmethod
     def for_precipitation(
