@@ -119,12 +119,14 @@ class QuantileDeltaMapping(Debiaser):
             precipitation_hurdle_model_randomization,
             precipitation_hurdle_model_kwds_for_distribution_fit,
         )
+
         parameters = {
             **default_settings[variable],
             "time_window_length": time_window_length,
             "distribution": method,
             "variable": variable.name,
         }
+
         return cls(**{**parameters, **kwargs})
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:

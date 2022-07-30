@@ -101,18 +101,20 @@ class QuantileMapping(Debiaser):
         """
         variable = pr
 
-        variable.method = map_standard_precipitation_method(
+        method = map_standard_precipitation_method(
             precipitation_model_type,
             precipitation_amounts_distribution,
             precipitation_censoring_value,
             precipitation_hurdle_model_randomization,
             precipitation_hurdle_model_kwds_for_distribution_fit,
         )
+
         parameters = {
             **default_settings[variable],
-            "distribution": variable.method,
+            "distribution": method,
             "variable": variable.name,
         }
+
         return cls(**{**parameters, **kwargs})
 
     def _standard_qm(self, x, fit_cm_hist, fit_obs):
