@@ -11,17 +11,12 @@ from typing import Union
 import attrs
 import numpy as np
 
-from ..variables import (
-    Precipitation,
-    Temperature,
-    Variable,
-    map_variable_str_to_variable_class,
-)
+from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {
-    Temperature: {"delta_type": "additive"},
-    Precipitation: {"delta_type": "multiplicative"},
+    tas: {"delta_type": "additive"},
+    pr: {"delta_type": "multiplicative"},
 }
 
 

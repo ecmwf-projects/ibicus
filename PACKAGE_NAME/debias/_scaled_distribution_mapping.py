@@ -14,17 +14,12 @@ from scipy.signal import detrend
 from scipy.stats import norm
 
 from ..utils import interp_sorted_cdf_vals_on_given_length, threshold_cdf_vals
-from ..variables import (
-    Precipitation,
-    Temperature,
-    Variable,
-    map_variable_str_to_variable_class,
-)
+from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {
-    Temperature: {"mapping_type": "absolute"},
-    Precipitation: {"mapping_type": "relative"},
+    tas: {"mapping_type": "absolute"},
+    pr: {"mapping_type": "relative"},
 }
 
 

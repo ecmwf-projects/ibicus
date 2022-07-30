@@ -15,17 +15,17 @@ import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
 from ..variables import (
-    Precipitation,
-    Temperature,
     Variable,
     map_standard_precipitation_method,
     map_variable_str_to_variable_class,
+    pr,
+    tas,
 )
 from ._debiaser import Debiaser
 
 default_settings = {
-    Temperature: {"distribution": scipy.stats.norm, "delta_type": "additive"},
-    Precipitation: {"distribution": PrecipitationHurdleModelGamma, "delta_type": "multiplicative"},
+    tas: {"distribution": scipy.stats.norm, "delta_type": "additive"},
+    pr: {"distribution": PrecipitationHurdleModelGamma, "delta_type": "multiplicative"},
 }
 
 
@@ -99,7 +99,7 @@ class QuantileMapping(Debiaser):
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
         """
-        variable = Precipitation
+        variable = pr
 
         variable.method = map_standard_precipitation_method(
             precipitation_model_type,

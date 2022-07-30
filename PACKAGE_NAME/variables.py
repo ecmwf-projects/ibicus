@@ -20,6 +20,7 @@ import PACKAGE_NAME.utils as utils
 @attrs.define(eq=False)
 class Variable:
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
+    unit: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     reasonable_physical_range: list = attrs.field(default=None)
 
     @reasonable_physical_range.validator
@@ -33,18 +34,26 @@ class Variable:
                 raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
 
-Temperature = Variable(name="Temperature", reasonable_physical_range=[0, 400])
-Precipitation = Variable(name="Precipitation", reasonable_physical_range=[0, np.inf])
+tas = Variable(name="Daily mean near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tasmin = Variable(name="Daily minimum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tasmax = Variable(name="Daily maximum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tasrange = Variable(
+    name="Daily near-surface air temperature range (tasmax-tasmin)", unit="K", reasonable_physical_range=[0, 400]
+)
+tasskew = Variable(
+    name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 400]
+)
+pr = Variable(name="Daily mean precipitation", unit="kg m-2 s-1", reasonable_physical_range=[0, np.inf])
 
 
 str_to_variable_class = {
-    "pr": Precipitation,
-    "precip": Precipitation,
-    "precipitation": Precipitation,
-    "rainfall": Precipitation,
-    "tas": Temperature,
-    "temp": Temperature,
-    "temperature": Temperature,
+    "tas": tas,
+    "t2m": tas,
+    "tasmin": tasmin,
+    "tasmax": tasmax,
+    "tasrange": tasrange,
+    "tasskew": tasskew,
+    "pr": pr,
 }
 
 
@@ -80,5 +89,8 @@ def map_standard_precipitation_method(
 def map_variable_str_to_variable_class(variable_str: str):
     variable_str = variable_str.lower()
     if variable_str not in str_to_variable_class.keys():
-        raise ValueError("variable_str needs to be one of %s" % str_to_variable_class.keys())
+        raise ValueError(
+            "%s not known as variable. Variable needs to be one of %s"
+            % (variable_str, list(str_to_variable_class.keys()))
+        )
     return str_to_variable_class.get(variable_str)

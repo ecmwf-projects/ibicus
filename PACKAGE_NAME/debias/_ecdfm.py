@@ -13,17 +13,17 @@ import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
 from ..variables import (
-    Precipitation,
-    Temperature,
     Variable,
     map_standard_precipitation_method,
     map_variable_str_to_variable_class,
+    pr,
+    tas,
 )
 from ._debiaser import Debiaser
 
 default_settings = {
-    Temperature: {"distribution": scipy.stats.beta},
-    Precipitation: {"distribution": PrecipitationHurdleModelGamma},
+    tas: {"distribution": scipy.stats.beta},
+    pr: {"distribution": PrecipitationHurdleModelGamma},
 }
 
 
@@ -110,7 +110,7 @@ class ECDFM(Debiaser):
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
         """
-        variable = Precipitation
+        variable = pr
 
         method = map_standard_precipitation_method(
             precipitation_model_type,

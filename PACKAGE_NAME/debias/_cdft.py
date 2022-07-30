@@ -12,17 +12,12 @@ import attrs
 import numpy as np
 
 from ..utils import create_array_of_consecutive_dates, ecdf, iecdf, month, year
-from ..variables import (
-    Precipitation,
-    Temperature,
-    Variable,
-    map_variable_str_to_variable_class,
-)
+from ..variables import Variable, map_variable_str_to_variable_class, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {
-    Temperature: {"SSR": False},
-    Precipitation: {"SSR": True},
+    tas: {"SSR": False},
+    pr: {"SSR": True},
 }
 
 
