@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from ..utils import (
     StatisticalModel,
+    create_array_of_consecutive_dates,
     day_of_year,
     ecdf,
     get_years_and_yearly_means,
@@ -174,6 +175,24 @@ class ISIMIP(Debiaser):
             return False
 
     # ----- Non public helpers: General ----- #
+
+    @staticmethod
+    def _infer_and_create_time_arrays_if_not_given(
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        time_obs: Optional[np.ndarray] = None,
+        time_cm_hist: Optional[np.ndarray] = None,
+        time_cm_future: Optional[np.ndarray] = None,
+    ):
+        if time_obs is None:
+            time_obs = create_array_of_consecutive_dates(obs.size)
+        if time_cm_hist is None:
+            time_cm_hist = create_array_of_consecutive_dates(cm_hist.size)
+        if time_cm_future is None:
+            time_cm_future = create_array_of_consecutive_dates(cm_future.size)
+
+        return time_obs, time_cm_hist, time_cm_future
 
     def _get_mask_for_values_beyond_lower_threshold(self, x):
         return x <= self.lower_threshold
@@ -794,55 +813,45 @@ class ISIMIP(Debiaser):
 
     def apply_location(
         self,
-        obs_hist: np.ndarray,
+        obs: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        time_obs_hist: Optional[np.ndarray] = None,
+        time_obs: Optional[np.ndarray] = None,
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        self._check_reasonable_physical_range(obs_hist, cm_hist, cm_future)
+        self._check_reasonable_physical_range(obs, cm_hist, cm_future)
+
+        if time_obs is None or time_cm_hist is None or time_cm_future is None:
+            warning(
+                """
+                    ISIMIP runs without time-information for at least one of obs, cm_hist or cm_future.
+                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information. 
+                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
+                    """
+            )
+            time_obs, time_cm_hist, time_cm_future = ISIMIP._infer_and_create_time_arrays_if_not_given(
+                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+            )
+
+        years_obs = year(time_obs)
+        years_cm_hist = year(time_cm_hist)
+        years_cm_future = year(time_cm_future)
 
         if self.running_window_mode:
+
+            days_of_year_obs = day_of_year(time_obs)
+            days_of_year_cm_hist = day_of_year(time_cm_hist)
+            days_of_year_cm_future = day_of_year(time_cm_future)
+
             debiased_cm_future = np.zeros_like(cm_future)
-
-            if time_obs_hist is not None and time_cm_hist is not None and time_cm_future is not None:
-                days_of_year_obs_hist = day_of_year(time_obs_hist)
-                days_of_year_cm_hist = day_of_year(time_cm_hist)
-                days_of_year_cm_future = day_of_year(time_cm_future)
-
-                years_obs_hist = year(time_obs_hist)
-                years_cm_hist = year(time_cm_hist)
-                years_cm_future = year(time_cm_future)
-
-            else:
-                warning(
-                    """
-                    ISIMIP runs in running window mode without time-information.
-                    A standard length of 365 days is assumed for the year and observations are chunked using this.
-                    This can lead to slight numerical differences due to leap years
-                    """
-                )
-                days_of_year_obs_hist = np.tile(np.arange(1, 366), (obs_hist.size // 365) + 1)[: obs_hist.size]
-                days_of_year_cm_hist = np.tile(np.arange(1, 366), (cm_hist.size // 365) + 1)[: cm_hist.size]
-                days_of_year_cm_future = np.tile(np.arange(1, 366), (cm_future.size // 365) + 1)[: cm_future.size]
-
-                years_obs_hist = np.concatenate([np.repeat(i, 366) for i in range(obs_hist.size // 365 + 1)])[
-                    : obs_hist.size
-                ]
-                years_cm_hist = np.concatenate([np.repeat(i, 366) for i in range(cm_hist.size // 365 + 1)])[
-                    : cm_hist.size
-                ]
-                years_cm_future = np.concatenate([np.repeat(i, 366) for i in range(cm_future.size // 365 + 1)])[
-                    : cm_future.size
-                ]
 
             window_centers = self._get_window_centers(np.max(days_of_year_cm_future))
 
             # Main iteration
             for day_of_year_center in window_centers:
 
-                indices_obs_hist = self._get_indices_around_window_center(days_of_year_obs_hist, day_of_year_center)
+                indices_obs = self._get_indices_around_window_center(days_of_year_obs, day_of_year_center)
                 indices_cm_hist = self._get_indices_around_window_center(days_of_year_cm_hist, day_of_year_center)
                 indices_cm_future = self._get_indices_around_window_center(days_of_year_cm_future, day_of_year_center)
                 indices_bias_corrected_values = self._get_indices_of_bias_corrected_values(
@@ -850,35 +859,32 @@ class ISIMIP(Debiaser):
                 )
 
                 debiased_cm_future[indices_bias_corrected_values] = self._apply_on_window(
-                    obs_hist=obs_hist[indices_obs_hist],
+                    obs_hist=obs[indices_obs],
                     cm_hist=cm_hist[indices_cm_hist],
                     cm_future=cm_future[indices_cm_future],
-                    years_obs_hist=years_obs_hist[indices_obs_hist],
+                    years_obs_hist=years_obs[indices_obs],
                     years_cm_hist=years_cm_hist[indices_cm_hist],
                     years_cm_future=years_cm_future[indices_cm_future],
                 )[np.in1d(indices_cm_future, indices_bias_corrected_values)]
 
             return debiased_cm_future
         else:
-            if time_obs_hist is not None and time_cm_hist is not None and time_cm_future is not None:
+            months_obs = month(time_obs)
+            months_cm_hist = month(time_cm_hist)
+            months_cm_future = month(time_cm_future)
 
-                debiased_cm_future = np.zeros_like(cm_future)
-                for i_month in range(1, 13):
-                    mask_i_month_in_obs_hist = month(time_obs_hist) == i_month
-                    mask_i_month_in_cm_hist = month(time_cm_hist) == i_month
-                    mask_i_month_in_cm_future = month(time_cm_future) == i_month
+            debiased_cm_future = np.zeros_like(cm_future)
+            for i_month in range(1, 13):
+                mask_i_month_in_obs = months_obs == i_month
+                mask_i_month_in_cm_hist = months_cm_hist == i_month
+                mask_i_month_in_cm_future = months_cm_future == i_month
 
-                    debiased_cm_future[mask_i_month_in_cm_future] = self._apply_on_window(
-                        obs_hist=obs_hist[mask_i_month_in_obs_hist],
-                        cm_hist=cm_hist[mask_i_month_in_cm_hist],
-                        cm_future=cm_future[mask_i_month_in_cm_future],
-                        years_obs_hist=year(time_obs_hist[mask_i_month_in_obs_hist]),
-                        years_cm_hist=year(time_cm_hist[mask_i_month_in_cm_hist]),
-                        years_cm_future=year(time_cm_future[mask_i_month_in_cm_future]),
-                    )
-                return debiased_cm_future
-            else:
-                raise ValueError(
-                    "ISIMIP not in running window mode requires time information. "
-                    "Please specify time_obs_hist, time_cm_hist, time_cm_future or change to running window mode."
+                debiased_cm_future[mask_i_month_in_cm_future] = self._apply_on_window(
+                    obs_hist=obs[mask_i_month_in_obs],
+                    cm_hist=cm_hist[mask_i_month_in_cm_hist],
+                    cm_future=cm_future[mask_i_month_in_cm_future],
+                    years_obs_hist=years_obs[mask_i_month_in_obs],
+                    years_cm_hist=years_cm_hist[mask_i_month_in_cm_hist],
+                    years_cm_future=years_cm_future[mask_i_month_in_cm_future],
                 )
+            return debiased_cm_future
