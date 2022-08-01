@@ -450,9 +450,9 @@ def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
 
     Parameters
     ----------
-    x : array
+    x : np.ndarray
         Array containing values with which the inverse empirical cdf is defined.
-    p : array
+    p : np.ndarray
         Array containing values between [0, 1] for which the inverse empirical cdf is evaluated.
     method : string
         Method string for np.quantile
