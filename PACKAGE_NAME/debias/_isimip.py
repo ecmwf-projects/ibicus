@@ -882,28 +882,3 @@ class ISIMIP(Debiaser):
                     "ISIMIP not in running window mode requires time information. "
                     "Please specify time_obs_hist, time_cm_hist, time_cm_future or change to running window mode."
                 )
-
-    @staticmethod
-    def _unpack_kwargs_and_get_locationwise_info(i, j, **kwargs):
-        return {
-            key: value[
-                :,
-                i,
-                j,
-            ]
-            for key, value in kwargs.items()
-        }
-
-    def apply(self, obs, cm_hist, cm_future, **kwargs):
-        print("----- Running debiasing -----")
-        Debiaser.check_inputs(obs, cm_hist, cm_future)
-        output = np.empty([cm_future.shape[0], obs.shape[1], obs.shape[2]], dtype=cm_future.dtype)
-        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = self.apply_location(
-                obs[:, i, j],
-                cm_hist[:, i, j],
-                cm_future[:, i, j],
-                **kwargs,
-            )
-
-        return output
