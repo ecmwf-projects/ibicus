@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from abc import ABC, abstractmethod
 from typing import Union
 
 import numpy as np
@@ -14,7 +15,7 @@ from tqdm import tqdm
 from ..variables import Variable, map_variable_str_to_variable_class
 
 
-class Debiaser:
+class Debiaser(ABC):
     def __init__(self, name):
         self.name = name
 
@@ -107,10 +108,9 @@ class Debiaser:
         return output
 
     # Apply functions:
+    @abstractmethod
     def apply_location(self, obs, cm_hist, cm_future, **kwargs):
-        raise NotImplementedError(
-            "apply_location is an abstract method which needs to be overriden in derived classes."
-        )
+        pass
 
     def apply(self, obs, cm_hist, cm_future, **kwargs):
         print("----- Running debiasing -----")
