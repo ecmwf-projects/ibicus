@@ -11,7 +11,14 @@ from typing import Optional, Union
 import attrs
 import numpy as np
 
-from ..utils import create_array_of_consecutive_dates, ecdf, iecdf, month, year
+from ..utils import (
+    RunningWindowModeOverYears,
+    create_array_of_consecutive_dates,
+    ecdf,
+    iecdf,
+    month,
+    year,
+)
 from ..variables import Variable, pr, tas
 from ._debiaser import Debiaser
 
@@ -131,82 +138,6 @@ class CDFt(Debiaser):
 
         return time_obs, time_cm_hist, time_cm_future
 
-    @staticmethod
-    def _get_if_in_chosen_years(years, chosen_years):
-        """
-        Given an array of years this returns an array of bools indicating whether a year in years is inside of chosen_years.
-
-        Parameters
-        ----------
-        years : np.ndarray
-            Array of years.
-        chosen_years : np.ndarray
-            Array of chosen years.
-        """
-        return np.in1d(years, chosen_years)
-
-    def _get_years_forming_window_centers(self, unique_years: np.ndarray) -> np.ndarray:
-        """
-        Given an array of years present in the data this returns an array of window-centers: years that form the center of a running window of size self.running_window_length_in_years moved in steps of self.running_window_step_length_in_years.
-
-        Parameters
-        ----------
-        unique_years : np.ndarray
-            Unique years present in the data.
-        """
-        number_of_years = unique_years.size
-
-        if number_of_years <= self.running_window_step_length_in_years:
-            return np.array([np.round(np.median(unique_years))])
-
-        if (years_left_after_last_step := number_of_years % self.running_window_step_length_in_years) == 0:
-            first_window_center = unique_years.min() + self.running_window_step_length_in_years // 2
-        else:
-            first_window_center = (
-                unique_years.min()
-                + self.running_window_step_length_in_years // 2
-                - (self.running_window_step_length_in_years - years_left_after_last_step) // 2
-            )
-
-        window_centers = np.arange(
-            first_window_center,
-            unique_years.max() + 1,
-            self.running_window_step_length_in_years,
-        )
-
-        return window_centers
-
-    def _get_years_in_window(self, window_center: int) -> np.ndarray:
-        """
-        Given a window center (a year forming the center of a window) this returns an array of all other years inside this window of size self.running_window_length_in_years.
-
-        Parameters
-        ----------
-        window_center: int
-            Window center around which in each year a window of length self.window_length is taken and the indices returned
-        """
-        years_in_window = np.arange(
-            window_center - self.running_window_length_in_years // 2,
-            window_center + self.running_window_length_in_years // 2 + 1,
-        )
-        return years_in_window
-
-    def _get_years_in_window_that_are_bias_corrected(self, window_center: int) -> np.ndarray:
-        """
-        Given a window center (a year forming the center of a window) this returns an array of the years inside that window that are bias corrected.
-        In a window of size self.running_window_length_in_years those are [window_center - self.running_window_step_length_in_years//2, window_center + self.running_window_step_length_in_years//2].
-
-        Parameters
-        ----------
-        window_center: int
-            Window center around which in each year a window of length self.window_length is taken and the indices returned
-        """
-        indices = np.arange(
-            window_center - self.running_window_step_length_in_years // 2,
-            window_center + self.running_window_step_length_in_years // 2 + 1,
-        )
-        return indices
-
     # ----- Helpers: CDFt application -----#
 
     def _apply_CDFt_mapping(self, obs, cm_hist, cm_future):
@@ -316,17 +247,21 @@ class CDFt(Debiaser):
         if self.running_window_mode:
             years_cm_future = year(time_cm_future)
 
-            window_centers = self._get_years_forming_window_centers(unique_years=np.unique(years_cm_future))
+            running_window = RunningWindowModeOverYears(
+                window_length_in_years=self.running_window_length_in_years,
+                window_step_length_in_years=self.running_window_step_length_in_years,
+            )
 
             debiased_cm_future = np.empty_like(cm_future)
-            for window_center in window_centers:
-                years_in_window = self._get_years_in_window(window_center)
-                mask_years_in_window = CDFt._get_if_in_chosen_years(years_cm_future, years_in_window)
+            for years_to_debias, years_in_window in running_window.use(years_cm_future):
 
-                years_to_debias = self._get_years_in_window_that_are_bias_corrected(window_center)
-                mask_years_to_debias = CDFt._get_if_in_chosen_years(years_cm_future, years_to_debias)
-
-                mask_years_in_window_to_debias = CDFt._get_if_in_chosen_years(
+                mask_years_in_window = RunningWindowModeOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_in_window
+                )
+                mask_years_to_debias = RunningWindowModeOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_to_debias
+                )
+                mask_years_in_window_to_debias = RunningWindowModeOverYears.get_if_in_chosen_years(
                     years_cm_future[mask_years_in_window], years_to_debias
                 )
 

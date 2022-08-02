@@ -7,4 +7,5 @@
 # nor does it submit to any jurisdiction.
 
 from ._math_utils import *  # noqa
+from ._running_window_mode import *  # noqa
 from ._utils import *  # noqa
