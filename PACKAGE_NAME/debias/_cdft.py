@@ -6,16 +6,18 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from logging import warning
 from typing import Optional, Union
 
 import attrs
 import numpy as np
 
 from ..utils import (
-    RunningWindowModeOverYears,
+    RunningWindowOverYears,
     create_array_of_consecutive_dates,
     ecdf,
     iecdf,
+    infer_and_create_time_arrays_if_not_given,
     month,
     year,
 )
@@ -47,6 +49,7 @@ class CDFt(Debiaser):
     If self.apply_by_month = True (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
     If self.running_window_mode = True (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
 
+    Warning: currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
 
 
     Attributes
@@ -114,29 +117,16 @@ class CDFt(Debiaser):
         ),
     )
 
+    def __attrs_post_init__(self):
+        if self.running_window_mode:
+            self.running_window = RunningWindowOverYears(
+                window_length_in_years=self.running_window_length_in_years,
+                window_step_length_in_years=self.running_window_step_length_in_years,
+            )
+
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         return super().from_variable(cls, default_settings, variable, **kwargs)
-
-    # ----- Helpers: running window mode -----#
-
-    @staticmethod
-    def _infer_and_create_time_arrays_if_not_given(
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: Optional[np.ndarray] = None,
-        time_cm_hist: Optional[np.ndarray] = None,
-        time_cm_future: Optional[np.ndarray] = None,
-    ):
-        if time_obs is None:
-            time_obs = create_array_of_consecutive_dates(obs.size)
-        if time_cm_hist is None:
-            time_cm_hist = create_array_of_consecutive_dates(cm_hist.size)
-        if time_cm_future is None:
-            time_cm_future = create_array_of_consecutive_dates(cm_future.size)
-
-        return time_obs, time_cm_hist, time_cm_future
 
     # ----- Helpers: CDFt application -----#
 
@@ -240,28 +230,28 @@ class CDFt(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ):
-        time_obs, time_cm_hist, time_cm_future = CDFt._infer_and_create_time_arrays_if_not_given(
-            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-        )
+
+        if time_obs is None or time_cm_hist is None or time_cm_future is None:
+            warning(
+                """
+                    CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
+                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information. 
+                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
+                    """
+            )
+            time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
+                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+            )
 
         if self.running_window_mode:
             years_cm_future = year(time_cm_future)
 
-            running_window = RunningWindowModeOverYears(
-                window_length_in_years=self.running_window_length_in_years,
-                window_step_length_in_years=self.running_window_step_length_in_years,
-            )
-
             debiased_cm_future = np.empty_like(cm_future)
-            for years_to_debias, years_in_window in running_window.use(years_cm_future):
+            for years_to_debias, years_in_window in self.running_window.use(years_cm_future):
 
-                mask_years_in_window = RunningWindowModeOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_in_window
-                )
-                mask_years_to_debias = RunningWindowModeOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_to_debias
-                )
-                mask_years_in_window_to_debias = RunningWindowModeOverYears.get_if_in_chosen_years(
+                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_in_window)
+                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_to_debias)
+                mask_years_in_window_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
                     years_cm_future[mask_years_in_window], years_to_debias
                 )
 

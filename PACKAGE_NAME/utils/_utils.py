@@ -6,6 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from typing import Optional
+
 import numpy as np
 
 
@@ -125,7 +127,25 @@ def day_of_year(x):
     return _day_of_year(x)
 
 
-def create_array_of_consecutive_dates(array_length, start_date=np.datetime64("1950-02-25")):
+def create_array_of_consecutive_dates(array_length, start_date=np.datetime64("1950-01-01")):
     if not isinstance(start_date, np.datetime64):
         start_date = np.datetime64(start_date)
     return np.arange(start_date, start_date + np.timedelta64(array_length, "D")).astype(object)
+
+
+def infer_and_create_time_arrays_if_not_given(
+    obs: np.ndarray,
+    cm_hist: np.ndarray,
+    cm_future: np.ndarray,
+    time_obs: Optional[np.ndarray] = None,
+    time_cm_hist: Optional[np.ndarray] = None,
+    time_cm_future: Optional[np.ndarray] = None,
+):
+    if time_obs is None:
+        time_obs = create_array_of_consecutive_dates(obs.size)
+    if time_cm_hist is None:
+        time_cm_hist = create_array_of_consecutive_dates(cm_hist.size)
+    if time_cm_future is None:
+        time_cm_future = create_array_of_consecutive_dates(cm_future.size)
+
+    return time_obs, time_cm_hist, time_cm_future

@@ -13,16 +13,15 @@ import attrs
 import numpy as np
 import scipy.special
 import scipy.stats
-from tqdm import tqdm
 
 from ..utils import (
-    RunningWindowModeOverDaysOfYear,
+    RunningWindowOverDaysOfYear,
     StatisticalModel,
-    create_array_of_consecutive_dates,
     day_of_year,
     ecdf,
     get_years_and_yearly_means,
     iecdf,
+    infer_and_create_time_arrays_if_not_given,
     interp_sorted_cdf_vals_on_given_length,
     month,
     quantile_map_non_parametically,
@@ -124,7 +123,7 @@ class ISIMIP(Debiaser):
 
     def __attrs_post_init__(self):
         if self.running_window_mode:
-            self.running_window = RunningWindowModeOverDaysOfYear(
+            self.running_window = RunningWindowOverDaysOfYear(
                 window_length_in_days=self.running_window_length,
                 window_step_length_in_days=self.running_window_step_length,
             )
@@ -183,24 +182,6 @@ class ISIMIP(Debiaser):
             return False
 
     # ----- Non public helpers: General ----- #
-
-    @staticmethod
-    def _infer_and_create_time_arrays_if_not_given(
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: Optional[np.ndarray] = None,
-        time_cm_hist: Optional[np.ndarray] = None,
-        time_cm_future: Optional[np.ndarray] = None,
-    ):
-        if time_obs is None:
-            time_obs = create_array_of_consecutive_dates(obs.size)
-        if time_cm_hist is None:
-            time_cm_hist = create_array_of_consecutive_dates(cm_hist.size)
-        if time_cm_future is None:
-            time_cm_future = create_array_of_consecutive_dates(cm_future.size)
-
-        return time_obs, time_cm_hist, time_cm_future
 
     def _get_mask_for_values_beyond_lower_threshold(self, x):
         return x <= self.lower_threshold
@@ -718,7 +699,7 @@ class ISIMIP(Debiaser):
                     This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
                     """
             )
-            time_obs, time_cm_hist, time_cm_future = ISIMIP._infer_and_create_time_arrays_if_not_given(
+            time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
