@@ -13,13 +13,13 @@ import numpy as np
 
 
 @attrs.define
-class RunningWindowModeOverYears:
+class RunningWindowOverYears:
     """
     Implements a running window mode iterating over years.
 
     Usual usage:
     >>> years = np.arange(2000, 2050)
-    >>> rolling_window = RunningWindowModeOverYears(window_length_in_years = 17, window_step_length_in_years = 9)
+    >>> rolling_window = RunningWindowOverYears(window_length_in_years = 17, window_step_length_in_years = 9)
     >>> for years_to_debias, years_in_window in rolling_window.use(years):
     ...     # do some calculations with both
     ...     print(years_to_debias)
@@ -137,7 +137,7 @@ class RunningWindowModeOverYears:
 
         >>> chosen_years = np.array([2022, 2023])
         >>> years = np.arange(2020, 2030)
-        >>> RunningWindowModeOverYears.get_if_in_chosen_years(years, chosen_years)
+        >>> RunningWindowOverYears.get_if_in_chosen_years(years, chosen_years)
         array([False, False,  True,  True, False, False, False, False, False, False])
 
         Parameters
@@ -158,7 +158,7 @@ class RunningWindowModeOverYears:
 
         Usual usage:
         >>> years = np.arange(2000, 2050)
-        >>> rolling_window = RunningWindowModeOverYears(window_length_in_years = 17, window_step_length_in_years = 9)
+        >>> rolling_window = RunningWindowOverYears(window_length_in_years = 17, window_step_length_in_years = 9)
         >>> for years_to_debias, years_in_window in rolling_window.use(years):
         ...     # do some calculations with both
         ...     print(years_to_debias)
@@ -181,19 +181,19 @@ class RunningWindowModeOverYears:
             if self.returns == "years":
                 yield years_to_adjust, years_in_window
             elif self.returns == "mask":
-                yield RunningWindowModeOverYears.get_if_in_chosen_years(
+                yield RunningWindowOverYears.get_if_in_chosen_years(
                     years_to_adjust, years
-                ), RunningWindowModeOverYears.get_if_in_chosen_years(years_in_window, years)
+                ), RunningWindowOverYears.get_if_in_chosen_years(years_in_window, years)
             elif self.returns == "indices":
-                yield np.where(RunningWindowModeOverYears.get_if_in_chosen_years(years_to_adjust, years))[0], np.where(
-                    RunningWindowModeOverYears.get_if_in_chosen_years(years_in_window, years)
+                yield np.where(RunningWindowOverYears.get_if_in_chosen_years(years_to_adjust, years))[0], np.where(
+                    RunningWindowOverYears.get_if_in_chosen_years(years_in_window, years)
                 )[0]
             else:
                 raise ValueError('self.returns needs to be one of ["years", "indices", "mask"]')
 
 
 @attrs.define
-class RunningWindowModeOverDaysOfYear:
+class RunningWindowOverDaysOfYear:
     """
     Implements a running window mode iterating over the days of a year.
 
@@ -201,7 +201,7 @@ class RunningWindowModeOverDaysOfYear:
     >>> from PACKAGE_NAME.utils import create_array_of_consecutive_dates, day_of_year, year
     >>> dates = create_array_of_consecutive_dates(1000)
     >>> days_of_year, years = day_of_year(dates), year(dates)
-    >>> rolling_window = RunningWindowModeOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
+    >>> rolling_window = RunningWindowOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
     >>> for window_center, indices_vals_to_debias in rolling_window.use(days_of_year, years):
     ...     # do some calculations with both
     ...     print(indices_vals_to_debias)
@@ -210,7 +210,7 @@ class RunningWindowModeOverDaysOfYear:
 
     Warning: currently only uneven sizes are allowed for window_length_in_days and window_step_length_in_days. This allows symmetrical windows of the form [window_center - self.window_step_length_in_days//2, window_center + self.window_step_length_in_days//2] for the days of year to adjust and similar for the days of year in window.
 
-    In contrast to RunningWindowModeOverYears this currently only returns only indices of values. Adjusting for leap years is difficult otherwise.
+    In contrast to RunningWindowOverYears this currently only returns only indices of values. Adjusting for leap years is difficult otherwise.
 
     Attributes
     ----------
@@ -372,7 +372,7 @@ class RunningWindowModeOverDaysOfYear:
         >>> from PACKAGE_NAME.utils import create_array_of_consecutive_dates, day_of_year, year
         >>> dates = create_array_of_consecutive_dates(1000)
         >>> days_of_year, years = day_of_year(dates), year(dates)
-        >>> rolling_window = RunningWindowModeOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
+        >>> rolling_window = RunningWindowOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
         >>> for window_center, indices_vals_to_debias in rolling_window.use(days_of_year, years):
         ...     # do some calculations with both
         ...     print(indices_vals_to_debias)
