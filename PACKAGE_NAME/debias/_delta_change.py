@@ -27,19 +27,21 @@ class DeltaChange(Debiaser):
 
     This is technically not a debiasing of a climate model because the future climate model output gets not directly transformed. Instead it only uses the models capturing of climate change to modify historical observations.
 
-    Let :math:`y` be the observed timeseries :math:`x_{hist}` the simulated historical one and :math:`x_{fut}` the simulated future one (climate model historical and future run). Then in delta change a timeseries of future climate is generated as:
+    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). Then in delta change a timeseries of future climate is generated as:
 
-    .. math::  y +  - (\\text{mean}(x_{fut}) - \\text{mean}(x_{hist}))
+    .. math::  x_{\\text{obs}} +  (\\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}})
 
     and for multiplicative change:
 
-    .. math:: y * \\frac{\\text{mean}(x_{fut})}{\\text{mean}(x_{hist})}.
+    .. math:: x_{\\text{obs}} * \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}.
 
+    Here :math:`\\bar x` stands for the mean over all x-values.
 
     Multiplicative change is classically used for precipitation and additive scaling for temperature.
 
-    References:
-    Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
+    **References**:
+
+    - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
 
     ...
 

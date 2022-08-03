@@ -35,25 +35,27 @@ class CDFt(Debiaser):
     """
     Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math: `F be an empirical cdf. The future climate projections :math: `x_{\text{cm_fut}}` are then mapped using a QQ-mapping between :math: `F_{\text{cm_fut}}` and :math: `F_{\text{obs_fut}}`, with:
+    Let :math:`F` be an empirical cdf. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`, with:
 
-    .. math:: F_{\text{obs_fut}} := F_{\text{obs_hist}}(F^-1_{\text{cm_hist}}(F_{\text{cm_fut}})).
+    .. math:: F_{\\text{obs_fut}} := F_{\\text{obs_hist}}(F^-1_{\\text{cm_hist}}(F_{\\text{cm_fut}})).
 
-    This means that :math: `x_{\text{cm_fut}}` is mapped using the following:
+    This means that :math:`x_{\\text{cm_fut}}` is mapped using the following:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow F^{-1}_{\text{obs_fut}}(F_{\text{cm_fut}}(x_{\text{cm_fut}})) = F^{-1}_{\text{cm_fut}}(F_{\text{cm_hist}}(F^{-1}_{\text{obs_hist}}(F_{\text{cm_fut}}(x_{\text{cm_fut}}))))
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs_fut}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) = F^{-1}_{\\text{cm_fut}}(F_{\\text{cm_hist}}(F^{-1}_{\\text{obs_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))))
 
     All cdfs here are estimated empirically.
 
     In case a delta_shift is used the future and historical climate model run are either additively shifted by the difference between observational mean and historical climate model mean or multiplicatively by the quotient between observational mean and historical climate model one. This means for an additive delta shift:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow x_{\text{cm_fut}} + \bar x_{\text{obs}} - \bar x_{\text{cm_hist}}
-    .. math:: x_{\text{cm_hist}} \\rightarrow x_{\text{cm_hist}} + \bar x_{\text{obs}} - \bar x_{\text{cm_hist}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
+    .. math:: x_{\\text{cm_hist}} \\rightarrow x_{\\text{cm_hist}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
 
     and for a multiplicative delta shift:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow x_{\text{cm_fut}} \cdot \frac{\bar x_{\text{obs}}}{\bar x_{\text{cm_hist}}}
-    .. math:: x_{\text{cm_hist}} \\rightarrow x_{\text{cm_hist}} \cdot \frac{\bar x_{\text{obs}}}{\bar x_{\text{cm_hist}}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} \\cdot \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}
+    .. math:: x_{\\text{cm_hist}} \\rightarrow x_{\\text{cm_hist}} \\cdot \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}
+
+    Here :math:`\\bar x` stands for the mean over all x-values.
 
     This does an additional shift by the mean absolute or relative bias and ensures that the range of observations and cm_hist is approximately similar (important for the empirical CDFs).
 
@@ -61,7 +63,14 @@ class CDFt(Debiaser):
     If self.apply_by_month = True (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
     If self.running_window_mode = True (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
 
-    Warning: currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
+    .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
+
+    **References**:
+
+    - Michelangeli, P.-A., Vrac, M., & Loukos, H. (2009). Probabilistic downscaling approaches: Application to wind cumulative distribution functions. In Geophysical Research Letters (Vol. 36, Issue 11). American Geophysical Union (AGU). https://doi.org/10.1029/2009gl038401
+    - Famien, A. M., Janicot, S., Ochou, A. D., Vrac, M., Defrance, D., Sultan, B., & Noël, T. (2018). A bias-corrected CMIP5 dataset for Africa using the CDF-t method – a contribution to agricultural impact studies. In Earth System Dynamics (Vol. 9, Issue 1, pp. 313–338). Copernicus GmbH. https://doi.org/10.5194/esd-9-313-2018
+    - Vrac, M., Drobinski, P., Merlo, A., Herrmann, M., Lavaysse, C., Li, L., & Somot, S. (2012). Dynamical and statistical downscaling of the French Mediterranean climate: uncertainty assessment. In Natural Hazards and Earth System Sciences (Vol. 12, Issue 9, pp. 2769–2784). Copernicus GmbH. https://doi.org/10.5194/nhess-12-2769-2012
+    - Vrac, M., Noël, T., & Vautard, R. (2016). Bias correction of precipitation through Singularity Stochastic Removal: Because occurrences matter. In Journal of Geophysical Research: Atmospheres (Vol. 121, Issue 10, pp. 5237–5258). American Geophysical Union (AGU). https://doi.org/10.1002/2015jd024511
 
 
     Attributes
@@ -84,12 +93,6 @@ class CDFt(Debiaser):
         One of ["kernel_density", "linear_interpolation", "step_function"], default: "linear_interpolation". Method to calculate the empirical CDF
     iecdf_method: str
         One of ["inverted_cdf","averaged_inverted_cdf", closest_observation","interpolated_inverted_cdf","hazen","weibull","linear","median_unbiased","normal_unbiased"], default "linear". Method to calculate the inverse empirical CDF (empirical quantile function).
-
-    References:
-    Michelangeli, P.-A., Vrac, M., & Loukos, H. (2009). Probabilistic downscaling approaches: Application to wind cumulative distribution functions. In Geophysical Research Letters (Vol. 36, Issue 11). American Geophysical Union (AGU). https://doi.org/10.1029/2009gl038401
-    Famien, A. M., Janicot, S., Ochou, A. D., Vrac, M., Defrance, D., Sultan, B., & Noël, T. (2018). A bias-corrected CMIP5 dataset for Africa using the CDF-t method – a contribution to agricultural impact studies. In Earth System Dynamics (Vol. 9, Issue 1, pp. 313–338). Copernicus GmbH. https://doi.org/10.5194/esd-9-313-2018
-    Vrac, M., Drobinski, P., Merlo, A., Herrmann, M., Lavaysse, C., Li, L., & Somot, S. (2012). Dynamical and statistical downscaling of the French Mediterranean climate: uncertainty assessment. In Natural Hazards and Earth System Sciences (Vol. 12, Issue 9, pp. 2769–2784). Copernicus GmbH. https://doi.org/10.5194/nhess-12-2769-2012
-    Vrac, M., Noël, T., & Vautard, R. (2016). Bias correction of precipitation through Singularity Stochastic Removal: Because occurrences matter. In Journal of Geophysical Research: Atmospheres (Vol. 121, Issue 10, pp. 5237–5258). American Geophysical Union (AGU). https://doi.org/10.1002/2015jd024511
     """
 
     # CDFt parameters

@@ -28,20 +28,25 @@ class QuantileMapping(Debiaser):
     """
     Implements (detrended) Quantile Mapping following Cannon et al. 2015 and Maraun 2016.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math: `F be a CDF. The future climate projections :math: `x_{\text{cm_fut}}` are then mapped using a QQ-mapping between :math: `F_{\text{cm_hist}}` and :math: `F_{\text{obs}}`, so:
+    Let :math:`F` be a CDF. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_hist}}` and :math:`F_{\\text{obs}}`, so:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow F^{-1}_{\text{obs}}(F_{\text{cm_hist}}(x_{\text{cm_fut}}))
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut}}))
 
-    If detrended quantile mapping is used then :math: `x_{\text{cm_fut}}` is first rescaled and then the mapped value is scaled back either additively or multiplicatively. That means for additive detrending:
+    If detrended quantile mapping is used then :math:`x_{\\text{cm_fut}}` is first rescaled and then the mapped value is scaled back either additively or multiplicatively. That means for additive detrending:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow F^{-1}_{\text{obs}}(F_{\text{cm_hist}}(x_{\text{cm_fut} + \mean x_{\text{cm_hist}} - \mean x_{\text{cm_fut}}})) + \mean x_{\text{cm_fut}} - \mean x_{\text{cm_hist}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut} + \\bar x_{\\text{cm_hist}} - \\bar x_{\\text{cm_fut}}})) + \\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}}
 
     and for multiplicative detrending.
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow F^{-1}_{\text{obs}}(F_{\text{cm_hist}}(x_{\text{cm_fut} \cdot \frac{\mean x_{\text{cm_hist}}}{\mean x_{\text{cm_fut}}}})) \cdot \frac{\mean x_{\text{cm_fut}}}{\mean x_{\text{cm_hist}}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut} \\cdot \\frac{\\bar x_{\\text{cm_hist}}}{\\bar x_{\\text{cm_fut}}}})) \\cdot \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}
 
-    Here :math: `\mean x_{\text{cm_fut}}` designs the mean of :math: `x_{\text{cm_fut}}` and similar for :math: `x_{\text{cm_hist}}`.
+    Here :math:`\\bar x_{\\text{cm_fut}}` designs the mean of :math:`x_{\\text{cm_fut}}` and similar for :math:`x_{\\text{cm_hist}}`.
     Detrended Quantile Mapping accounts for changes in the projected values and is thus trend-preserving in the mean.
+
+    **References**:
+
+    - Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
+    - Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211–220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
 
 
     Attributes
@@ -53,10 +58,6 @@ class QuantileMapping(Debiaser):
         One of ["additive", "multiplicative", "no_detrending"]. Default: "no_detrending". What kind of scaling is applied to the future climate model data before quantile mapping.
     variable: str
         Variable for which the debiasing is done. Default: "unknown".
-
-    References:
-    Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
-    Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211–220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
     """
 
     distribution: Union[

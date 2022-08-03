@@ -26,14 +26,20 @@ class ECDFM(Debiaser):
     """
     Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math: `F_{\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math: `x_{\text{cm_fut}}`are then mapped to:
+    Let :math:`F_{\\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}`are then mapped to:
 
-    .. math:: x_{\text{cm_fut}} \\rightarrow x_{\text{cm_fut}} + F^-1_{\text{obs}}(F_{\text{cm_fut}}(x_{\text{cm_fut}})) - F^-1_{\text{cm_hist}}(F_{\text{cm_fut}}(x_{\text{cm_fut}}))
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))
 
     Default distributions are:
-        Temperature: 4-parameter beta distribution
-        Precipitation: Gamma hurdle model
-        ...
+
+    - Temperature: 4-parameter beta distribution
+    - Precipitation: Gamma hurdle model
+    - ...
+
+    **Reference**:
+
+    - Li, H., Sheffield, J., and Wood, E. F. (2010), Bias correction of monthly precipitation and temperature fields from Intergovernmental Panel on Climate Change AR4 models using equidistant quantile matching, J. Geophys. Res., 115, D10101, doi:10.1029/2009JD012882.
+
 
     Attributes
     ----------
@@ -41,9 +47,6 @@ class ECDFM(Debiaser):
         Method used for the fit to the historical and future climate model outputs as well as the observations. Eg. a beta-distribution for temperature, but also more complex models are possible.
     variable: str
         Variable for which the debiasing is done. Default: "unknown".
-
-    Reference:
-    Li, H., Sheffield, J., and Wood, E. F. (2010), Bias correction of monthly precipitation and temperature fields from Intergovernmental Panel on Climate Change AR4 models using equidistant quantile matching, J. Geophys. Res., 115, D10101, doi:10.1029/2009JD012882.
     """
 
     distribution: Union[

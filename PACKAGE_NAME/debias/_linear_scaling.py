@@ -26,20 +26,22 @@ class LinearScaling(Debiaser):
     Class LinearScaling representing debiasing via so-called linear scaling following Maraun 2016 as reference.
 
     In linear scaling the present day model bias is either subtracted or divided from the future climate model time-series.
-    Let :math:`y` be the observed timeseries :math:`x_{hist}` the simulated historical one and :math:`x_{fut}` the simulated future one (climate model historical and future run). Then additive linear scaling adjusts :math:`x_{fut}` as follows:
 
-    .. math:: x_{fut} \\rightarrow x_{fut} - (\\text{mean}(x_{hist}) - \\text{mean}(y))
+    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). Then additive linear scaling adjusts :math:`x_{\\text{cm_fut}}` as follows:
+
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} - (\\bar x_{\\text{cm_hist}} - \\bar x_{\\text{obs}})
 
     and multiplicative scaling:
 
-    .. math:: x_{fut} \\rightarrow x_{fut} * \\frac{\\text{mean}(y)}{\\text{mean}(x_{hist})}.
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} * \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}.
 
+    Here :math:`\\bar x` stands for the mean over all x-values.
 
     Multiplicative scaling is classically used for precipitation and additive scaling for temperature. Additive scaling amounts to a simple mean bias correction, whilst multiplicative one adjusts both mean and variance, but keeps their ration constant (Maraun 2016).
 
+    **References**:
 
-    References:
-    Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
+    - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
 
     ...
 
