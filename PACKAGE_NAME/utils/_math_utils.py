@@ -300,11 +300,14 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
     ----------
     self.censoring_value : float
         Value under which observations are censored.
+    self.censor_in_ppf : bool
+        If in the ppf mapping values under the threshold are to be censored.
     """
 
     censoring_value: float = attrs.field(
         default=0.1, validator=[attrs.validators.instance_of((float)), attrs.validators.gt(0)], converter=float
     )
+    censor_in_ppf: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
 
     @staticmethod
     def _fit_censored_gamma(x: np.ndarray, nr_censored_x: int, min_x: float) -> tuple:
@@ -403,7 +406,9 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
             Array containing cdf-values for x.
         """
         vals = scipy.stats.gamma.ppf(q, *fit)
-        return np.where(vals < self.censoring_value, 0, vals)
+        if self.censor_in_ppf:
+            vals = np.where(vals < self.censoring_value, 0, vals)
+        return vals
 
 
 PrecipitationGammaLeftCensoredModel_5mm_threshold = gen_PrecipitationGammaLeftCensoredModel(0.05)
