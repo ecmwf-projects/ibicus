@@ -16,6 +16,7 @@ import scipy.stats
 from tqdm import tqdm
 
 from ..utils import (
+    RunningWindowModeOverDaysOfYear,
     StatisticalModel,
     create_array_of_consecutive_dates,
     day_of_year,
@@ -120,6 +121,13 @@ class ISIMIP(Debiaser):
     running_window_step_length: int = attrs.field(
         default=1, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
     )
+
+    def __attrs_post_init__(self):
+        if self.running_window_mode:
+            self.running_window = RunningWindowModeOverDaysOfYear(
+                window_length_in_days=self.running_window_length,
+                window_step_length_in_days=self.running_window_step_length,
+            )
 
     @classmethod
     def from_variable(cls, variable):
@@ -519,126 +527,6 @@ class ISIMIP(Debiaser):
             mapped_vals = self.distribution.ppf(scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future)
         return mapped_vals
 
-    # ----- Non-public helpers: Iteration -----#
-
-    def _get_window_centers(self, max_day_of_year: int) -> np.ndarray:
-        """
-        Returns an array of window-centers: integers representing a day of year (between 1 and 365) around which a window can be taken.
-        Although 366 is a valid day of year it is not taken as window-center, because it arises only in a few years. It is replaced by 365.
-
-        Parameters
-        ----------
-        max_day_of_year : int
-            Maximum day of year present in data. Normally 365 or 366. Determines how many windows need to fit in the data.
-        """
-        days_left_after_last_step = max_day_of_year % self.running_window_step_length
-        # Running window with step length fits perfectly into year
-        if days_left_after_last_step == 0:
-            first_window_center = 1 + self.running_window_step_length // 2
-        # Adjust start-window-center so the last window is not too much sorter
-        else:
-            first_window_center = (
-                1
-                + self.running_window_step_length // 2
-                - (self.running_window_step_length - days_left_after_last_step) // 2
-            )
-
-        window_centers = np.arange(
-            first_window_center,
-            max_day_of_year + 1,
-            self.running_window_step_length,
-        )
-
-        return window_centers
-
-    @staticmethod
-    def _get_indices_of_window_center(window_center: int, days_of_years: np.ndarray) -> np.ndarray:
-        # If window_center is 366th day of year, then use indices of 366th day of year for years with 366 days and for other years indices of first day of year
-        if window_center == 366:
-            return np.where(days_of_years == 365)[0] + 1
-        else:
-            return np.where(days_of_years == window_center)[0]
-
-    def _get_indices_around_window_center(self, days_of_years: np.ndarray, window_center: int) -> np.ndarray:
-        """
-        Gets the indices around a window-center in each year, contained in the window of length window_length.
-
-        Parameters
-        ----------
-        days_of_years : np.ndarray
-            Array of days of years for which indices of window around window_center are returned.
-        window_center: int
-            Window center around which in each year a window of length self.window_length is taken and the indices returned
-        """
-        indices_center = ISIMIP._get_indices_of_window_center(window_center, days_of_years)
-        indices = np.sort(
-            np.mod(
-                np.concatenate(
-                    [
-                        np.arange(i - self.running_window_length // 2, i + self.running_window_length // 2 + 1)
-                        for i in indices_center
-                    ]
-                ),
-                days_of_years.size,
-            )
-        )
-        return indices
-
-    def _get_indices_of_bias_corrected_values(
-        self, days_of_years: np.ndarray, years: np.ndarray, window_center: int
-    ) -> np.ndarray:
-        """
-        Gets the indices of which values inside a running window have been bias corrected (bc) and makes sure that the indices of the bc values do not extend into a neighbouring year.
-        For example if the window_center is 364 and the step size 5 then the day of year values to store the bc values would be [362, 363, 364, 365, 366 or 1, 1 or 2]. However since this would extend into the following year -- values already covered by another running window center/index -- days 1 and 2 are filtered out using years.
-
-        Parameters
-        ----------
-        days_of_years : np.ndarray
-            Array of days of years to find indices of bc values.
-        years: np.ndarray:
-            Array of years to make sure indices of bc values do not extend into neighbouring years.
-        window_center: int
-            Window center around which a window of length self.running_window_step_length is taken which stores the bc values.
-
-        """
-        if window_center == 366:
-            indices_center = np.where(days_of_years == 365)[0] + 1
-            years_indices_center = years[indices_center - 1]
-        else:
-            indices_center = np.where(days_of_years == window_center)[0]
-            years_indices_center = years[indices_center]
-
-        if np.unique(years).size == 1:
-            # If timeseries spans only one year then we only circle through this year anyway and do not need to match running windows together
-            indices = np.concatenate(
-                [
-                    np.arange(i - self.running_window_step_length // 2, i + self.running_window_step_length // 2 + 1)
-                    for i in indices_center
-                ]
-            )
-            indices = indices[(indices <= days_of_years.size) & (indices >= 0)]
-        else:
-            # If timeseries spans multiple year make sure that indices in window-center that get bc-values are only always in one year.
-            years_indices_center = np.unique(years_indices_center)
-            indices = np.array(
-                [
-                    index
-                    for index_nr, index_window_center, in enumerate(indices_center)
-                    # Compute indices in window-center to store bc values inside
-                    for index in np.mod(
-                        np.arange(
-                            index_window_center - self.running_window_step_length // 2,
-                            index_window_center + self.running_window_step_length // 2 + 1,
-                        ),
-                        days_of_years.size,
-                    )
-                    # Make sure these indices are in the respective year
-                    if years[index] == years_indices_center[index_nr]
-                ]
-            )
-
-        return indices
-
     # ----- ISIMIP calculation steps ----- #
     def step1(self, obs_hist, cm_hist, cm_future):
         scale = None
@@ -846,26 +734,27 @@ class ISIMIP(Debiaser):
 
             debiased_cm_future = np.zeros_like(cm_future)
 
-            window_centers = self._get_window_centers(np.max(days_of_year_cm_future))
-
             # Main iteration
-            for day_of_year_center in window_centers:
+            for window_center, indices_bias_corrected_values in self.running_window.use(
+                days_of_year_cm_future, years_cm_future
+            ):
 
-                indices_obs = self._get_indices_around_window_center(days_of_year_obs, day_of_year_center)
-                indices_cm_hist = self._get_indices_around_window_center(days_of_year_cm_hist, day_of_year_center)
-                indices_cm_future = self._get_indices_around_window_center(days_of_year_cm_future, day_of_year_center)
-                indices_bias_corrected_values = self._get_indices_of_bias_corrected_values(
-                    days_of_year_cm_future, years_cm_future, day_of_year_center
+                indices_window_obs = self.running_window.get_indices_vals_in_window(days_of_year_obs, window_center)
+                indices_window_cm_hist = self.running_window.get_indices_vals_in_window(
+                    days_of_year_cm_hist, window_center
+                )
+                indices_window_cm_future = self.running_window.get_indices_vals_in_window(
+                    days_of_year_cm_future, window_center
                 )
 
                 debiased_cm_future[indices_bias_corrected_values] = self._apply_on_window(
-                    obs_hist=obs[indices_obs],
-                    cm_hist=cm_hist[indices_cm_hist],
-                    cm_future=cm_future[indices_cm_future],
-                    years_obs_hist=years_obs[indices_obs],
-                    years_cm_hist=years_cm_hist[indices_cm_hist],
-                    years_cm_future=years_cm_future[indices_cm_future],
-                )[np.in1d(indices_cm_future, indices_bias_corrected_values)]
+                    obs_hist=obs[indices_window_obs],
+                    cm_hist=cm_hist[indices_window_cm_hist],
+                    cm_future=cm_future[indices_window_cm_future],
+                    years_obs_hist=years_obs[indices_window_obs],
+                    years_cm_hist=years_cm_hist[indices_window_cm_hist],
+                    years_cm_future=years_cm_future[indices_window_cm_future],
+                )[np.in1d(indices_window_cm_future, indices_bias_corrected_values)]
 
             return debiased_cm_future
         else:

@@ -208,7 +208,7 @@ class RunningWindowModeOverDaysOfYear:
     ...     indices_vals_in_window = rolling_window.get_indices_vals_in_window(days_of_year, window_center)
     ...     print(indices_vals_in_window)
 
-    Warning: currently only uneven sizes are allowed for window_length_in_days and window_step_length_in_days. This allows symmetrical windows of the form [window_center - self.window_step_length_in_days//2, window_center + self.window_step_length_in_days//2] for the years to adjust and similar for the years in window.
+    Warning: currently only uneven sizes are allowed for window_length_in_days and window_step_length_in_days. This allows symmetrical windows of the form [window_center - self.window_step_length_in_days//2, window_center + self.window_step_length_in_days//2] for the days of year to adjust and similar for the days of year in window.
 
     In contrast to RunningWindowModeOverYears this currently only returns only indices of values. Adjusting for leap years is difficult otherwise.
 
@@ -226,6 +226,18 @@ class RunningWindowModeOverDaysOfYear:
     window_step_length_in_days: int = attrs.field(
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)], converter=round
     )
+
+    def __attrs_post_init__(self):
+        if self.window_length_in_days % 2 == 0:
+            warning(
+                "Currently only uneven window lengths are allowed for window_length_in_days. Automatically increased by 1."
+            )
+            self.window_length_in_days = self.window_length_in_days + 1
+        if self.window_step_length_in_days % 2 == 0:
+            warning(
+                "Currently only uneven step lengths are allowed for window_step_length_in_years. Automatically increased by 1."
+            )
+            self.window_step_length_in_days = self.window_step_length_in_days + 1
 
     # ----- Helpers: get window centers and their indices ----- #
     def _get_window_centers(self, max_day_of_year: int) -> np.ndarray:
@@ -343,7 +355,7 @@ class RunningWindowModeOverDaysOfYear:
 
         return indices
 
-    def use(self, days_of_year, years):
+    def use(self, days_of_year: np.ndarray, years: np.ndarray) -> np.ndarray:
         """
         This applies the running window onto an array of days of year, whilst respecting year bounds.
         It returns an iterator of (indices_vals_to_adjust, window_center) giving:
