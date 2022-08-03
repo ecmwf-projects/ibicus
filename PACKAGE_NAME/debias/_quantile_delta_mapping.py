@@ -17,7 +17,6 @@ from ..utils import (
     RunningWindowOverDaysOfYear,
     RunningWindowOverYears,
     StatisticalModel,
-    create_array_of_consecutive_dates,
     day_of_year,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
@@ -25,13 +24,13 @@ from ..utils import (
     threshold_cdf_vals,
     year,
 )
-from ..variables import Variable, map_standard_precipitation_method, pr, tas
+from ..variables import Variable, pr, tas
 from ._debiaser import Debiaser
 
 default_settings = {
     tas: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
     pr: {
-        "distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05),
+        "distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05, censor_in_ppf=False),
         "trend_preservation": "relative",
     },
 }
@@ -43,35 +42,41 @@ class QuantileDeltaMapping(Debiaser):
     """
     Implements Quantile Delta Mapping following Cannon et al. 2015.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    The future climate projections :math: `x_{\text{cm_fut}}` are adjusted in two steps: 1) they are bias corrected by quantile mapping and in the same time also detrended in all quantiles, 2) the trends in all quantiles -- as projected by the model -- are imposed again onto the bias corrected values.
+    The future climate projections :math:`x_{\\text{cm_fut}}` are adjusted in two steps: 1) they are bias corrected by quantile mapping and in the same time also detrended in all quantiles, 2) the trends in all quantiles -- as projected by the model -- are imposed again onto the bias corrected values.
 
-    In step 1) values :math: `x_{\text{cm_fut}} (t)` are first mapped onto:
+    In step 1) values :math:`x_{\\text{cm_fut}} (t)` are first mapped onto:
 
-    .. math:: x_{\text{cm_fut, bc}} (t) := F^{-1}_{\text{obs}}(\hat F_{\text{cm_fut}}^{(t)}(x_{\text{cm_fut}}(t)))
+    .. math:: x_{\\text{cm_fut, bc}} (t) := F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t)))
 
-    Here :math: `\hat F_{\text{cm_fut}}^{(t)}` is the empirical CDF of future climate model values in a window around t. :math: `F^{-1}_{\text{obs}}` is the inverse CDF estimated by fitting a distribution to observations.
+    Here :math:`\\hat F_{\\text{cm_fut}}^{(t)}` is the empirical CDF of future climate model values in a window around t. :math:`F^{-1}_{\\text{obs}}` is the inverse CDF estimated by fitting a distribution to observations.
 
-    In step 2) :math: `x_{\text{cm_fut, bc}} (t)` is then adjusting by imposing the modeled trend in all quantiles onto the bias corrected values. If relative trends are to be preserved :math: `x_{\text{cm_fut, bc}} (t)` is mapped as follows:
+    In step 2) :math:`x_{\\text{cm_fut, bc}} (t)` is then adjusting by imposing the modeled trend in all quantiles onto the bias corrected values. If relative trends are to be preserved :math:`x_{\\text{cm_fut, bc}} (t)` is mapped as follows:
 
-    .. math:: x_{\text{cm_fut, bc}} (t) \rightarrow x_{\text{cm_fut, bc}} (t) \cdot \Delta_{\text{cm}}^{\text{rel}} (t) = x_{\text{cm_fut, bc}} (t) \cdot \frac{x_{\text{cm_fut}} (t)}{F^{-1}_{\text{cm_hist}}(\hat F_{\text{cm_fut}}^{(t)}(x_{\text{cm_fut}}))}
+    .. math:: x_{\\text{cm_fut, bc}} (t) \\rightarrow x_{\\text{cm_fut, bc}} (t) \\cdot \\Delta_{\\text{cm}}^{\\text{rel}} (t) = x_{\\text{cm_fut, bc}} (t) \\cdot \\frac{x_{\\text{cm_fut}} (t)}{F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}))}
 
     and if absolute trends are to be preserved:
 
-    .. math:: x_{\text{cm_fut, bc}} (t) \rightarrow x_{\text{cm_fut, bc}} (t) \cdot \Delta_{\text{cm}}^{\text{abs}} (t) = x_{\text{cm_fut, bc}} (t) + x_{\text{cm_fut}} (t)}{F^{-1}_{\text{cm_hist}}(\hat F_{\text{cm_fut}}^{(t) - x_{\text{cm_fut}}))
+    .. math:: x_{\\text{cm_fut, bc}} (t) \\rightarrow x_{\\text{cm_fut, bc}} (t) + \\Delta_{\\text{cm}}^{\\text{abs}} (t) = x_{\\text{cm_fut, bc}} (t) + x_{\\text{cm_fut}} (t) - F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)} ( x_{\\text{cm_fut}}))
 
-    Here :math: `F^{-1}_{\text{cm_hist}}` is the inverse CDF estimated by fitting a distribution to the historical climate model run and :math: `\hat F_{\text{cm_fut}}^{(t)}` stands again for the empirical CDF fitted on a time window of future climate model values around t.
+    Here :math:`F^{-1}_{\\text{cm_hist}}` is the inverse CDF estimated by fitting a distribution to the historical climate model run and :math:`\\hat F_{\\text{cm_fut}}^{(t)}` stands again for the empirical CDF fitted on a time window of future climate model values around t.
 
-    Delta Quantile Mapping is approximately trend preserving in all quantiles because the absolute :math: `\Delta_{\text{cm}}^{\text{abs}}` or relative change :math: `\Delta_{\text{cm}}^{\text{rel}}}` is calculated and applied for each quantile individually.
+    Delta Quantile Mapping is approximately trend preserving in all quantiles because the absolute :math:`\\Delta_{\\text{cm}}^{\\text{abs}}` or relative change :math:`\\Delta_{\\text{cm}}^{\\text{rel}}` is calculated and applied for each quantile individually.
 
 
     Running window:
+
     - "running_window_over_year": controls whether the methodology and mapping is applied on a running window over the year to account for seasonality. "running_window_over_year_length" and "running_window_over_year_step_length" control the length (how many days are included in the running window) and step length (by how far the window is shifted and how many days inside are debiased) respectively.
-    - "running_window_mode_over_years_of_cm_future" controls whether a running window is used to estimate the empirical CDF :math: `\hat F_{\text{cm_fut}}^{(t)}(x_{\text{cm_fut}}(t))` and time-dependent quantiles or if this is done statically on the whole future climate model run. running_window_over_years_of_cm_future_length and running_window_over_years_of_cm_future_step_length control the length and step length of this window respectively. Estimation this information in a running window has the advantage of accounting for changes in trends.
+    - "running_window_mode_over_years_of_cm_future" controls whether a running window is used to estimate the empirical CDF :math:`\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t))` and time-dependent quantiles or if this is done statically on the whole future climate model run. running_window_over_years_of_cm_future_length and running_window_over_years_of_cm_future_step_length control the length and step length of this window respectively. Estimation this information in a running window has the advantage of accounting for changes in trends.
 
     If both running windows are active then first the running window inside the year is used to account for seasonality. Values are chunked according to this one. Afterwards the running window over years is used and values are further split up. This is just a choice made for computational efficiency and the order of running window application/chunking does not matter.
 
 
-    Warning: currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center. This affects both within year and over year window.
+    .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center. This affects both within year and over year window.
+
+
+    **References**:
+
+    - Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
 
 
     Attributes
@@ -98,10 +103,6 @@ class QuantileDeltaMapping(Debiaser):
 
     variable: str
         Variable for which the debiasing is done. Default: "unknown".
-
-    References:
-    Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
-    Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211–220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x     Vrac, M., Drobinski, P., Merlo, A., Herrmann, M., Lavaysse, C., Li, L., & Somot, S. (2012). Dynamical and statistical downscaling of the French Mediterranean climate: uncertainty assessment. In Natural Hazards and Earth System Sciences (Vol. 12, Issue 9, pp. 2769–2784). Copernicus GmbH. https://doi.org/10.5194/nhess-12-2769-2012
     """
 
     distribution: Union[
@@ -159,55 +160,22 @@ class QuantileDeltaMapping(Debiaser):
         return super().from_variable(cls, default_settings, variable, **kwargs)
 
     @classmethod
-    def for_precipitation(
-        cls,
-        time_window_length=50,
-        precipitation_model_type: str = "censored",
-        precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
-        precipitation_censoring_value: float = 0.1,
-        precipitation_hurdle_model_randomization: bool = True,
-        precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
-        **kwargs
-    ):
+    def for_precipitation(cls, precipitation_censoring_value: float = 0.05, **kwargs):
         """
-        Instanciates the class to a precipitation-debiaser. This allows granular setting of available precipitation models without needing to explicitly specify the precipitation censored model for example.
+        Instanciates the class to a precipitation-debiaser.
 
         Parameters
         ----------
-        time_window_length: int
-            Length of moving time window to fit ECDFs.
-        precipitation_model_type: str
-            One of ["censored", "hurdle", "ignore_zeros"]. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details.
-        precipitation_amounts_distribution: scipy.stats.rv_continuous
-            Distribution used for precipitation amounts. For the censored model only scipy.stats.gamma is possible.
         precipitation_censoring_value: float
-            The censoring-value if a censored precipitation model is used.
-        precipitation_hurdle_model_randomization: bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details.
-        precipitation_hurdle_model_kwds_for_distribution_fit: dict
-            Dict of parameters used for the distribution fit inside a hurdle model. Standard: location of distribution is fixed at zero (floc = 0) to stabilise Gamma distribution fits in scipy.
+            The censoring-value under which precipitation amounts are assumed zero/censored.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
         """
-        variable = pr
-
-        method = map_standard_precipitation_method(
-            precipitation_model_type,
-            precipitation_amounts_distribution,
-            precipitation_censoring_value,
-            precipitation_hurdle_model_randomization,
-            precipitation_hurdle_model_kwds_for_distribution_fit,
+        distribution = gen_PrecipitationGammaLeftCensoredModel(
+            censoring_value=precipitation_censoring_value, censor_in_ppf=False
         )
-
-        parameters = {
-            **default_settings[variable],
-            "time_window_length": time_window_length,
-            "distribution": method,
-            "variable": variable.name,
-        }
-
-        return cls(**{**parameters, **kwargs})
+        return QuantileDeltaMapping.from_variable("pr", distribution=distribution, **kwargs)
 
     # ----- Main application functions ----- #
     def _apply_debiasing_steps(self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray) -> np.ndarray:
