@@ -45,6 +45,18 @@ class CDFt(Debiaser):
 
     All cdfs here are estimated empirically.
 
+    In case a delta_shift is used the future and historical climate model run are either additively shifted by the difference between observational mean and historical climate model mean or multiplicatively by the quotient between observational mean and historical climate model one. This means for an additive delta shift:
+
+    .. math:: x_{\text{cm_fut}} \\rightarrow x_{\text{cm_fut}} + \bar x_{\text{obs}} - \bar x_{\text{cm_hist}}
+    .. math:: x_{\text{cm_hist}} \\rightarrow x_{\text{cm_hist}} + \bar x_{\text{obs}} - \bar x_{\text{cm_hist}}
+
+    and for a multiplicative delta shift:
+
+    .. math:: x_{\text{cm_fut}} \\rightarrow x_{\text{cm_fut}} \cdot \frac{\bar x_{\text{obs}}}{\bar x_{\text{cm_hist}}}
+    .. math:: x_{\text{cm_hist}} \\rightarrow x_{\text{cm_hist}} \cdot \frac{\bar x_{\text{obs}}}{\bar x_{\text{cm_hist}}}
+
+    This does an additional shift by the mean absolute or relative bias and ensures that the range of observations and cm_hist is approximately similar (important for the empirical CDFs).
+
     If self.SSR = True then Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is used to correct the occurrence in addition to amounts (default for Precipitation). In there all zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
     If self.apply_by_month = True (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
     If self.running_window_mode = True (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
