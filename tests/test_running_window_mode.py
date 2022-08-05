@@ -15,18 +15,18 @@ from datetime import date
 
 import numpy as np
 
-from PACKAGE_NAME.utils import RunningWindowModeOverYears
+from PACKAGE_NAME.utils import RunningWindowOverYears
 
 
 def check_different_maximally_up_to_1(x, y):
     return np.abs(x - y) <= 1
 
 
-class TestCDFt(unittest.TestCase):
+class TestRunningWindowOverYears(unittest.TestCase):
     def test__init__(self):
-        window1 = RunningWindowModeOverYears(9, 17)
-        window2 = RunningWindowModeOverYears(window_step_length_in_years=17, window_length_in_years=9)
-        window3 = RunningWindowModeOverYears(window_length_in_years=4, window_step_length_in_years=2)
+        window1 = RunningWindowOverYears(9, 17)
+        window2 = RunningWindowOverYears(window_step_length_in_years=17, window_length_in_years=9)
+        window3 = RunningWindowOverYears(window_length_in_years=4, window_step_length_in_years=2)
 
         # Test equality
         assert window1 == window2
@@ -34,26 +34,26 @@ class TestCDFt(unittest.TestCase):
 
         # Test validators
         with self.assertRaises(ValueError):
-            RunningWindowModeOverYears(0, 2)
+            RunningWindowOverYears(0, 2)
 
         with self.assertRaises(ValueError):
-            RunningWindowModeOverYears(2, 0)
+            RunningWindowOverYears(2, 0)
 
         with self.assertRaises(TypeError):
-            RunningWindowModeOverYears("2", 0)
+            RunningWindowOverYears("2", 0)
 
         # Test converter
-        window4 = RunningWindowModeOverYears(8.6, 17.0)
+        window4 = RunningWindowOverYears(8.6, 17.0)
         assert window1 == window4
 
     def test_get_if_in_chosen_years(self):
         years = np.arange(2010, 2050)
         chosen_years = np.arange(2040 - 10 // 2, 2040 + 10 // 2)
 
-        assert RunningWindowModeOverYears.get_if_in_chosen_years(years, chosen_years).sum() == 10
+        assert RunningWindowOverYears.get_if_in_chosen_years(years, chosen_years).sum() == 10
 
     def test__get_years_forming_window_centers(self):
-        window = RunningWindowModeOverYears(9, 17)
+        window = RunningWindowOverYears(9, 17)
 
         # Only 1 year
         unique_years = np.array([2020])
@@ -94,14 +94,14 @@ class TestCDFt(unittest.TestCase):
         )
 
     def test__get_years_in_window(self):
-        window = RunningWindowModeOverYears(17, 9)
+        window = RunningWindowOverYears(17, 9)
         years_in_window = window._get_years_in_window(2020)
 
         assert years_in_window.size == window.window_length_in_years
         assert np.array_equal(years_in_window, np.arange(2012, 2028 + 1))
 
     def test__get_years_in_window_that_are_adjusted(self):
-        window = RunningWindowModeOverYears(17, 9)
+        window = RunningWindowOverYears(17, 9)
         years_in_window_bias_corrected = window._get_years_in_window_that_are_adjusted(2020)
 
         assert years_in_window_bias_corrected.size == window.window_step_length_in_years
@@ -130,7 +130,7 @@ class TestCDFt(unittest.TestCase):
     def test_use(self):
         for step_length in range(1, 10):
             for length in range(1, 10):
-                window = RunningWindowModeOverYears(length, step_length)
+                window = RunningWindowOverYears(length, step_length)
                 for i in range(2000, 2050):
                     for j in range(i + 1, 2050):
                         self._test_all_bias_corrected_and_length_each_window(window, i, j)
