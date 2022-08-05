@@ -15,20 +15,20 @@ PACKAGE\_NAME.debias LinearScaling class
 ++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: LinearScaling
-	:members:
+	:members: from_variable, apply
 
 PACKAGE\_NAME.debias DeltaChange class
 ++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: DeltaChange
-	:members:
+	:members: from_variable, apply
 
 
 PACKAGE\_NAME.debias QuantileMapping class
 ++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: QuantileMapping
-	:members:
+	:members: from_variable, for_precipitation, apply
 
 
 PACKAGE\_NAME.debias CDFt class

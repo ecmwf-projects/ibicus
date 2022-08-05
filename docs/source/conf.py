@@ -55,3 +55,18 @@ html_theme = "default" #"alabaster"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+
+#-- Some new settings ------------------------------------------------------------------
+# Automatically extract typehints when specified and place them in
+# descriptions of the relevant function/method.
+autodoc_typehints = "description"
+autodoc_typehints_format = "fully-qualified"
+
+# Styling of autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+# Don't show class signature with the class' name.
+autodoc_class_signature = "mixed"
+autodoc_member_order = "groupwise"
+
+# Do not preserve default arguments
+autodoc_preserve_defaults = False
