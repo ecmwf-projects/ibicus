@@ -32,7 +32,7 @@ from ..utils import (
 )
 from ..variables import Variable
 from ._debiaser import Debiaser
-from ._isimip_options import isimip_2_5
+from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 
 
 # Reference TODO
@@ -134,8 +134,8 @@ class ISIMIP(Debiaser):
         return super().from_variable(
             cls,
             variable=variable,
-            default_settings_variable=isimip_2_5.get("variables"),
-            default_settings_general=isimip_2_5.get("isimip_run"),
+            default_settings_variable=isimip3_variable_settings,
+            default_settings_general=isimip3_general_settings,
             **kwargs,
         )
 

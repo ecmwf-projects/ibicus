@@ -34,6 +34,14 @@ class Variable:
                 raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
 
+hurs = Variable(name="Daily mean near-surface relative humidity", unit="%")
+pr = Variable(name="Daily mean precipitation", unit="kg m-2 s-1", reasonable_physical_range=[0, np.inf])
+# prsn = Variable(name = "Daily mean snowfall flux", unit="kg m-2 s-1")
+prsnratio = Variable("Daily mean snowfall flux / Daily mean precipitation", unit="1")
+psl = Variable(name="Daily mean sea-level pressure", unit="Pa")
+rlds = Variable(name="Daily mean surface downwelling longwave radiation", unit="W m-2")
+rsds = Variable(name="Daily mean surface downwelling shortwave radiation", unit="W m-2")
+sfcwind = Variable(name="Daily mean near-surface wind speed", unit="m s-1")
 tas = Variable(name="Daily mean near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
 tasmin = Variable(name="Daily minimum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
 tasmax = Variable(name="Daily maximum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
@@ -43,17 +51,22 @@ tasrange = Variable(
 tasskew = Variable(
     name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 400]
 )
-pr = Variable(name="Daily mean precipitation", unit="kg m-2 s-1", reasonable_physical_range=[0, np.inf])
 
 
 str_to_variable_class = {
+    "hurs": hurs,
+    "pr": pr,
+    "prsnratio": prsnratio,
+    "ps": psl,
+    "psl": psl,
+    "rlds": rlds,
+    "sfcwind": sfcwind,
     "tas": tas,
     "t2m": tas,
     "tasmin": tasmin,
     "tasmax": tasmax,
     "tasrange": tasrange,
     "tasskew": tasskew,
-    "pr": pr,
 }
 
 

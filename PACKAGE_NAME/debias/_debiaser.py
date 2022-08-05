@@ -32,8 +32,14 @@ class Debiaser(ABC):
 
         Parameters
         ----------
+        child_class:
+            Child class of debiaser to be instantiated.
         variable : Union[str, Variable]
             String or Variable object referring to standard meteorological variable for which default settings can be used.
+        default_settings_variable : dict
+            Dict of default settings for each variables. Has Variable-objects as keys (eg. tas, hurs) and dicts as values which map to the class parameters and store the default settings for these variables.
+        default_settings_general : dict
+            Default: {} (empty dict). Dict of general default settings (not variable specific) for the debiaser. Settings in here get overwritten by the variable specific ones.
         **kwargs:
             All other class attributes that shall be set and where the standard values for variable shall be overwritten.
         """
