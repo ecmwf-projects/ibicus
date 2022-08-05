@@ -64,7 +64,7 @@ class DeltaChange(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(cls, default_settings, variable, **kwargs)
+        return super().from_variable(cls, variable, default_settings, **kwargs)
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
         """Applies delta change at one location and returns the debiased timeseries."""

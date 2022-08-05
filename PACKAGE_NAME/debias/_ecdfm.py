@@ -60,7 +60,7 @@ class ECDFM(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(cls, default_settings, variable, **kwargs)
+        return super().from_variable(cls, variable, default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(

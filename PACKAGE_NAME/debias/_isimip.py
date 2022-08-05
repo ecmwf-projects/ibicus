@@ -30,6 +30,7 @@ from ..utils import (
     threshold_cdf_vals,
     year,
 )
+from ..variables import Variable
 from ._debiaser import Debiaser
 from ._isimip_options import isimip_2_5
 
@@ -129,15 +130,14 @@ class ISIMIP(Debiaser):
             )
 
     @classmethod
-    def from_variable(cls, variable):
-        if variable not in isimip_2_5.get("variables").keys():
-            raise ValueError("variable needs to be one of %s" % isimip_2_5.get("variables").keys())
-        isimip_instance = cls(
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        return super().from_variable(
+            cls,
             variable=variable,
-            **isimip_2_5.get("variables").get(variable),
-            **isimip_2_5.get("isimip_run"),
+            default_settings_variable=isimip_2_5.get("variables"),
+            default_settings_general=isimip_2_5.get("isimip_run"),
+            **kwargs,
         )
-        return isimip_instance
 
     @property
     def has_lower_threshold(self):

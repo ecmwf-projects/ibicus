@@ -20,7 +20,13 @@ class Debiaser(ABC):
         self.name = name
 
     # Constructors
-    def from_variable(child_class, default_settings: dict, variable: Union[str, Variable], **kwargs):
+    def from_variable(
+        child_class,
+        variable: Union[str, Variable],
+        default_settings_variable: dict,
+        default_settings_general: dict = {},
+        **kwargs
+    ):
         """
         Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
 
@@ -37,14 +43,14 @@ class Debiaser(ABC):
         else:
             variable_object = variable
 
-        if variable_object not in default_settings.keys():
+        if variable_object not in default_settings_variable.keys():
             raise ValueError("No default settings exist for %s in debiaser %s" % (variable, child_class.__name__))
 
         parameters = {
-            **default_settings[variable_object],
+            **default_settings_general,
+            **default_settings_variable[variable_object],
             "variable": variable_object.name,
         }
-
         return child_class(**{**parameters, **kwargs})
 
     # Input checks:
@@ -67,6 +73,10 @@ class Debiaser(ABC):
             return False
 
     @staticmethod
+    def contains_inf_nan(x):
+        return any(np.isnan(x) | np.isinf(x))
+
+    @staticmethod
     def check_inputs(obs, cm_hist, cm_future):
         # correct type
         if not Debiaser.is_correct_type(obs):
@@ -85,7 +95,11 @@ class Debiaser(ABC):
         # have shame shape
         if not Debiaser.have_same_shape(obs, cm_hist, cm_future):
             raise ValueError("obs, cm_hist, cm_future need to have same (number of) spatial dimensions")
-
+        """
+        # contains inf, nan or na
+        if Debiaser.contains_inf_nan(obs) or Debiaser.contains_inf_nan(cm_hist) or Debiaser.contains_inf_nan(cm_future):
+            raise ValueError("One of obs, cm_hist, cm_future contains inf or nan values")
+        """
         return True
 
     # Helpers

@@ -9,6 +9,19 @@
 import numpy as np
 import scipy.stats
 
+from ..variables import (
+    hurs,
+    pr,
+    prsnratio,
+    psl,
+    rlds,
+    rsds,
+    sfcWind,
+    tas,
+    tasrange,
+    tasskew,
+)
+
 isimip_2_5 = {
     "isimip_run": {
         # ISIMIP behavior
@@ -23,7 +36,7 @@ isimip_2_5 = {
         "running_window_step_length": 1,  # >= v2.5
     },
     "variables": {
-        "hurs": {
+        hurs: {
             "lower_bound": 0,
             "lower_threshold": 0.01,
             "upper_bound": 100,
@@ -36,7 +49,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": False,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": False,  # v >= 2.5, step 6
         },
-        "pr": {
+        pr: {
             "lower_bound": 0,
             "lower_threshold": 0.1 / 86400,
             "upper_bound": np.inf,
@@ -49,7 +62,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "prsnratio": {
+        prsnratio: {
             "lower_bound": 0,
             "lower_threshold": 0.0001,
             "upper_bound": 1,
@@ -62,7 +75,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "psl": {
+        psl: {
             "lower_bound": -np.inf,
             "lower_threshold": -np.inf,
             "upper_bound": np.inf,
@@ -75,7 +88,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "rsds": {
+        rsds: {
             "lower_bound": 0,
             "lower_threshold": 0.0001,
             "upper_bound": 1,
@@ -88,7 +101,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "rlds": {
+        rlds: {
             "lower_bound": -np.inf,
             "lower_threshold": -np.inf,
             "upper_bound": np.inf,
@@ -101,7 +114,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "sfcWind": {
+        sfcWind: {
             "lower_bound": 0,
             "lower_threshold": 0.01,
             "upper_bound": np.inf,
@@ -114,7 +127,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "tas": {
+        tas: {
             "lower_bound": -np.inf,
             "lower_threshold": -np.inf,
             "upper_bound": np.inf,
@@ -128,7 +141,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "tasrange": {
+        tasrange: {
             "lower_bound": 0,
             "lower_threshold": 0.01,
             "upper_bound": np.inf,
@@ -141,7 +154,7 @@ isimip_2_5 = {
             "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
             "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
         },
-        "tasskew": {
+        tasskew: {
             "lower_bound": 0,
             "lower_threshold": 0.0001,
             "upper_bound": 1,
