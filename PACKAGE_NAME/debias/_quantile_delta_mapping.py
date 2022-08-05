@@ -103,6 +103,11 @@ class QuantileDeltaMapping(Debiaser):
 
     variable: str
         Variable for which the debiasing is done. Default: "unknown".
+
+    ecdf_method: str
+        One of ["kernel_density", "linear_interpolation", "step_function"]. Method used to calculate the empirical CDF. Default: "linear_interpolation".
+    cdf_threshold: Optional[float]
+        Threshold for the CDF-values to round away from 0 and 1. Default: None. It is then set to 1 / (self.running_window_within_year_length * self.running_window_over_years_of_cm_future_length + 1)
     """
 
     distribution: Union[
@@ -141,7 +146,9 @@ class QuantileDeltaMapping(Debiaser):
         default="linear_interpolation",
         validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
     )
-    cdf_threshold: int = attrs.field(default=1e-10, validator=attrs.validators.instance_of(float))
+    cdf_threshold: Optional[float] = attrs.field(
+        default=None, validator=attrs.validators.instance_of((float, type(None)))
+    )
 
     def __attrs_post_init__(self):
         if self.running_window_mode_over_years_of_cm_future:
@@ -153,6 +160,10 @@ class QuantileDeltaMapping(Debiaser):
             self.running_window_within_year = RunningWindowOverDaysOfYear(
                 window_length_in_days=self.running_window_within_year_length,
                 window_step_length_in_days=self.running_window_within_year_step_length,
+            )
+        if self.cdf_threshold is None:
+            self.cdf_threshold = 1 / (
+                self.running_window_within_year_length * self.running_window_over_years_of_cm_future_length + 1
             )
 
     @classmethod
