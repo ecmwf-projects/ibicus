@@ -30,8 +30,10 @@ from ._debiaser import Debiaser
 default_settings = {
     tas: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
     pr: {
-        "distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05, censor_in_ppf=False),
+        "distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=0.05 / 86400, censor_in_ppf=False),
         "trend_preservation": "relative",
+        "censor_values_to_zero": True,
+        "censoring_threshold": 0.05 / 86400,
     },
 }
 
@@ -119,6 +121,12 @@ class QuantileDeltaMapping(Debiaser):
     )
     trend_preservation: str = attrs.field(validator=attrs.validators.in_(["absolute", "relative"]))
 
+    # Relevant for precipitation
+    censor_values_to_zero: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    censoring_threshold: float = attrs.field(
+        default=0.05 / 86400, validator=attrs.validators.instance_of(float), converter=float
+    )
+
     # Running window over years
     running_window_mode_over_years_of_cm_future: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
@@ -168,25 +176,34 @@ class QuantileDeltaMapping(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        if (variable == "pr" or variable == pr) and (censoring_threshold := kwargs.pop("censoring_threshold", None)):
+            return QuantileDeltaMapping.for_precipitation(censoring_threshold, **kwargs)
         return super().from_variable(cls, variable, default_settings, **kwargs)
 
     @classmethod
-    def for_precipitation(cls, precipitation_censoring_value: float = 0.05, **kwargs):
+    def for_precipitation(cls, censoring_threshold: float = 0.05 / 86400, **kwargs):
         """
         Instanciates the class to a precipitation-debiaser.
 
         Parameters
         ----------
-        precipitation_censoring_value: float
+        censoring_threshold: float
             The censoring-value under which precipitation amounts are assumed zero/censored.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
         """
-        distribution = gen_PrecipitationGammaLeftCensoredModel(
-            censoring_value=precipitation_censoring_value, censor_in_ppf=False
+        if distribution := kwargs.pop("distribution", None):
+            warning(
+                "If specifying an own precipitation distribution make sure that the .fit-methods fits to censored data and assumes all observations under the specified censoring_threshold are zero/censored."
+            )
+        else:
+            distribution = gen_PrecipitationGammaLeftCensoredModel(
+                censoring_threshold=censoring_threshold, censor_in_ppf=False
+            )
+        return super().from_variable(
+            cls, "pr", default_settings, censoring_threshold=censoring_threshold, distribution=distribution, **kwargs
         )
-        return QuantileDeltaMapping.from_variable("pr", distribution=distribution, **kwargs)
 
     # ----- Main application functions ----- #
     def _apply_debiasing_steps(self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray) -> np.ndarray:
@@ -200,12 +217,20 @@ class QuantileDeltaMapping(Debiaser):
         )
 
         if self.trend_preservation == "absolute":
-            # print(cm_future + self.distribution.ppf(tau_t, *fit_obs) - self.distribution.ppf(tau_t, *fit_cm_hist))
-            return cm_future + self.distribution.ppf(tau_t, *fit_obs) - self.distribution.ppf(tau_t, *fit_cm_hist)
+            bias_corrected_vals = (
+                cm_future + self.distribution.ppf(tau_t, *fit_obs) - self.distribution.ppf(tau_t, *fit_cm_hist)
+            )
         elif self.trend_preservation == "relative":
-            return cm_future * self.distribution.ppf(tau_t, *fit_obs) / self.distribution.ppf(tau_t, *fit_cm_hist)
+            bias_corrected_vals = (
+                cm_future * self.distribution.ppf(tau_t, *fit_obs) / self.distribution.ppf(tau_t, *fit_cm_hist)
+            )
         else:
             raise ValueError('self.trend_preservation needs to be one of ["absolute", "relative"]')
+
+        if self.censor_values_to_zero:
+            bias_corrected_vals[bias_corrected_vals < self.censoring_threshold] = 0
+
+        return bias_corrected_vals
 
     def _get_obs_and_cm_hist_fits(self, obs: np.ndarray, cm_hist: np.ndarray):
         fit_obs = self.distribution.fit(obs)
@@ -293,7 +318,6 @@ class QuantileDeltaMapping(Debiaser):
                     years_cm_future=years_cm_future[indices_window_cm_future],
                 )[np.in1d(indices_window_cm_future, indices_bias_corrected_values)]
 
-            print(debiased_cm_future)
             return debiased_cm_future
 
         else:
