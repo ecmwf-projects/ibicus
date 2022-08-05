@@ -293,18 +293,18 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
     A left censored gamma model is a gamma distribution where all values under a given threshold are censored: not observed. Those are represented by zero
     This is useful when a slightly higher threshold is used to account for the drizzle effect in climate models.
 
-    In the cdf before calculating all values below the censoring value are first randomized between (0, censoring_value). In the ppf values below
-        the censoring_value are again set to zero. This handles possible inflation in quantile mapping by the censoring-value.
+    In the cdf before calculating all values below the censoring value are first randomized between (0, censoring_threshold). In the ppf values below
+        the censoring_threshold are again set to zero. This handles possible inflation in quantile mapping by the censoring-value.
 
     Parameters
     ----------
-    self.censoring_value : float
+    self.censoring_threshold : float
         Value under which observations are censored.
     self.censor_in_ppf : bool
         If in the ppf mapping values under the threshold are to be censored.
     """
 
-    censoring_value: float = attrs.field(
+    censoring_threshold: float = attrs.field(
         default=0.1, validator=[attrs.validators.instance_of((float)), attrs.validators.gt(0)], converter=float
     )
     censor_in_ppf: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
@@ -350,7 +350,7 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
 
     def fit(self, data: np.ndarray) -> np.ndarray:
         """
-        Fits a censored gamma distribution to precipitation data where everything under `self.censoring_value` is assumed to be
+        Fits a censored gamma distribution to precipitation data where everything under `self.censoring_threshold` is assumed to be
             a censored observation.
 
         Parameters
@@ -363,15 +363,15 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         tuple
             Parameter estimates for the gamma distribution.
         """
-        noncensored_data = data[data > self.censoring_value]
+        noncensored_data = data[data > self.censoring_threshold]
         return gen_PrecipitationGammaLeftCensoredModel._fit_censored_gamma(
-            noncensored_data, data.size - noncensored_data.size, self.censoring_value
+            noncensored_data, data.size - noncensored_data.size, self.censoring_threshold
         )
 
     def cdf(self, x: np.ndarray, *fit: tuple) -> np.ndarray:
         """
         Returns cdf-values of a vector x for the cdf of a precipitation left censored gamma-model.
-        Values x below the censoring value (mainly zeros) are first randomized between (0, censoring_value) before calculating the gamma-cdf.
+        Values x below the censoring value (mainly zeros) are first randomized between (0, censoring_threshold) before calculating the gamma-cdf.
 
         Parameters
         ----------
@@ -385,7 +385,7 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         np.ndarray
             Array containing cdf-values for x.
         """
-        x = np.where(x < self.censoring_value, np.random.uniform(0, self.censoring_value), x)
+        x = np.where(x < self.censoring_threshold, np.random.uniform(0, self.censoring_threshold), x)
         return scipy.stats.gamma.cdf(x, *fit)
 
     def ppf(self, q: np.ndarray, *fit: tuple) -> np.ndarray:
@@ -407,13 +407,12 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         """
         vals = scipy.stats.gamma.ppf(q, *fit)
         if self.censor_in_ppf:
-            vals = np.where(vals < self.censoring_value, 0, vals)
+            vals = np.where(vals < self.censoring_threshold, 0, vals)
         return vals
 
 
 PrecipitationGammaLeftCensoredModel_5mm_threshold = gen_PrecipitationGammaLeftCensoredModel(0.05)
 
-# TODO: think about possibility of kwargs and censoring_value outside of class: as kwarg
 
 """----- Other helpers -----"""
 

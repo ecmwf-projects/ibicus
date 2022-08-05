@@ -73,16 +73,16 @@ str_to_variable_class = {
 def map_standard_precipitation_method(
     precipitation_model_type: str = "censored",
     precipitation_amounts_distribution=scipy.stats.gamma,
-    precipitation_censoring_value: float = 0.1,
+    precipitation_censoring_threshold: float = 0.1,
     precipitation_hurdle_model_randomization: bool = True,
     precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
 ):
     if precipitation_model_type == "censored":
         if precipitation_model_type == "censored" and precipitation_amounts_distribution != scipy.stats.gamma:
             raise ValueError("Only the gamma distribution is supported for a censored precipitation model")
-        if precipitation_censoring_value < 0:
-            raise ValueError("precipitation_censoring_value needs to be >= 0")
-        method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_value=precipitation_censoring_value)
+        if precipitation_censoring_threshold < 0:
+            raise ValueError("precipitation_censoring_threshold needs to be >= 0")
+        method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=precipitation_censoring_threshold)
     elif precipitation_model_type == "hurdle":
         method = utils.gen_PrecipitationHurdleModel(
             distribution=precipitation_amounts_distribution,

@@ -82,7 +82,7 @@ class QuantileMapping(Debiaser):
         cls,
         precipitation_model_type: str = "censored",
         precipitation_amounts_distribution=scipy.stats.gamma,
-        precipitation_censoring_value: float = 0.1,
+        precipitation_censoring_threshold: float = 0.1,
         precipitation_hurdle_model_randomization: bool = True,
         precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
@@ -98,7 +98,7 @@ class QuantileMapping(Debiaser):
             One of ["censored", "hurdle", "ignore_zeros"]. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details.
         precipitation_amounts_distribution: scipy.stats.rv_continuous
             Distribution used for precipitation amounts. For the censored model only scipy.stats.gamma is possible.
-        precipitation_censoring_value: float
+        precipitation_censoring_threshold: float
             The censoring-value if a censored precipitation model is used.
         precipitation_hurdle_model_randomization: bool
             Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details
@@ -113,7 +113,7 @@ class QuantileMapping(Debiaser):
         method = map_standard_precipitation_method(
             precipitation_model_type,
             precipitation_amounts_distribution,
-            precipitation_censoring_value,
+            precipitation_censoring_threshold,
             precipitation_hurdle_model_randomization,
             precipitation_hurdle_model_kwds_for_distribution_fit,
         )
