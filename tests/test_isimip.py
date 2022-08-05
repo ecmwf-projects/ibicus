@@ -19,6 +19,10 @@ from PACKAGE_NAME.debias import ISIMIP
 
 
 class TestISIMIPsteps(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_step2_all_missing(self):
         variable = "prsnratio"
         debiaser = ISIMIP.from_variable(variable)
@@ -80,7 +84,7 @@ class TestISIMIPsteps(unittest.TestCase):
         cm_future = scipy.stats.gamma.rvs(a=1, size=1000)
         debiaser.lower_threshold = np.quantile(cm_future, 0.1)
 
-        step4_output = debiaser.step4(cm_future)
+        step4_output, _, _ = debiaser.step4(cm_future, cm_future, cm_future)
         step4_outside_thresholds = step4_output[
             np.logical_not(debiaser._get_mask_for_values_between_thresholds(step4_output))
         ]
@@ -96,7 +100,7 @@ class TestISIMIPsteps(unittest.TestCase):
         debiaser.lower_threshold = np.quantile(cm_future, 0.1)
         debiaser.upper_threshold = np.quantile(cm_future, 0.9)
 
-        step4_output = debiaser.step4(cm_future)
+        step4_output, _, _ = debiaser.step4(cm_future, cm_future, cm_future)
         step4_outside_thresholds = step4_output[
             np.logical_not(debiaser._get_mask_for_values_between_thresholds(step4_output))
         ]
@@ -112,7 +116,7 @@ class TestISIMIPsteps(unittest.TestCase):
         debiaser.lower_threshold = np.quantile(cm_future, 0.1)
         debiaser.upper_threshold = np.quantile(cm_future, 0.9)
 
-        step4_output = debiaser.step4(cm_future)
+        step4_output, _, _ = debiaser.step4(cm_future, cm_future, cm_future)
         step4_between_thresholds = debiaser._get_values_between_thresholds(step4_output)
         cm_future_between_thresholds = debiaser._get_values_between_thresholds(cm_future)
 
@@ -140,6 +144,10 @@ class TestISIMIPsteps(unittest.TestCase):
 
 
 class TestISIMIPRunningWindowIteration(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test__get_window_centers(self):
         debiaser = ISIMIP.from_variable("pr")
         debiaser.running_window_mode = True
@@ -150,7 +158,7 @@ class TestISIMIPRunningWindowIteration(unittest.TestCase):
             window_centers = debiaser._get_window_centers(366)
 
             # Not day appearing only every four years in there
-            assert not 366 in window_centers
+            assert 366 not in window_centers
             if 366 % debiaser.running_window_step_length > 0:
                 # Enough window centers
                 assert window_centers.size == (366 // debiaser.running_window_step_length) + 1

@@ -11,7 +11,6 @@ Demo tests for raw template.
 """
 
 import unittest
-from datetime import date
 
 import numpy as np
 
@@ -23,6 +22,10 @@ def check_different_maximally_up_to_1(x, y):
 
 
 class TestRunningWindowOverYears(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test__init__(self):
         window1 = RunningWindowOverYears(9, 17)
         window2 = RunningWindowOverYears(window_step_length_in_years=17, window_length_in_years=9)

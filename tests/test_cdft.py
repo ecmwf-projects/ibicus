@@ -17,8 +17,6 @@ import numpy as np
 
 from PACKAGE_NAME.debias import CDFt
 
-np.random.seed(12345)
-
 
 def check_different_maximally_up_to_1(x, y):
     return np.abs(x - y) <= 1
@@ -34,6 +32,10 @@ def get_min_distance_in_array(x):
 
 
 class TestCDFt(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_from_variable(self):
         tas = CDFt.from_variable("tas")
         assert tas.SSR is False

@@ -30,9 +30,6 @@ from PACKAGE_NAME.utils import (
     quantile_map_x_on_y_non_parametically,
 )
 
-np.random.seed(12345)
-ESTIMATION_MAX_DIFF = 0.35
-
 
 def nested_tuples_similar_up_to_diff(tuple1, tuple2, diff):
     if len(tuple1) != len(tuple2):
@@ -50,6 +47,12 @@ def nested_tuples_similar_up_to_diff(tuple1, tuple2, diff):
 
 
 class TestStatisticalModel(unittest.TestCase):
+    ESTIMATION_MAX_DIFF = 0.35
+
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_abstract_StatisticalModel_class(self):
         with self.assertRaises(TypeError):
             StatisticalModel()
@@ -75,10 +78,10 @@ class TestStatisticalModel(unittest.TestCase):
         fit3 = model1.fit(data1[data1 != 0])
         fit4 = model4.fit(data1)
 
-        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
         assert fit1[1] == 0  # loc fixed to zero
         assert fit4[1] == 0 and fit4[2] == 2  # loc and scale fixed to zero and two
-        assert nested_tuples_similar_up_to_diff(fit2, (3, 0, 2), ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit2, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
         assert np.allclose(fit1, fit3)
 
         # Test cdf
@@ -124,11 +127,11 @@ class TestStatisticalModel(unittest.TestCase):
         fit3 = model1.fit(data2)
         fit4 = model3.fit(data2)
 
-        assert nested_tuples_similar_up_to_diff(fit1, (0.6, (3, 0, 2)), ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit1, (0.6, (3, 0, 2)), self.ESTIMATION_MAX_DIFF)
         assert fit1[1][1] == 0  # loc fixed to 0
         assert np.allclose(fit1[1], fit2[1])
-        assert nested_tuples_similar_up_to_diff(fit3, fit4, ESTIMATION_MAX_DIFF)
-        assert nested_tuples_similar_up_to_diff(fit3, (0.6, (3, 0, 1)), ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit3, fit4, self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit3, (0.6, (3, 0, 1)), self.ESTIMATION_MAX_DIFF)
 
         # Test cdf
         cdf_vals = model1.cdf(data1, *(0.6, (3, 0, 2)))
@@ -151,10 +154,10 @@ class TestStatisticalModel(unittest.TestCase):
     def test_gen_PrecipitationGammaLeftCensoredModel(self):
         # Test init
         model1 = gen_PrecipitationGammaLeftCensoredModel()
-        model2 = gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.05)
+        model2 = gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=0.05)
 
         with self.assertRaises(ValueError):
-            gen_PrecipitationGammaLeftCensoredModel(censoring_value=0.0)
+            gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=0.0)
         assert model1 != model2
         assert model2 == PrecipitationGammaLeftCensoredModel_5mm_threshold
 
@@ -164,16 +167,16 @@ class TestStatisticalModel(unittest.TestCase):
         data2 = data1.copy()
         data1[data1 <= threshold] = 0
 
-        model1 = gen_PrecipitationGammaLeftCensoredModel(censoring_value=threshold)
+        model1 = gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=threshold)
 
         fit1 = model1.fit(data1)
         fit2 = scipy.stats.gamma.fit(data2, floc=0)
-        model2 = gen_PrecipitationGammaLeftCensoredModel(censoring_value=np.min(data2) / 2)
+        model2 = gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=np.min(data2) / 2)
         fit3 = model2.fit(data2)
 
-        assert nested_tuples_similar_up_to_diff(fit1, fit2, ESTIMATION_MAX_DIFF)
-        assert nested_tuples_similar_up_to_diff(fit2, fit3, ESTIMATION_MAX_DIFF)
-        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit1, fit2, self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit2, fit3, self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
 
         # Test cdf
         cdf_vals = model1.cdf(data1, *(3, 0, 2))
@@ -199,6 +202,8 @@ class TestStatisticalModel(unittest.TestCase):
 class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        np.random.seed(12345)
+
         cls.x = np.random.random(10000)
         cls.p = np.random.random(1000)
         sorted_p = np.sort(cls.p)
@@ -241,6 +246,10 @@ class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
 
 
 class TestOtherHelpers(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_quantile_map_non_parametically(self):
         vals = np.random.random(100)
         x = np.random.random(1000)

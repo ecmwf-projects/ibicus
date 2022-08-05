@@ -21,8 +21,6 @@ from PACKAGE_NAME.utils import (
     gen_PrecipitationGammaLeftCensoredModel,
 )
 
-np.random.seed(12345)
-
 
 def check_different_maximally_up_to_1(x, y):
     return np.abs(x - y) <= 1
@@ -43,6 +41,10 @@ def gen_precip_data(p0, n, *gamma_args):
 
 
 class TestECDFM(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_from_variable(self):
         tas = ECDFM.from_variable("tas")
         assert tas.distribution == scipy.stats.beta
@@ -72,21 +74,21 @@ class TestECDFM(unittest.TestCase):
         pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
         pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="censored",
-            precipitation_censoring_value=0.2,
+            precipitation_censoring_threshold=0.2,
             precipitation_hurdle_model_randomization=False,
         )
 
         assert pr_1 == pr_2
 
         pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.1))
-        pr_2 = ECDFM.for_precipitation(precipitation_model_type="censored", precipitation_censoring_value=0.2)
+        pr_2 = ECDFM.for_precipitation(precipitation_model_type="censored", precipitation_censoring_threshold=0.2)
 
         assert pr_1 != pr_2
 
         pr_1 = ECDFM.for_precipitation(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
         pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="censored",
-            precipitation_censoring_value=0.2,
+            precipitation_censoring_threshold=0.2,
             precipitation_hurdle_model_randomization=False,
         )
 
@@ -95,7 +97,7 @@ class TestECDFM(unittest.TestCase):
         pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
         pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="hurdle",
-            precipitation_censoring_value=0.2,
+            precipitation_censoring_threshold=0.2,
             precipitation_hurdle_model_randomization=True,
         )
 
@@ -104,7 +106,7 @@ class TestECDFM(unittest.TestCase):
         pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
         pr_2 = ECDFM.for_precipitation(
             precipitation_model_type="hurdle",
-            precipitation_censoring_value=0.2,
+            precipitation_censoring_threshold=0.2,
             precipitation_hurdle_model_randomization=False,
         )
 
@@ -138,7 +140,7 @@ class TestECDFM(unittest.TestCase):
         obs = np.random.beta(5, 2, size=1000)
         cm_hist = obs + 5
         cm_future = np.random.beta(7, 4, size=1000) + 7
-        assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future - 5)
+        assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future - 5, atol=1e-5)
 
     def test_apply_location_pr(self):
         # Compare all values

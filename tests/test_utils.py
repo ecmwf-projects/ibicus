@@ -18,6 +18,10 @@ from PACKAGE_NAME.utils import sort_array_like_another_one
 
 
 class TestUtils(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
     def test_sort_array_like_another_one(self):
         x = np.random.random(1000)
         y = np.random.random(1000)
