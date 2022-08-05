@@ -26,7 +26,7 @@ class ECDFM(Debiaser):
     """
     Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math:`F_{\\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}`are then mapped to:
+    Let :math:`F_{\\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))
 
