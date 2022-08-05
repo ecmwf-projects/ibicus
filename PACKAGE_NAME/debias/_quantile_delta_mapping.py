@@ -89,6 +89,13 @@ class QuantileDeltaMapping(Debiaser):
     trend_preservation: str
         One of ["absolute", "relative"]. If "absolute" then absolute trend preservation is used, if "relative" then relative trend preservation is used.
 
+    censor_values_to_zero: bool
+        Whether values below a censoring threhsold shall be censored to zero. Default: False. Only relevant for precipitation.
+    censoring_threshold: float
+        Threshold below which values shall be censored to zero if censor_values_to_zero = True. Relevant mainly for precipitation.
+        If it is used (so censor_values_to_zero = True) one needs to make sure that the distribution fits to censored data, knows the correct censoring_threshold and assumes all observations under the specified censoring_threshold are zero/censored.
+        If the standard for_precipitation and from_variable methods are used to construct the class this is ensured by default. However if this parameter is changed manually or own distributions for precipitation are specified problems can arise.
+
     running_window_mode_over_years_of_cm_future: bool
         Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
     running_window_over_years_of_cm_future_length: int
