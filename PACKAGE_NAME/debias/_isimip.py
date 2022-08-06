@@ -195,6 +195,12 @@ class ISIMIP(Debiaser):
     def _get_values_between_thresholds(self, x):
         return x[self._get_mask_for_values_between_thresholds(x)]
 
+    def get_proportion_of_days_beyond_lower_threshold(self, x):
+        return self._get_mask_for_values_beyond_lower_threshold(x).mean()
+
+    def get_proportion_of_days_beyond_upper_threshold(self, x):
+        return self._get_mask_for_values_beyond_upper_threshold(x).mean()
+
     def _check_reasonable_physical_range(self, obs_hist, cm_hist, cm_future):
         if self.reasonable_physical_range is not None:
             if np.any((obs_hist < self.reasonable_physical_range[0]) | (obs_hist > self.reasonable_physical_range[1])):
@@ -373,61 +379,55 @@ class ISIMIP(Debiaser):
         mask_for_values_beyond_threshold_cm_future_sorted,
     ):
 
-        P_obs_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_values_beyond_threshold_obs_hist_sorted
-        )
-        P_cm_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_values_beyond_threshold_cm_hist_sorted
-        )
-        P_cm_future = ISIMIP._step6_calculate_percent_values_beyond_threshold(
-            mask_for_values_beyond_threshold_cm_future_sorted
-        )
+        if self.adjust_frequencies_of_values_beyond_thresholds:
 
-        P_obs_future = ISIMIP._step6_get_P_obs_future(P_obs_hist, P_cm_hist, P_cm_future)
+            P_obs_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
+                mask_for_values_beyond_threshold_obs_hist_sorted
+            )
+            P_cm_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
+                mask_for_values_beyond_threshold_cm_hist_sorted
+            )
+            P_cm_future = ISIMIP._step6_calculate_percent_values_beyond_threshold(
+                mask_for_values_beyond_threshold_cm_future_sorted
+            )
+
+            P_obs_future = ISIMIP._step6_get_P_obs_future(P_obs_hist, P_cm_hist, P_cm_future)
+
+        else:
+
+            P_obs_future = ISIMIP._step6_calculate_percent_values_beyond_threshold(
+                mask_for_values_beyond_threshold_obs_hist_sorted
+            )
 
         return round(mask_for_values_beyond_threshold_cm_future_sorted.size * P_obs_future)
 
     @staticmethod
-    def _step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(nr, cm_future_sorted):
+    def _step6_scale_nr_of_entries_to_set_to_bounds(
+        nr_of_entries_to_set_to_lower_bound, nr_of_entries_to_set_to_upper_bound, size_cm_future
+    ):
+        nr_of_entries_to_set_to_lower_bound = round(
+            nr_of_entries_to_set_to_lower_bound
+            * size_cm_future
+            / (nr_of_entries_to_set_to_lower_bound + nr_of_entries_to_set_to_upper_bound)
+        )
+        nr_of_entries_to_set_to_upper_bound = round(
+            nr_of_entries_to_set_to_upper_bound
+            * size_cm_future
+            / (nr_of_entries_to_set_to_lower_bound + nr_of_entries_to_set_to_upper_bound)
+        )
+        return nr_of_entries_to_set_to_lower_bound, nr_of_entries_to_set_to_upper_bound
+
+    @staticmethod
+    def _step6_get_mask_for_entries_to_set_to_lower_bound(nr, cm_future_sorted):
         mask = np.zeros_like(cm_future_sorted, dtype=bool)
         mask[0:nr] = True
         return mask
 
-    def _step6_get_mask_for_entries_to_set_to_lower_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
-
-        nr_of_entries_to_set_to_lower_bound = self._step6_get_nr_of_entries_to_set_to_bound(
-            self._get_mask_for_values_beyond_lower_threshold(obs_hist_sorted),
-            self._get_mask_for_values_beyond_lower_threshold(cm_hist_sorted),
-            self._get_mask_for_values_beyond_lower_threshold(cm_future_sorted),
-        )
-
-        mask_for_entries_to_set_to_lower_bound = (
-            ISIMIP._step6_transform_nr_of_entries_to_set_to_lower_bound_to_mask_for_cm_future(
-                nr_of_entries_to_set_to_lower_bound, cm_future_sorted
-            )
-        )
-        return mask_for_entries_to_set_to_lower_bound
-
     @staticmethod
-    def _step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(nr, cm_future_sorted):
+    def _step6_get_mask_for_entries_to_set_to_upper_bound(nr, cm_future_sorted):
         mask = np.zeros_like(cm_future_sorted, dtype=bool)
         mask[(cm_future_sorted.size - nr) :] = True
         return mask
-
-    def _step6_get_mask_for_entries_to_set_to_upper_bound(self, obs_hist_sorted, cm_hist_sorted, cm_future_sorted):
-
-        nr_of_entries_to_set_to_upper_bound = self._step6_get_nr_of_entries_to_set_to_bound(
-            self._get_mask_for_values_beyond_upper_threshold(obs_hist_sorted),
-            self._get_mask_for_values_beyond_upper_threshold(cm_hist_sorted),
-            self._get_mask_for_values_beyond_upper_threshold(cm_future_sorted),
-        )
-
-        mask_for_entries_to_set_to_upper_bound = (
-            ISIMIP._step6_transform_nr_of_entries_to_set_to_upper_bound_to_mask_for_cm_future(
-                nr_of_entries_to_set_to_upper_bound, cm_future_sorted
-            )
-        )
-        return mask_for_entries_to_set_to_upper_bound
 
     def _step6_adjust_values_between_thresholds(
         self,
@@ -600,27 +600,43 @@ class ISIMIP(Debiaser):
         # Vector to store quantile mapped values
         mapped_vals = cm_future_sorted.copy()
 
-        # Calculate values that are set to lower bound for bounded/thresholded variables
-        mask_for_entries_to_set_to_lower_bound = np.zeros_like(cm_future_sorted, dtype=bool)
+        # Calculate number of values that are set to lower bound for bounded/thresholded variables
+        nr_of_entries_to_set_to_lower_bound = 0
         if self.has_lower_threshold:
-            mask_for_entries_to_set_to_lower_bound = (
-                self._step6_get_mask_for_entries_to_set_to_lower_bound(
-                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-                )
-                if self.adjust_frequencies_of_values_beyond_thresholds
-                else self._get_mask_for_values_beyond_lower_threshold(obs_hist_sorted)
+            nr_of_entries_to_set_to_lower_bound = self._step6_get_nr_of_entries_to_set_to_bound(
+                self._get_mask_for_values_beyond_lower_threshold(obs_hist_sorted),
+                self._get_mask_for_values_beyond_lower_threshold(cm_hist_sorted),
+                self._get_mask_for_values_beyond_lower_threshold(cm_future_sorted),
             )
 
-        # Calculate values that are set to lower bound for bounded/thresholded variables
-        mask_for_entries_to_set_to_upper_bound = np.zeros_like(cm_future_sorted, dtype=bool)
+        # Calculate number of values that are set to lower bound for bounded/thresholded variables
+        nr_of_entries_to_set_to_upper_bound = 0
         if self.has_upper_threshold:
-            mask_for_entries_to_set_to_upper_bound = (
-                self._step6_get_mask_for_entries_to_set_to_upper_bound(
-                    obs_hist_sorted, cm_hist_sorted, cm_future_sorted
-                )
-                if self.adjust_frequencies_of_values_beyond_thresholds
-                else self._get_mask_for_values_beyond_upper_threshold(obs_hist_sorted)
+            nr_of_entries_to_set_to_upper_bound = self._step6_get_nr_of_entries_to_set_to_bound(
+                self._get_mask_for_values_beyond_upper_threshold(obs_hist_sorted),
+                self._get_mask_for_values_beyond_upper_threshold(cm_hist_sorted),
+                self._get_mask_for_values_beyond_upper_threshold(cm_future_sorted),
             )
+
+        # Adjust number of values by scaling if more values are supposed to be set to bound than cm_future has entries
+        if nr_of_entries_to_set_to_lower_bound + nr_of_entries_to_set_to_upper_bound > cm_future_sorted.size:
+            (
+                nr_of_entries_to_set_to_lower_bound,
+                nr_of_entries_to_set_to_upper_bound,
+            ) = ISIMIP._step6_scale_nr_of_entries_to_set_to_bounds(
+                nr_of_entries_to_set_to_lower_bound, nr_of_entries_to_set_to_upper_bound, cm_future_sorted.size
+            )
+
+        # Get mask for the number of entries to set to lower bound if this adjustment is to be done
+        mask_for_entries_to_set_to_lower_bound = self._step6_get_mask_for_entries_to_set_to_lower_bound(
+            nr_of_entries_to_set_to_lower_bound, cm_future_sorted
+        )
+
+        # Get mask for the number of entries to set to higher bound if this adjustment is to be done
+        mask_for_entries_to_set_to_upper_bound = ISIMIP._step6_get_mask_for_entries_to_set_to_upper_bound(
+            nr_of_entries_to_set_to_upper_bound, cm_future_sorted
+        )
+
         # Set values to upper or lower bound for bounded/thresholded variables
         mapped_vals[mask_for_entries_to_set_to_lower_bound] = self.lower_bound
         mapped_vals[mask_for_entries_to_set_to_upper_bound] = self.upper_bound
