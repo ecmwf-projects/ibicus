@@ -60,6 +60,7 @@ str_to_variable_class = {
     "ps": psl,
     "psl": psl,
     "rlds": rlds,
+    "rsds": rsds,
     "sfcwind": sfcwind,
     "tas": tas,
     "t2m": tas,

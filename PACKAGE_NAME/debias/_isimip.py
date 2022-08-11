@@ -73,6 +73,12 @@ class ISIMIP(Debiaser):
     )
 
     # ISIMIP behavior
+    scale_by_annual_cycle_of_upper_bounds: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )  # step 1
+    window_length_annual_cycle_of_upper_bounds: int = attrs.field(
+        default=31, validator=attrs.validators.instance_of(int), converter=int
+    )  # step 1
     trend_removal_with_significance_test: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )  # step 3
@@ -222,13 +228,100 @@ class ISIMIP(Debiaser):
                     % self.reasonable_physical_range
                 )
 
+    @staticmethod
+    def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
+        if obs.size != time_obs.size or cm_hist.size != time_cm_hist.size or cm_future.size != time_cm_future.size:
+            raise ValueError(
+                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
+                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
+            )
+
     # ----- Non public helpers: ISIMIP-steps ----- #
 
-    def _needs_imputation(self, x):
+    def _step1_get_annual_cycle_of_upper_bounds(self, vals, days_of_year_vals):
+
+        # Sort vals and days_of_year_vals by days of year
+        argsort_days_of_year_vals = days_of_year_vals.argsort()
+        vals = vals[argsort_days_of_year_vals]
+        days_of_year_vals = days_of_year_vals[argsort_days_of_year_vals]
+
+        unique_days_of_year, idx_day_of_year = np.unique(days_of_year_vals, return_index=True)
+
+        # Multiyear maximum values
+        multiyear_daily_maximum_values = np.maximum.reduceat(vals, idx_day_of_year)
+
+        # Running maximum:
+        multiyear_daily_maximum_values = scipy.ndimage.maximum_filter1d(
+            multiyear_daily_maximum_values, size=self.window_length_annual_cycle_of_upper_bounds, mode="wrap"
+        )
+        # Running mean:
+        annual_cycle_of_upper_bounds = scipy.ndimage.uniform_filter1d(
+            multiyear_daily_maximum_values, size=self.window_length_annual_cycle_of_upper_bounds, mode="wrap"
+        )
+
+        return annual_cycle_of_upper_bounds, unique_days_of_year
+
+    @staticmethod
+    def _step1_calculate_debiased_annual_cycle_of_upper_bounds(
+        annual_cycle_obs_hist,
+        unique_days_of_year_obs_hist,
+        annual_cycle_cm_hist,
+        unique_days_of_year_cm_hist,
+        annual_cycle_cm_future,
+        unique_days_of_year_cm_future,
+    ):
+        if np.array_equal(unique_days_of_year_cm_hist, unique_days_of_year_cm_future) and np.array_equal(
+            unique_days_of_year_obs_hist, unique_days_of_year_cm_future
+        ):
+            factor = np.where(annual_cycle_cm_hist != 0, annual_cycle_cm_future / annual_cycle_cm_hist, 1)
+            factor = np.maximum(0.1, np.minimum(10.0, factor))
+            debiased_annual_cycle = annual_cycle_obs_hist * factor
+
+        else:
+            # One of obs, cm_hist, cm_future has one or multiple days of year more
+            debiased_annual_cycle = annual_cycle_cm_future.copy()
+            for index, day_of_year in enumerate(unique_days_of_year_cm_future):
+
+                val_cm_future = annual_cycle_cm_future[index]
+                val_cm_hist = annual_cycle_cm_hist[unique_days_of_year_cm_hist == day_of_year]
+                val_obs_hist = annual_cycle_obs_hist[unique_days_of_year_obs_hist == day_of_year]
+
+                # Day of year exists in unique_days_of_year_cm_hist
+                if val_cm_hist.size > 0:
+                    val_cm_hist = val_cm_hist[0]
+
+                    # Day of year exists in unique_days_of_year_obs_hist
+                    if val_obs_hist.size > 0:
+                        val_obs_hist = val_obs_hist[0]
+
+                        debiased_annual_cycle[index] = (
+                            val_obs_hist * val_cm_future / val_cm_hist if val_cm_hist != 0 else val_obs_hist
+                        )
+
+        return debiased_annual_cycle
+
+    @staticmethod
+    def _step1_scale_by_annual_cycle_of_upper_bounds(
+        vals, days_of_year_vals, annual_cycle_of_upper_bounds, days_of_year_annual_cycle_of_upper_bounds
+    ):
+        scaling = np.where(annual_cycle_of_upper_bounds == 0, 1.0, 1 / annual_cycle_of_upper_bounds)
+        scaling = (
+            scaling[days_of_year_vals - 1]
+            if days_of_year_annual_cycle_of_upper_bounds.size == 366
+            else np.array(
+                [
+                    scaling[days_of_year_annual_cycle_of_upper_bounds == day_of_year][0]
+                    for day_of_year in days_of_year_vals
+                ]
+            )
+        )
+        return vals * scaling
+
+    def _step2_needs_imputation(self, x):
         return (np.isnan(x)) | (x < self.lower_bound) | (x > self.upper_bound)
 
     def _step2_impute_values(self, x):
-        if all(mask_values_to_impute := self._needs_imputation(x)):
+        if all(mask_values_to_impute := self._step2_needs_imputation(x)):
             raise ValueError("Step2: Imputation not possible because all values are not defined.")
 
         x[mask_values_to_impute] = iecdf(
@@ -508,14 +601,69 @@ class ISIMIP(Debiaser):
             mapped_vals = self.distribution.ppf(scipy.special.expit(L_obs_hist + delta_log_odds), *fit_obs_future)
         return mapped_vals
 
-    # ----- ISIMIP calculation steps ----- #
-    def step1(self, obs_hist, cm_hist, cm_future):
-        scale = None
-        if self.variable == "rsds":
-            # TODO
-            pass
+    @staticmethod
+    def _step8_rescale_by_annual_cycle_of_upper_bounds(
+        vals, days_of_year_vals, annual_cycle_of_upper_bounds, days_of_year_annual_cycle_of_upper_bounds
+    ):
+        scaling = (
+            annual_cycle_of_upper_bounds[days_of_year_vals - 1]
+            if days_of_year_annual_cycle_of_upper_bounds.size == 366
+            else np.array(
+                [
+                    annual_cycle_of_upper_bounds[days_of_year_annual_cycle_of_upper_bounds == day_of_year][0]
+                    for day_of_year in days_of_year_vals
+                ]
+            )
+        )
+        return vals * scaling
 
-        return obs_hist, cm_hist, cm_future, scale
+    # ----- ISIMIP calculation steps ----- #
+
+    def step1(self, obs_hist, cm_hist, cm_future, time_obs_hist, time_cm_hist, time_cm_future):
+        """
+        Step 1: rsds only (if scale_by_annual_cycle_of_upper_bounds = True).
+        Scales obs, cm_hist and cm_future values to [0, 1] by computing an annual cycle of upper bounds as "running mean values of running maximum values of multiyear daily maximum values." (Lange 2019). Furthermore return a debiased annual cycle of upper bounds to rescale cm_future values in step8.
+        """
+        debiased_annual_cycle = None
+        if self.scale_by_annual_cycle_of_upper_bounds:
+
+            days_of_year_obs_hist = day_of_year(time_obs_hist)
+            days_of_year_cm_hist = day_of_year(time_cm_hist)
+            days_of_year_cm_future = day_of_year(time_cm_future)
+
+            # Calculate the annual cycles
+            annual_cycle_obs_hist, unique_days_of_year_obs_hist = self._step1_get_annual_cycle_of_upper_bounds(
+                obs_hist, days_of_year_obs_hist
+            )
+            annual_cycle_cm_hist, unique_days_of_year_cm_hist = self._step1_get_annual_cycle_of_upper_bounds(
+                cm_hist, days_of_year_cm_hist
+            )
+            annual_cycle_cm_future, unique_days_of_year_cm_future = self._step1_get_annual_cycle_of_upper_bounds(
+                cm_future, days_of_year_cm_future
+            )
+
+            # Remove the annual cycle from observations and climate model values
+            obs_hist = ISIMIP._step1_scale_by_annual_cycle_of_upper_bounds(
+                obs_hist, days_of_year_obs_hist, annual_cycle_obs_hist, unique_days_of_year_obs_hist
+            )
+            cm_hist = ISIMIP._step1_scale_by_annual_cycle_of_upper_bounds(
+                cm_hist, days_of_year_cm_hist, annual_cycle_cm_hist, unique_days_of_year_cm_hist
+            )
+            cm_future = ISIMIP._step1_scale_by_annual_cycle_of_upper_bounds(
+                cm_future, days_of_year_cm_future, annual_cycle_cm_future, unique_days_of_year_cm_future
+            )
+
+            # Calculate the debiased annual cycle:
+            debiased_annual_cycle = ISIMIP._step1_calculate_debiased_annual_cycle_of_upper_bounds(
+                annual_cycle_obs_hist,
+                unique_days_of_year_obs_hist,
+                annual_cycle_cm_hist,
+                unique_days_of_year_cm_hist,
+                annual_cycle_cm_future,
+                unique_days_of_year_cm_future,
+            )
+
+        return obs_hist, cm_hist, cm_future, debiased_annual_cycle
 
     def step2(self, obs_hist, cm_hist, cm_future):
         """
@@ -667,12 +815,22 @@ class ISIMIP(Debiaser):
             cm_future = cm_future + trend_cm_future
         return cm_future
 
-    def step8(self, cm_future, scale):
-        if self.variable == "rsds":
-            pass
+    def step8(self, cm_future, debiased_annual_cycle, time_cm_future):
+        """
+        Step 8: rsds only (if scale_by_annual_cycle_of_upper_bounds = True).
+        Scales debiased cm_future on [0, 1] back to the usual scale using the debiased annual cycle
+        """
+        if self.scale_by_annual_cycle_of_upper_bounds:
+
+            days_of_year_cm_future = day_of_year(time_cm_future)
+            cm_future = ISIMIP._step8_rescale_by_annual_cycle_of_upper_bounds(
+                cm_future, days_of_year_cm_future, debiased_annual_cycle, np.unique(days_of_year_cm_future)
+            )
+
         return cm_future
 
     # ----- Apply location function -----
+
     def _apply_on_window(
         self,
         obs_hist: np.ndarray,
@@ -682,8 +840,9 @@ class ISIMIP(Debiaser):
         years_cm_hist: np.ndarray = None,
         years_cm_future: np.ndarray = None,
     ) -> np.ndarray:
-        # Steps
-        obs_hist, cm_hist, cm_future, scale = self.step1(obs_hist, cm_hist, cm_future)
+
+        # Apply all ISIMIP steps
+        # Step 1 & 8 are outside the running window iteration
         obs_hist, cm_hist, cm_future = self.step2(obs_hist, cm_hist, cm_future)
         obs_hist, cm_hist, cm_future, trend_cm_future = self.step3(
             obs_hist, cm_hist, cm_future, years_obs_hist, years_cm_hist, years_cm_future
@@ -692,8 +851,7 @@ class ISIMIP(Debiaser):
         obs_future = self.step5(obs_hist, cm_hist, cm_future)
         cm_future = self.step6(obs_hist, obs_future, cm_hist, cm_future)
         cm_future = self.step7(cm_future, trend_cm_future)
-        cm_future = self.step8(cm_future, scale)
-
+        # Step 1 & 8 are outside the running window iteration
         return cm_future
 
     def apply_location(
@@ -719,9 +877,16 @@ class ISIMIP(Debiaser):
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
+        ISIMIP._check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+
         years_obs = year(time_obs)
         years_cm_hist = year(time_cm_hist)
         years_cm_future = year(time_cm_future)
+
+        # Step 1 & 8 are outside the running window iteration
+        obs, cm_hist, cm_future, debiased_annual_cycle = self.step1(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         if self.running_window_mode:
 
@@ -753,7 +918,6 @@ class ISIMIP(Debiaser):
                     years_cm_future=years_cm_future[indices_window_cm_future],
                 )[np.in1d(indices_window_cm_future, indices_bias_corrected_values)]
 
-            return debiased_cm_future
         else:
             months_obs = month(time_obs)
             months_cm_hist = month(time_cm_hist)
@@ -773,4 +937,8 @@ class ISIMIP(Debiaser):
                     years_cm_hist=years_cm_hist[mask_i_month_in_cm_hist],
                     years_cm_future=years_cm_future[mask_i_month_in_cm_future],
                 )
-            return debiased_cm_future
+
+        # Step 1 & 8 are outside the running window iteration
+        debiased_cm_future = self.step8(debiased_cm_future, debiased_annual_cycle, time_cm_future)
+
+        return debiased_cm_future
