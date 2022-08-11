@@ -212,7 +212,17 @@ class QuantileDeltaMapping(Debiaser):
             cls, "pr", default_settings, censoring_threshold=censoring_threshold, distribution=distribution, **kwargs
         )
 
+    # ----- Helpers ----- #
+    @staticmethod
+    def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
+        if obs.size != time_obs.size or cm_hist.size != time_cm_hist.size or cm_future.size != time_cm_future.size:
+            raise ValueError(
+                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
+                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
+            )
+
     # ----- Main application functions ----- #
+
     def _apply_debiasing_steps(self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray) -> np.ndarray:
         """
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.
@@ -292,6 +302,10 @@ class QuantileDeltaMapping(Debiaser):
             time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
+
+        QuantileDeltaMapping._check_time_information_and_raise_error(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         years_cm_future = year(time_cm_future)
 

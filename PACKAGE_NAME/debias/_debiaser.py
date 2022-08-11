@@ -50,7 +50,10 @@ class Debiaser(ABC):
             variable_object = variable
 
         if variable_object not in default_settings_variable.keys():
-            raise ValueError("No default settings exist for %s in debiaser %s" % (variable, child_class.__name__))
+            raise ValueError(
+                "Unfortunately currently no default settings exist for the variable '%s' in the debiaser %s. You can set the required class parameters manually by using the class constructor. This also allows more fine-grained optimization of the debiaser."
+                % (variable, child_class.__name__)
+            )
 
         parameters = {
             **default_settings_general,

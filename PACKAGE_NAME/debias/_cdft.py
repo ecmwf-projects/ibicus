@@ -143,6 +143,15 @@ class CDFt(Debiaser):
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         return super().from_variable(cls, variable, default_settings, **kwargs)
 
+    # ----- Helpers: General ----- #
+    @staticmethod
+    def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
+        if obs.size != time_obs.size or cm_hist.size != time_cm_hist.size or cm_future.size != time_cm_future.size:
+            raise ValueError(
+                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
+                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
+            )
+
     # ----- Helpers: CDFt application -----#
 
     def _apply_CDFt_mapping(self, obs, cm_hist, cm_future):
@@ -257,6 +266,8 @@ class CDFt(Debiaser):
             time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
+
+        CDFt._check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
 
         if self.running_window_mode:
             years_cm_future = year(time_cm_future)
