@@ -17,9 +17,9 @@ from tqdm import tqdm
 from ..variables import Variable, map_variable_str_to_variable_class
 
 
-@attrs.define(slots=False)
+@attrs.define(slots=False, kw_only=True)
 class Debiaser(ABC):
-    variable: str = attrs.field(validator=attrs.validators.instance_of(str), eq=False)
+    variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str), eq=False)
 
     # Constructors
     def from_variable(
