@@ -28,7 +28,6 @@ default_settings = {
 class ScaledDistributionMapping(Debiaser):
 
     mapping_type: str = attrs.field(validator=attrs.validators.in_(["absolute", "relative"]))
-    variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):

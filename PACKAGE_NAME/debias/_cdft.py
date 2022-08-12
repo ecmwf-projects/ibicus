@@ -107,9 +107,6 @@ class CDFt(Debiaser):
     running_window_length_in_years: int = attrs.field(default=17, validator=attrs.validators.instance_of(int))
     running_window_step_length_in_years: int = attrs.field(default=9, validator=attrs.validators.instance_of(int))
 
-    # Variable meta information
-    variable: str = attrs.field(default="unknown", eq=False)
-
     # Calculation parameters
     ecdf_method: str = attrs.field(
         default="linear_interpolation",

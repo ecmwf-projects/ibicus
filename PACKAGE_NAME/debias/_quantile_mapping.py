@@ -70,7 +70,6 @@ class QuantileMapping(Debiaser):
     detrending: str = attrs.field(
         default="no_detrending", validator=attrs.validators.in_(["additive", "multiplicative", "no_detrending"])
     )
-    variable: str = attrs.field(default="unknown", eq=False)
 
     # ----- Constructors -----
     @classmethod

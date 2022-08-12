@@ -56,7 +56,6 @@ class ECDFM(Debiaser):
             (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
         )
     )
-    variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):

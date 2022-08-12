@@ -154,8 +154,6 @@ class QuantileDeltaMapping(Debiaser):
         default=31, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
     )
 
-    variable: str = attrs.field(default="unknown", eq=False)
-
     # Calculation parameters
     ecdf_method: str = attrs.field(
         default="linear_interpolation",

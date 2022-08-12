@@ -10,15 +10,16 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Union
 
+import attrs
 import numpy as np
 from tqdm import tqdm
 
 from ..variables import Variable, map_variable_str_to_variable_class
 
 
+@attrs.define(slots=False)
 class Debiaser(ABC):
-    def __init__(self, name):
-        self.name = name
+    variable: str = attrs.field(validator=attrs.validators.instance_of(str), eq=False)
 
     # Constructors
     def from_variable(

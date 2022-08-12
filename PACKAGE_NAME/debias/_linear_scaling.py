@@ -60,7 +60,6 @@ class LinearScaling(Debiaser):
     """
 
     delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
-    variable: str = attrs.field(default="unknown", eq=False)
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):

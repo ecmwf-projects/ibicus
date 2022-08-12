@@ -63,8 +63,6 @@ class ISIMIP(Debiaser):
             if not value[0] < value[1]:
                 raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
 
-    variable: str = attrs.field(default="unknown", eq=False)
-
     # Bounds
     lower_bound: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
     lower_threshold: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
