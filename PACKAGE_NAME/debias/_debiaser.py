@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Union
 
@@ -62,56 +63,148 @@ class Debiaser(ABC):
         }
         return child_class(**{**parameters, **kwargs})
 
-    # Input checks:
+    # ----- Helpers: Input checks ----- #
+
     @staticmethod
     def is_correct_type(df):
         return isinstance(df, np.ndarray)
 
     @staticmethod
     def has_correct_shape(df):
-        if df.ndim == 3:
-            return True
-        else:
-            return False
+        return df.ndim == 3
 
     @staticmethod
     def have_same_shape(obs, cm_hist, cm_future):
-        if obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]:
-            return True
-        else:
-            return False
+        return obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]
 
     @staticmethod
     def contains_inf_nan(x):
-        return any(np.isnan(x) | np.isinf(x))
+        return np.any(np.logical_or(np.isnan(x), np.isinf(x)))
 
     @staticmethod
-    def check_inputs(obs, cm_hist, cm_future):
+    def has_float_dtype(x):
+        return np.issubdtype(x.dtype, np.floating)
+
+    @staticmethod
+    def is_masked_array(x):
+        return isinstance(x, np.ma.core.MaskedArray)
+
+    @staticmethod
+    def masked_array_contains_invalid_values(x):
+        return np.any(x.mask)
+
+    # ----- Helpers: Input converters ----- #
+
+    @staticmethod
+    def convert_to_float_dtype(x):
+        try:
+            return x.astype(float)
+        except:
+            raise ValueError("Conversion to float not possible. Please use float datatype for obs, cm_hist, cm_future.")
+
+    @staticmethod
+    def fill_masked_array_with_nan(x):
+        return x.filled(np.nan)
+
+    # ----- Input checks ----- #
+
+    @staticmethod
+    def check_inputs_and_convert_if_possible(obs, cm_hist, cm_future):
+
         # correct type
         if not Debiaser.is_correct_type(obs):
             raise TypeError("Wrong type for obs. Needs to be np.ndarray")
+        if not Debiaser.is_correct_type(cm_hist):
+            raise TypeError("Wrong type for cm_hist. Needs to be np.ndarray")
+        if not Debiaser.is_correct_type(cm_future):
+            raise TypeError("Wrong type for cm_future. Needs to be np.ndarray")
+
+        # correct dtype
+        if not Debiaser.has_float_dtype(obs):
+            logging.warning("obs does not have a float dtype. Attempting conversion.")
+            obs = Debiaser.convert_to_float_dtype(obs)
+        if not Debiaser.has_float_dtype(cm_hist):
+            logging.warning("cm_hist does not have a float dtype. Attempting conversion.")
+            cm_hist = Debiaser.convert_to_float_dtype(cm_hist)
+        if not Debiaser.has_float_dtype(cm_future):
+            logging.warning("cm_future does not have a float dtype. Attempting conversion.")
+            cm_future = Debiaser.convert_to_float_dtype(cm_future)
 
         # correct shape
         if not Debiaser.has_correct_shape(obs):
             raise ValueError("obs needs to have 3 dimensions: time, x, y")
-
         if not Debiaser.has_correct_shape(cm_hist):
             raise ValueError("cm_hist needs to have 3 dimensions: time, x, y")
-
         if not Debiaser.has_correct_shape(cm_future):
             raise ValueError("cm_future needs to have 3 dimensions: time, x, y")
 
         # have shame shape
         if not Debiaser.have_same_shape(obs, cm_hist, cm_future):
             raise ValueError("obs, cm_hist, cm_future need to have same (number of) spatial dimensions")
-        """
-        # contains inf, nan or na
-        if Debiaser.contains_inf_nan(obs) or Debiaser.contains_inf_nan(cm_hist) or Debiaser.contains_inf_nan(cm_future):
-            raise ValueError("One of obs, cm_hist, cm_future contains inf or nan values")
-        """
-        return True
 
-    # Helpers
+        # contains inf or nan
+        if Debiaser.contains_inf_nan(obs):
+            logging.warning(
+                "obs contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            )
+        if Debiaser.contains_inf_nan(cm_hist):
+            logging.warning(
+                "cm_hist contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            )
+        if Debiaser.contains_inf_nan(cm_future):
+            logging.warning(
+                "cm_future contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            )
+
+        # masked arrays
+        if Debiaser.is_masked_array(obs):
+            if Debiaser.masked_array_contains_invalid_values(obs):
+                logging.warning(
+                    "obs is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                )
+            else:
+                logging.info(
+                    "obs is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                )
+            obs = Debiaser.fill_masked_array_with_nan(obs)
+        if Debiaser.is_masked_array(cm_hist):
+            if Debiaser.masked_array_contains_invalid_values(cm_hist):
+                logging.warning(
+                    "cm_hist is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                )
+            else:
+                logging.info(
+                    "cm_hist is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                )
+            cm_hist = Debiaser.fill_masked_array_with_nan(cm_hist)
+        if Debiaser.is_masked_array(cm_future):
+            if Debiaser.masked_array_contains_invalid_values(cm_future):
+                logging.warning(
+                    "cm_future is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                )
+            else:
+                logging.info(
+                    "cm_future is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                )
+            cm_future = Debiaser.fill_masked_array_with_nan(cm_future)
+
+        return obs, cm_hist, cm_future
+
+    # ----- Helpers ----- #
+
+    @staticmethod
+    def set_up_logging(verbosity):
+        if verbosity == "INFO":
+            level = logging.INFO
+        elif verbosity == "WARNING":
+            level = logging.WARNING
+        elif verbosity == "ERROR":
+            level = logging.ERROR
+        else:
+            raise ValueError('verbosity needs to be one of ["INFO", "WARNING", "ERROR"]')
+
+        logging.basicConfig(encoding="utf-8", level=level)
+
     @staticmethod
     def _unpack_iterable_args_and_get_locationwise_info(i, j, iterable_args):
         return {
@@ -130,14 +223,21 @@ class Debiaser(ABC):
             output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs)
         return output
 
-    # Apply functions:
+    # ----- Apply functions ----- #
+
     @abstractmethod
     def apply_location(self, obs, cm_hist, cm_future, **kwargs):
         pass
 
-    def apply(self, obs, cm_hist, cm_future, **kwargs):
-        print("----- Running debiasing -----")
-        Debiaser.check_inputs(obs, cm_hist, cm_future)
+    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", **kwargs):
+        """
+        Applies the debiaser onto given data.
+        """
+
+        Debiaser.set_up_logging(verbosity)
+        logging.info("----- Running debiasing for variable: %s -----" % self.variable)
+
+        obs, cm_hist, cm_future = Debiaser.check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
             self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future, **kwargs

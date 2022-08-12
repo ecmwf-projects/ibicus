@@ -77,7 +77,7 @@ class DeltaChange(Debiaser):
 
     def apply(self, obs, cm_hist, cm_future):
         print("----- Running debiasing -----")
-        Debiaser.check_inputs(obs, cm_hist, cm_future)
+        Debiaser.check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
             func=self.apply_location, output_size=obs.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
