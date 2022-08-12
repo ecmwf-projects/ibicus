@@ -39,9 +39,10 @@ isimip3_general_settings = {
     "window_length_annual_cycle_of_upper_bounds": 31,  # step 1
     "impute_missing_values": False,  # step 2
     "detrending": False,  # step 3
+    "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
+    "ks_test_for_goodness_of_cdf_fit": True,  # step 6
     "nonparametric_qm": False,  # >= v2.4.1 step 6
     "event_likelihood_adjustment": False,  # >= v2.5 step 6
-    "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
     "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
 }
 

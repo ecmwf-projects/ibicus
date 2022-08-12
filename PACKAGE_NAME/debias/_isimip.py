@@ -93,6 +93,9 @@ class ISIMIP(Debiaser):
     event_likelihood_adjustment: bool = attrs.field(
         default=False, validator=attrs.validators.instance_of(bool)
     )  # step 6
+    ks_test_for_goodness_of_cdf_fit: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )  # step6
     nonparametric_qm: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))  # step6
 
     # math functions
@@ -552,6 +555,11 @@ class ISIMIP(Debiaser):
         mask[(cm_future_sorted.size - nr) :] = True
         return mask
 
+    @staticmethod
+    def _step6_fit_good_enough(data, distribution, fit):
+        ks_statistic = scipy.stats.kstest(data, distribution.cdf, args=fit)[0]
+        return ks_statistic <= 0.5
+
     def _step6_adjust_values_between_thresholds(
         self,
         obs_hist_sorted_entries_between_thresholds,
@@ -596,6 +604,28 @@ class ISIMIP(Debiaser):
         # Calculate cdf-fits
         fit_cm_future = self.distribution.fit(cm_future_sorted_entries_between_thresholds, **fixed_args)
         fit_obs_future = self.distribution.fit(obs_future_sorted_entries_between_thresholds, **fixed_args)
+
+        # If ks_test_for_goodness_of_fit = True then test for goodness of fit and do nonparametric qm if too bad
+        if self.ks_test_for_goodness_of_cdf_fit:
+
+            if not (
+                ISIMIP._step6_fit_good_enough(
+                    cm_future_sorted_entries_between_thresholds, self.distribution, fit_cm_future
+                )
+                and ISIMIP._step6_fit_good_enough(
+                    obs_future_sorted_entries_between_thresholds, self.distribution, fit_obs_future
+                )
+            ):
+                warning(
+                    "Step 6: Goodness of fit not good enough according to ks-test. Using nonparametric quantile mapping instead."
+                )
+                return quantile_map_non_parametically(
+                    x=cm_future_sorted_entries_not_sent_to_bound,
+                    y=obs_future_sorted_entries_between_thresholds,
+                    vals=cm_future_sorted_entries_not_sent_to_bound,
+                    ecdf_method=self.ecdf_method,
+                    iecdf_method=self.iecdf_method,
+                )
 
         # Get the cdf-vals of cm_future
         cdf_vals_cm_future = threshold_cdf_vals(
