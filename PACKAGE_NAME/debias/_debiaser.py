@@ -194,6 +194,8 @@ class Debiaser(ABC):
 
     @staticmethod
     def set_up_logging(verbosity):
+        verbosity = verbosity.upper()
+
         if verbosity == "INFO":
             level = logging.INFO
         elif verbosity == "WARNING":
@@ -204,6 +206,7 @@ class Debiaser(ABC):
             raise ValueError('verbosity needs to be one of ["INFO", "WARNING", "ERROR"]')
 
         logging.basicConfig(encoding="utf-8", level=level)
+        logging.getLogger().setLevel(level)
 
     @staticmethod
     def _unpack_iterable_args_and_get_locationwise_info(i, j, iterable_args):
