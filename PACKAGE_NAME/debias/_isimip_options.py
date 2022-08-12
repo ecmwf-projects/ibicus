@@ -37,7 +37,8 @@ isimip3_general_settings = {
     # Standard algorithm behavior (overwritten by variables potentially)
     "scale_by_annual_cycle_of_upper_bounds": False,  # step 1
     "window_length_annual_cycle_of_upper_bounds": 31,  # step 1
-    "detrending": False,
+    "impute_missing_values": False,  # step 2
+    "detrending": False,  # step 3
     "nonparametric_qm": False,  # >= v2.4.1 step 6
     "event_likelihood_adjustment": False,  # >= v2.5 step 6
     "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
@@ -72,6 +73,7 @@ isimip3_variable_settings = {
         "upper_threshold": 0.9999,
         "distribution": scipy.stats.beta,
         "trend_preservation_method": "bounded",
+        "impute_missing_values": True,  # step 2
         "nonparametric_qm": True,  # >= v2.4.1 step 6
     },
     psl: {

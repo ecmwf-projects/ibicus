@@ -11,6 +11,7 @@ from typing import Optional, Union
 
 import attrs
 import numpy as np
+import scipy.interpolate
 import scipy.special
 import scipy.stats
 
@@ -79,6 +80,7 @@ class ISIMIP(Debiaser):
     window_length_annual_cycle_of_upper_bounds: int = attrs.field(
         default=31, validator=attrs.validators.instance_of(int), converter=int
     )  # step 1
+    impute_missing_values: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
     trend_removal_with_significance_test: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )  # step 3
@@ -317,18 +319,46 @@ class ISIMIP(Debiaser):
         )
         return vals * scaling
 
-    def _step2_needs_imputation(self, x):
-        return (np.isnan(x)) | (x < self.lower_bound) | (x > self.upper_bound)
+    def _step2_get_mask_for_values_to_impute(self, x):
+        return np.logical_or(np.isnan(x), np.isinf(x))
 
     def _step2_impute_values(self, x):
-        if all(mask_values_to_impute := self._step2_needs_imputation(x)):
-            raise ValueError("Step2: Imputation not possible because all values are not defined.")
 
-        x[mask_values_to_impute] = iecdf(
-            x=x[np.logical_not(mask_values_to_impute)],
-            p=np.random.uniform(size=mask_values_to_impute.sum()),
+        mask_values_to_impute = self._step2_get_mask_for_values_to_impute(x)
+        mask_valid_values = np.logical_not(mask_values_to_impute)
+        valid_values = x[mask_valid_values]
+
+        # If all values are invalid raise error
+        if valid_values.size == 0:
+            raise ValueError("Step2: Imputation not possible because all values are invalid in the given month/window.")
+
+        # If only one valid value exist insert this one at locations of invalid values
+        if valid_values.size == 1:
+            x[mask_values_to_impute] = valid_values[0]
+            return x
+
+        # Sample invalid values from the valid ones
+        sampled_values = iecdf(
+            x=valid_values,
+            p=np.random.random(size=mask_values_to_impute.sum()),
             method=self.iecdf_method,
         )
+
+        # Compute a backsort of how sorted valid values would be reinserted
+        indices_valid_values = np.where(mask_valid_values)[0]
+        backsort_sorted_valid_values = np.argsort(np.argsort(valid_values))
+        interpolated_backsort_valid_values = scipy.interpolate.interp1d(
+            indices_valid_values, backsort_sorted_valid_values, fill_value="extrapolate"
+        )
+
+        # Use this backsort to compute where sorted sampled values for invalid values would be reinserted
+        backsort_invalid_values = np.argsort(
+            np.argsort(interpolated_backsort_valid_values(np.where(mask_values_to_impute)[0]))
+        )
+
+        # Reinserted sorted sampled values into the locations
+        x[mask_values_to_impute] = np.sort(sampled_values)[backsort_invalid_values]
+
         return x
 
     def _step3_remove_trend(self, x, years):
@@ -669,7 +699,7 @@ class ISIMIP(Debiaser):
         """
         Step 2: impute values for prsnratio which are missing on days where there is no precipitation. They are imputed by effectively sampling the iecdf (see Lange 2019 and ISIMIP3b factsheet for the method).
         """
-        if self.variable == "prsnratio":
+        if self.impute_missing_values:
             obs_hist = self._step2_impute_values(obs_hist)
             cm_hist = self._step2_impute_values(cm_hist)
             cm_future = self._step2_impute_values(cm_future)
@@ -719,11 +749,16 @@ class ISIMIP(Debiaser):
         if self.trend_transfer_only_for_values_within_threshold:
             mask_for_values_between_thresholds_obs_hist = self._get_mask_for_values_between_thresholds(obs_hist)
             obs_future = obs_hist.copy()
-            obs_future[mask_for_values_between_thresholds_obs_hist] = self._step5_transfer_trend(
-                obs_hist[mask_for_values_between_thresholds_obs_hist],
-                self._get_values_between_thresholds(cm_hist),
-                self._get_values_between_thresholds(cm_future),
-            )
+            if (
+                any(mask_for_values_between_thresholds_obs_hist) > 0
+                and (values_between_thresholds_cm_hist := self._get_values_between_thresholds(cm_hist)).size > 0
+                and (values_between_thresholds_cm_future := self._get_values_between_thresholds(cm_future)).size > 0
+            ):
+                obs_future[mask_for_values_between_thresholds_obs_hist] = self._step5_transfer_trend(
+                    obs_hist[mask_for_values_between_thresholds_obs_hist],
+                    values_between_thresholds_cm_hist,
+                    values_between_thresholds_cm_future,
+                )
             return obs_future
         else:
             return self._step5_transfer_trend(obs_hist, cm_hist, cm_future)
