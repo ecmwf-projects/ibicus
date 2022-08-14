@@ -240,17 +240,20 @@ class RunningWindowOverDaysOfYear:
             self.window_step_length_in_days = self.window_step_length_in_days + 1
 
     # ----- Helpers: get window centers and their indices ----- #
-    def _get_window_centers(self, max_day_of_year: int) -> np.ndarray:
+    def _get_window_centers(self, days_of_year: np.ndarray) -> np.ndarray:
         """
         Returns an array of window-centers: integers representing a day of year (between 1 and 366) around which a window can be taken.
 
         Parameters
         ----------
-        max_day_of_year : int
-            Maximum day of year present in data. Normally 365 or 366 (leap years). Determines how many windows need to fit in the data.
+        days_of_year: np.ndarray
+            Array of consecutive days of year on which the running window is calculated/applied on.
         """
 
-        days_left_after_last_step = max_day_of_year % self.window_step_length_in_days
+        min_day_of_year = np.min(days_of_year)
+        max_day_of_year = np.max(days_of_year)
+
+        days_left_after_last_step = (max_day_of_year - min_day_of_year + 1) % self.window_step_length_in_days
 
         # Running window with step length fits perfectly into year
         if days_left_after_last_step == 0:
@@ -258,7 +261,7 @@ class RunningWindowOverDaysOfYear:
         # Adjust start-window-center so the last window is not too much sorter
         else:
             first_window_center = (
-                1
+                min_day_of_year
                 + self.window_step_length_in_days // 2
                 - (self.window_step_length_in_days - days_left_after_last_step) // 2
             )
@@ -288,6 +291,9 @@ class RunningWindowOverDaysOfYear:
             indices_center = np.where(days_of_year == 365)[0] + 1
         else:
             indices_center = np.where(days_of_year == window_center)[0]
+
+        if indices_center.size == 0:
+            return indices_center
 
         indices = np.sort(
             np.mod(
@@ -323,6 +329,9 @@ class RunningWindowOverDaysOfYear:
         else:
             indices_center = np.where(days_of_year == window_center)[0]
             years_indices_center = years[indices_center]
+
+        if indices_center.size == 0:
+            return indices_center
 
         if np.unique(years).size == 1:
             # If timeseries spans only one year then we only circle through this year anyway and do not need to match running windows together
@@ -387,7 +396,7 @@ class RunningWindowOverDaysOfYear:
         years : np.ndarray
             Array of consecutive years on which the running window is calculated/applied on.
         """
-        window_centers = self._get_window_centers(np.max(days_of_year))
+        window_centers = self._get_window_centers(days_of_year)
 
         for window_center in window_centers:
             yield window_center, self.get_indices_vals_to_adjust(days_of_year, years, window_center)
