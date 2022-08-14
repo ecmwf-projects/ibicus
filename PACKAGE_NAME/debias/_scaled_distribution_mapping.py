@@ -79,6 +79,8 @@ class ScaledDistributionMapping(Debiaser):
 
     The :math:`\\text{# total}_{\\text{bc}} - \\text{# rain}_{\\text{bc}}` days with the smallest precipitation values in cm_fut are then set to zero and all bias corrected rain values are inserted at the correct locations, starting with the biggest one.
 
+    .. warning:: The relative SDM method does not currently allow correcting the number of precipitation days in cm_fut upwards, so to convert dry into rainy days. Should the calculated expected number of rainy days be higher than what is given inside the future climate model then the number of rainy days is left unadjusted. The method focuses on the biggest precipitation values, so this should not be an issue for most applications. However if such a correction is required this method might not be appropriate.
+
     Default distributions are:
 
     - tas: normal
