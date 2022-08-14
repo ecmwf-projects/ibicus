@@ -51,6 +51,11 @@ PACKAGE\_NAME.debias QuantileDeltaMapping class
 .. autoclass:: QuantileDeltaMapping
 	:members:
 
+PACKAGE\_NAME.debias ISIMIP class
++++++++++++++++++++++++++++++++++
+
+.. autoclass:: ISIMIP
+	:members: from_variable, apply, apply_location, step1, step2, step3, step4, step5, step6, step7, step8
 
 PACKAGE\_NAME.evaluate module
 -----------------------------

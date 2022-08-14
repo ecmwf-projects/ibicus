@@ -24,26 +24,30 @@ from ..variables import (
 
 # General settings (non variable specific, might be overwritten by variable-settings)
 isimip3_general_settings = {
-    # ISIMIP behavior
-    "trend_removal_with_significance_test": True,  # >= v2.1, step 3
-    # Math helpers
+    # Standard algorithm behavior (overwritten by variables potentially)
+    # Step 1
+    "scale_by_annual_cycle_of_upper_bounds": False,
+    "window_length_annual_cycle_of_upper_bounds": 31,
+    # Step 2
+    "impute_missing_values": False,
+    # Step 3
+    "detrending": False,
+    "detrending_with_significance_test": True,  # >= v2.1,
+    # Step 5
+    "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4
+    # Step 6
+    "ks_test_for_goodness_of_cdf_fit": True,
+    "nonparametric_qm": False,  # >= v2.4.1
+    "event_likelihood_adjustment": False,  # removed in the ISIMIP3b run
+    "bias_correct_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5
+    # Computation
     "ecdf_method": "linear_interpolation",
     "iecdf_method": "linear",
-    "mode_non_parametric_quantile_mapping": "isimipv3.0",  # >= v2.4, step 6
+    "mode_non_parametric_qm": "isimipv3.0",  # >= v2.4, step 6
     # Iteration
     "running_window_mode": True,  # >= v2.5
     "running_window_length": 31,  # >= v2.5
     "running_window_step_length": 1,  # >= v2.5
-    # Standard algorithm behavior (overwritten by variables potentially)
-    "scale_by_annual_cycle_of_upper_bounds": False,  # step 1
-    "window_length_annual_cycle_of_upper_bounds": 31,  # step 1
-    "impute_missing_values": False,  # step 2
-    "detrending": False,  # step 3
-    "trend_transfer_only_for_values_within_threshold": True,  # >= v2.4,  step 5
-    "ks_test_for_goodness_of_cdf_fit": True,  # step 6
-    "nonparametric_qm": False,  # >= v2.4.1 step 6
-    "event_likelihood_adjustment": False,  # >= v2.5 step 6
-    "adjust_frequencies_of_values_beyond_thresholds": True,  # v >= 2.5, step 6
 }
 
 # Variable settings: controlling behavior for individual variables
@@ -57,7 +61,7 @@ isimip3_variable_settings = {
         "trend_preservation_method": "bounded",
         "nonparametric_qm": True,  # >= v2.4.1 step 6
         "trend_transfer_only_for_values_within_threshold": False,  # >= v2.4,  step 5
-        "adjust_frequencies_of_values_beyond_thresholds": False,  # v >= 2.5, step 6
+        "bias_correct_frequencies_of_values_beyond_thresholds": False,  # v >= 2.5, step 6
     },
     pr: {
         "lower_bound": 0,
