@@ -138,7 +138,7 @@ class CDFt(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     # ----- Helpers: General ----- #
     @staticmethod

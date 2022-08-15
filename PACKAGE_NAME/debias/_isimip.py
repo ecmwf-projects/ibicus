@@ -279,7 +279,7 @@ class ISIMIP(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(
+        return super()._from_variable(
             cls,
             variable=variable,
             default_settings_variable=isimip3_variable_settings,

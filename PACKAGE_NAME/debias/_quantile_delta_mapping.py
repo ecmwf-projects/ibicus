@@ -183,7 +183,7 @@ class QuantileDeltaMapping(Debiaser):
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         if (variable == "pr" or variable == pr) and (censoring_threshold := kwargs.pop("censoring_threshold", None)):
             return QuantileDeltaMapping.for_precipitation(censoring_threshold, **kwargs)
-        return super().from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(cls, censoring_threshold: float = 0.05 / 86400, **kwargs):
@@ -206,7 +206,7 @@ class QuantileDeltaMapping(Debiaser):
             distribution = gen_PrecipitationGammaLeftCensoredModel(
                 censoring_threshold=censoring_threshold, censor_in_ppf=False
             )
-        return super().from_variable(
+        return super()._from_variable(
             cls, "pr", default_settings, censoring_threshold=censoring_threshold, distribution=distribution, **kwargs
         )
 

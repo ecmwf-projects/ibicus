@@ -22,7 +22,8 @@ class Debiaser(ABC):
     variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str), eq=False)
 
     # Constructors
-    def from_variable(
+    # Helper for downstream classes
+    def _from_variable(
         child_class,
         variable: Union[str, Variable],
         default_settings_variable: dict,
@@ -63,6 +64,23 @@ class Debiaser(ABC):
             "variable": variable_object.name,
         }
         return child_class(**{**parameters, **kwargs})
+
+    @classmethod
+    @abstractmethod
+    def from_variable(cls, variable: Union[str, Variable], **kwargs):
+        """
+        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+
+        Parameters
+        ----------
+        variable : Union[str, Variable]
+            String or Variable object referring to standard meteorological variable for which default settings can be used.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values for variable shall be overwritten.
+        """
+        raise NotImplementedError(
+            "abstract classmethod from_variable of debiaser-class is not implemented and needs to be overwritten in child class of the debiaser-class."
+        )
 
     # ----- Helpers: Input checks ----- #
 

@@ -74,7 +74,7 @@ class QuantileMapping(Debiaser):
     # ----- Constructors -----
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(

@@ -124,7 +124,7 @@ class ScaledDistributionMapping(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super().from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     def apply_location_relative_sdm(self, obs, cm_hist, cm_future):
 
