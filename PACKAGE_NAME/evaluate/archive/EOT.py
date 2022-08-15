@@ -112,7 +112,7 @@ def calculate_matrix(dataset, thresholdname):
 
 
 
-def calculate_probability_once(data, thresholdname):
+def calculate_probability_once(data, threshold_name):
     
     """
     Calculates the probability of exceeding the specified threshold, using the function calculate_matrix to calculate array of 1-0 entries first 
@@ -123,7 +123,7 @@ def calculate_probability_once(data, thresholdname):
     thresholdname: name of threshold specified in the threshold dictionary
     """
     
-    threshold_data = calculate_matrix(data, thresholdname)
+    threshold_data = calculate_matrix(data, threshold_name)
     
     threshold_probability = np.zeros((threshold_data.shape[1], threshold_data.shape[2]))
     

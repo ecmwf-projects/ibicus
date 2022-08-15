@@ -6,225 +6,260 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn
 import scipy
-from itertools import chain
+import seaborn
+
+from PACKAGE_NAME.evaluate import metrics
 
 variable_dictionary = {
-        "tas": {
+    "tas": {
         "distribution": scipy.stats.norm,
         "trend_preservation": "additive",
         "detrending": True,
-        "name": '2m daily mean air temperature (K)',
+        "name": "2m daily mean air temperature (K)",
         "high_threshold": 295,
         "low_threshold": 273,
-        "unit": 'K'
+        "unit": "K",
     },
     "pr": {
         "distribution": scipy.stats.gamma,
         "trend_preservation": "mixed",
         "detrending": False,
-        "name": 'Total precipitation (m/day)',
+        "name": "Total precipitation (m/day)",
         "high_threshold": 0.0004,
         "low_threshold": 0.00001,
-        "unit": 'm/day'
-    }
+        "unit": "m/day",
+    },
 }
 
-  
-def plot_histogram(variable, data_obs, data_raw, bin_number=100, **kwargs): 
-
-      """
-      Plots histogram over full area covered. Expects a one-dimensional array as input, so 2d lat-long array has to be flattened using
-      for example np.ndarray.flatten. This plot will be more meaningful for smaller areas.
-    
-      Parameters
-      ----------
-      variable: str, variable name is standard form (i.e. 'tas', 'pr', etc)
-      data_obs : flattened entry of all observed values over the area, numeric entries expected
-      data_raw : flattened entry of all 'raw', i.e. not biased corrected, climate simulations over the area, numeric entries expected
-      bin_number: integer expected, number of bins of the plotted histogram, default set to 100
-      **kwargs: flattened, bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, the latter being
-      of the same form as data_obs and data_raw, numeric entries expected.
-      """
-        
-      number_biascorrections = len(kwargs.keys())
-      figure_length = 5 + number_biascorrections*5
-      plot_number = number_biascorrections +1
-    
-      fig, ax = plt.subplots(1,plot_number, figsize=(figure_length,5))
-        
-      fig.suptitle("Distribution {} over entire area".format(variable_dictionary.get(variable).get('name')))
-      
-      ax[0].hist(data_obs, bins=bin_number, alpha=0.5, label='Observed')
-      ax[0].hist(data_raw, bins=bin_number, alpha=0.5, label='Climate model') 
-      ax[0].set_title("Not bias corrected")
-      ax[0].legend()
-      
-      i=0
-      for k in kwargs.keys():
-          
-          i=i+1
-          ax[i].hist(data_obs, bins=bin_number, alpha=0.5, label='Observed')
-          ax[i].hist(kwargs[k], bins=bin_number, alpha=0.5, label='Climate model') 
-          ax[i].set_title("Bias corrected ({})".format(k))
-          ax[i].legend()
-      
-      return fig
+metrics_dictionary = {
+    "frost": {
+        "variable": "tasmin",
+        "variablename": "2m daily minimum air temperature (K)",
+        "value": 273.15,
+        "threshold_sign": "lower",
+        "name": "Frost days",
+    },
+    "mean_warm_day": {
+        "variable": "tas",
+        "variablename": "2m daily mean air temperature (K)",
+        "value": 295,
+        "threshold_sign": "higher",
+        "name": "Warm days (mean)",
+    },
+    "mean_cold_day": {
+        "variable": "tas",
+        "variablename": "2m daily mean air temperature (K)",
+        "value": 273,
+        "threshold_sign": "lower",
+        "name": "Cold days (mean)",
+    },
+    "dry": {
+        "variable": "pr",
+        "variablename": "Precipitation",
+        "value": 0.000001,
+        "threshold_sign": "lower",
+        "name": "Dry days (mean)",
+    },
+    "wet": {
+        "variable": "pr",
+        "variable_name": "Precipitation",
+        "value": 1 / 86400,
+        "threshold_sign": "higher",
+        "name": "Wet days (daily total precipitation > 1 mm)",
+    },
+}
 
 
-def plot_bias_spatial(variable, data_obs, data_raw, **kwargs):
+def _descriptive_statistics_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
+
+    mean_obs = np.mean(obs_data, axis=0)
+    lowpc_obs = np.quantile(obs_data, 0.05, axis=0)
+    highpc_obs = np.quantile(obs_data, 0.95, axis=0)
+
+    mean_bias = 100 * (mean_obs - np.mean(cm_data, axis=0)) / mean_obs
+
+    if np.any(lowpc_obs) == 0:
+        lowpc_bias = 0 * lowpc_obs
+    else:
+        lowpc_bias = 100 * (lowpc_obs - np.quantile(cm_data, 0.05, axis=0)) / lowpc_obs
+
+    highpc_bias = 100 * (highpc_obs - np.quantile(cm_data, 0.95, axis=0)) / highpc_obs
+
+    return (mean_bias, lowpc_bias, highpc_bias)
+
+
+def _metrics_marginal_bias(metric: str, obs_data: np.ndarray, cm_data: np.ndarray):
+
+    obs_metric = metrics.calculate_eot_probability(data=obs_data, threshold_name=metric)
+
+    cm_metric = metrics.calculate_eot_probability(data=cm_data, threshold_name=metric)
+
+    bias = 100 * (obs_metric - cm_metric) / obs_metric
+
+    return bias
+
+
+def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data) -> np.ndarray:
     
     """
-    Calculates the bias of the mean, 10th percentile and 90th percentile between the 
-    observational and climate model data at each location and plots their spatial distribution. Function is intended to be applied to data in the validation
-    period.
+    Calculates location-wise percentage bias of different metrics, comparing observations to climate model output during the validation period.
+    Default metrics include mean, 5th and 95th perecentile, 
+    calculated in _descriptive_statistics_marginal_bias. Additional metrics can be specified in the metrics input argument,
+    bias is calculated in _metrics_marginal_bias
+    
+    Parameters
+    ----------
+    metrics: np.array
+        Array of strings containing the names of the metrics that are to be assessed.
+    obs_data: np.ndarray
+        observational dataset in validation period
+    **cm_data: 
+        Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
+        covering all debiasers that are to be compared
+    """
+
+    marginal_bias_data = np.empty((0, 3))
+    number_locations = len(np.ndarray.flatten(obs_data[1, :, :]))
+
+    for k, cm_data in cm_data.items():
+
+        mean_bias, lowqn_bias, highqn_bias = _descriptive_statistics_marginal_bias(
+            obs_data=obs_data, cm_data=cm_data
+        )
+
+        marginal_bias_data = np.append(
+            marginal_bias_data,
+            np.transpose(
+                np.array(
+                    [[k] * number_locations, ["Mean"] * number_locations, np.transpose(np.ndarray.flatten(mean_bias))]
+                )
+            ),
+            axis=0,
+        )
+
+        marginal_bias_data = np.append(
+            marginal_bias_data,
+            np.transpose(
+                np.array(
+                    [[k] * number_locations, ["5% qn"] * number_locations, np.transpose(np.ndarray.flatten(lowqn_bias))]
+                )
+            ),
+            axis=0,
+        )
+
+        marginal_bias_data = np.append(
+            marginal_bias_data,
+            np.transpose(
+                np.array(
+                    [
+                        [k] * number_locations,
+                        ["95% qn"] * number_locations,
+                        np.transpose(np.ndarray.flatten(highqn_bias)),
+                    ]
+                )
+            ),
+            axis=0,
+        )
+        if len(metrics) != 0:
+
+            for m in metrics:
+
+                metric_bias = _metrics_marginal_bias(m, obs_data, cm_data)
+
+                marginal_bias_data = np.append(
+                    marginal_bias_data,
+                    np.transpose(
+                        np.array(
+                            [
+                                [k] * number_locations,
+                                [metrics_dictionary.get(m).get("name")] * number_locations,
+                                np.transpose(np.ndarray.flatten(metric_bias)),
+                            ]
+                        )
+                    ),
+                    axis=0,
+                )
+
+    return marginal_bias_data
+
+
+def plot_marginal_bias(variable: str, bias_array: np.ndarray, metrics: np.ndarray):
+
+    """
+    Takes numpy array containing the location-wise percentage bias of different metrics and outputs two boxplots,
+    one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics.  
 
     Parameters
     ----------
-    variable : str, variable name is standard form (i.e. 'tas', 'pr', etc)
-    data_obs : three-dimensional array (time, latitude, longitude) of observational data in validation period, numeric entries expected
-    data_raw : three-dimensional array (time, latitude, longitude) of raw (i.e. not bias corrected) climate model data in validation period, numeric entries expected
-    **kwargs: three-dimensional array (time, latitude, longitude) of bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, 
-    the latter being of the same form as data_obs and data_raw, numeric entries expected.
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    bias_array: np.ndarray
+        Numpy array containing percentage bias for descriptive statistics and specified metrics. Has to be output of
+        the function calculate_marginal_bias to be in correct format
+    metrics: np.array
+        Array of strings containing the names of the metrics that are to be plotted.
+
     """
 
-    number_biascorrections = len(kwargs.keys())
-    fig_length = 5 + 5*number_biascorrections
-    plot_number = number_biascorrections +1
-    
-    mean_obs = np.mean(data_obs, axis=0)
-    lowpc_obs = np.quantile(data_obs, 0.1, axis=0)
-    highpc_obs = np.quantile(data_obs, 0.9, axis=0)
-    
-    bias_mean = {}
-    bias_lowpc = {}
-    bias_highpc = {}
-    
-    bias_mean['raw'] = 100*(mean_obs - np.mean(data_raw, axis=0))/mean_obs
-    bias_lowpc['raw'] = 100*(lowpc_obs - np.quantile(data_raw, 0.1, axis=0))/lowpc_obs
-    bias_highpc['raw'] = 100*(highpc_obs - np.quantile(data_raw, 0.9, axis=0))/highpc_obs
 
-    
-    for k in kwargs.keys():
-        
-        bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
-        bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
-        bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
+    plot_data = pd.DataFrame(bias_array, columns=["Correction Method", "Metric", "Percentage bias"])
+    plot_data["Percentage bias"] = pd.to_numeric(plot_data["Percentage bias"])
 
-    arrays_max = max(max(np.ndarray.flatten(np.vstack(list(chain(*bias_mean.values()))))),
-                   max(np.ndarray.flatten(np.vstack(list(chain(*bias_lowpc.values()))))),
-                   max(np.ndarray.flatten(np.vstack(list(chain(*bias_highpc.values()))))))
-    
-    arrays_min = min(min(np.ndarray.flatten(np.vstack(list(chain(*bias_mean.values()))))),
-                   min(np.ndarray.flatten(np.vstack(list(chain(*bias_lowpc.values()))))),
-                   min(np.ndarray.flatten(np.vstack(list(chain(*bias_highpc.values()))))))
-    
-    axis_max = max(abs(arrays_max), abs(arrays_min))
-    axis_min = -axis_max
+    plot_data1 = plot_data[plot_data["Metric"].isin(["Mean", "5% qn", "95% qn"])]
+    plot_data2 = plot_data[~plot_data["Metric"].isin(["Mean", "5% qn", "95% qn"])]
 
-    fig, ax = plt.subplots(plot_number, 3, figsize=(18,fig_length))
+    fig_width = 2 * plot_data["Metric"].nunique() + 3
 
-    fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
-    
-    i=0
-    for k in ('raw', *kwargs.keys()):
+    fig, ax = plt.subplots(1, 2, figsize=(fig_width, 6))
 
-        plot1 = ax[i, 0].imshow(bias_mean[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[i, 0].set_title('% bias of mean \n {}'.format(k))
-        fig.colorbar(plot1, ax=ax[i, 0])
+    seaborn.violinplot(
+        ax=ax[0], y="Percentage bias", x="Metric", data=plot_data1, palette="colorblind", hue="Correction Method"
+    )
+    [ax[0].axvline(x + 0.5, color="k") for x in ax[0].get_xticks()]
 
-        plot2 = ax[i, 1].imshow(bias_lowpc[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[i, 1].set_title('% bias of 10th percentile \n {}'.format(k))
-        fig.colorbar(plot2, ax=ax[i, 1])
+    seaborn.violinplot(
+        ax=ax[1], y="Percentage bias", x="Metric", data=plot_data2, palette="colorblind", hue="Correction Method"
+    )
+    [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
 
-        plot3 = ax[i, 2].imshow(bias_highpc[k], cmap=plt.get_cmap('coolwarm'), vmin = axis_min, vmax = axis_max)
-        ax[i, 2].set_title('% bias of 90th percentile \n {}'.format(k))
-        fig.colorbar(plot3, ax=ax[i, 2])
-        
+    fig.suptitle("{} - Bias".format(variable_dictionary.get(variable).get("name")))
+
+
+def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_data):
+
+    """
+    Plots histogram over entire area. Expects a one-dimensional array as input, so 2d lat-long array has to be flattened using
+    for example np.ndarray.flatten. This plot will be more meaningful for smaller areas.
+
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    data_obs: np.ndarray
+        Flattened entry of all observed values over the area, numeric entries expected
+    bin_number: int
+        Number of bins plotted in histogram, set to 100 by default
+
+    """
+
+    number_biascorrections = len(debiased_cm_data.keys())
+    figure_length = number_biascorrections * 5
+    plot_number = number_biascorrections
+
+    fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5))
+    fig.suptitle("Distribution {} over entire area".format(variable_dictionary.get(variable).get("name")))
+
+    i = 0
+    for k, cm_data in cm_data.items():
+
+        ax[i].hist(data_obs, bins=bin_number, alpha=0.5, label="Observed")
+        ax[i].hist(cm_data, bins=bin_number, alpha=0.5, label="Climate model")
+        ax[i].set_title(k)
+        ax[i].legend()
         i=i+1
 
-
     return fig
-
-
-
-
-
-
-def plot_bias_distribution(variable, data_obs, data_raw, **kwargs):
-    
-    """
-    Calculates the bias of the mean, 10th percentile and 90th percentile between the 
-    observational and climate model data at each location and plots the distribution of this bias across locations. 
-    Function is intended to be applied to data in the validation period.
-
-    Parameters
-    ----------
-    variable : str, variable name is standard form (i.e. 'tas', 'pr', etc)
-    data_obs : three-dimensional array (time, latitude, longitude) of observational data in validation period, numeric entries expected
-    data_raw : three-dimensional array (time, latitude, longitude) of raw (i.e. not bias corrected) climate model data in validation period, numeric entries expected
-    **kwargs: three-dimensional array (time, latitude, longitude) of bias corrected data sets. To be given in the form bias_correction_name = bias_corrected_dataset, 
-    the latter being of the same form as data_obs and data_raw, numeric entries expected.
-    """
-
-    mean_obs = np.mean(data_obs, axis=0)
-    lowpc_obs = np.quantile(data_obs, 0.1, axis=0)
-    highpc_obs = np.quantile(data_obs, 0.9, axis=0)
-
-    bias_mean = {}
-    bias_lowpc = {}
-    bias_highpc = {}
-    
-    bias_mean['raw'] = 100*(mean_obs - np.mean(data_raw, axis=0))/mean_obs
-    bias_lowpc['raw'] = 100*(lowpc_obs - np.quantile(data_raw, 0.1, axis=0))/lowpc_obs
-    bias_highpc['raw'] = 100*(highpc_obs - np.quantile(data_raw, 0.9, axis=0))/highpc_obs
-
-    bias_array = np.empty((0, 3))
-    
-    for k in kwargs.keys():
-        
-            bias_mean[str(k)] = 100*(mean_obs - np.mean(kwargs[k], axis=0))/mean_obs
-
-            if np.any(lowpc_obs)==0:
-                bias_lowpc[str(k)]=lowpc_obs # TODO think of what to do here
-            else:
-                bias_lowpc[str(k)] = 100*(lowpc_obs - np.quantile(kwargs[k], 0.1, axis=0))/lowpc_obs
-
-            bias_highpc[str(k)] = 100*(highpc_obs - np.quantile(kwargs[k], 0.9, axis=0))/highpc_obs
-            
-
-    for k in ('raw', *kwargs.keys()):
-    
-            length = len(np.ndarray.flatten(bias_mean['raw']))
-    
-        
-            bias_array = np.append(bias_array,
-                               np.transpose(np.array([[k]*length, ['Mean']*length, np.transpose(np.ndarray.flatten(bias_mean[k]))])), 
-                               axis = 0)
-            bias_array = np.append(bias_array,
-                               np.transpose(np.array([[k]*length, ['10pc']*length, np.transpose(np.ndarray.flatten(bias_lowpc[k]))])), 
-                               axis = 0)
-            bias_array = np.append(bias_array,
-                               np.transpose(np.array([[k]*length, ['90pc']*length, np.transpose(np.ndarray.flatten(bias_highpc[k]))])), 
-                               axis = 0)
-        
-
-    boxplot_data = pd.DataFrame(bias_array, columns=['Correction Method','Metric', 'Percentage bias'])
-    boxplot_data["Percentage bias"] = pd.to_numeric(boxplot_data["Percentage bias"])
-
-    fig_width = 5 + 2*len(kwargs.keys())
-    fig = plt.figure(figsize=(fig_width, 6))
-    seaborn.violinplot(y='Percentage bias', x='Metric', 
-                 data=boxplot_data, 
-                 palette="colorblind",
-                 hue='Correction Method')
-
-    fig.suptitle('{} - Bias'.format(variable_dictionary.get(variable).get('name')))
-
-    return fig
-
