@@ -1,6 +1,16 @@
 PACKAGE\_NAME package
 =====================
 
+.. # define a hard line break for HTML
+.. |br| raw:: html
+
+   <br />
+
+.. # define a double hard line break for HTML
+.. |brr| raw:: html
+
+   <br /> <br />
+
 
 PACKAGE\_NAME.debias module
 ---------------------------
@@ -49,7 +59,7 @@ PACKAGE\_NAME.debias QuantileDeltaMapping class
 +++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: QuantileDeltaMapping
-	:members:
+	:members: from_variable, for_precipitation, apply, apply_location
 
 PACKAGE\_NAME.debias ISIMIP class
 +++++++++++++++++++++++++++++++++

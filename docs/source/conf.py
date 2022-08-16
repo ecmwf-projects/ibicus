@@ -32,7 +32,7 @@ author = "ECMWF"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.napoleon",
+    "numpydoc",  # "sphinx.ext.napoleon"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,7 +49,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "default" #"alabaster"
+html_theme = "default"  # "alabaster"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -57,10 +57,10 @@ html_theme = "default" #"alabaster"
 html_static_path = ["_static"]
 
 
-#-- Some new settings ------------------------------------------------------------------
+# -- Some new settings ------------------------------------------------------------------
 # Automatically extract typehints when specified and place them in
 # descriptions of the relevant function/method.
-autodoc_typehints = "description"
+autodoc_typehints = "none"  # description
 autodoc_typehints_format = "fully-qualified"
 
 # Styling of autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
@@ -70,3 +70,7 @@ autodoc_member_order = "groupwise"
 
 # Do not preserve default arguments
 autodoc_preserve_defaults = False
+
+"""numpydoc_attributes_as_param_list = True
+numpydoc_show_class_members = True
+"""
