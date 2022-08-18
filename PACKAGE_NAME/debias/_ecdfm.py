@@ -24,28 +24,34 @@ default_settings = {
 @attrs.define
 class ECDFM(Debiaser):
     """
-    Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
+    |br| Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
+
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F_{\\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))
 
-    Default distributions are:
+    Differences/biases are hereby adjusted for each quantile individually. The underlying assumption is that the difference (bias) in each quantile between model and observations, stays the same between historical and future period. This relaxes the assumption of classical Quantile Mapping that the climate distribution changes in the mean, but higher moments like variance and skewness are stationary (Li et al. 2010). TODO: check
 
-    - Temperature: 4-parameter beta distribution
-    - Precipitation: Gamma hurdle model
-    - ...
+    The method was originally developed with monthly data in view, however it might also be suitable for daily one.
+
+    .. note:: Different than in most publications Li et al. use a  4-parameter beta distribution (:py:data:`scipy.stats.beta`) for ``tas`` instead of a normal distribution. This can be slow for the fit at times. Consider modifying the ``distribution`` parameter for ``tas``.
+
+    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
+
 
     **Reference**:
 
     - Li, H., Sheffield, J., and Wood, E. F. (2010), Bias correction of monthly precipitation and temperature fields from Intergovernmental Panel on Climate Change AR4 models using equidistant quantile matching, J. Geophys. Res., 115, D10101, doi:10.1029/2009JD012882.
 
+    |br|
 
     Attributes
     ----------
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
-        Method used for the fit to the historical and future climate model outputs as well as the observations. Eg. a beta-distribution for temperature, but also more complex models are possible.
-    variable: str
+    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
+        Method used for the fit to the historical and future climate model outputs as well as the observations.
+        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel``(TODO: reference) class.
+    variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
 
@@ -76,18 +82,16 @@ class ECDFM(Debiaser):
 
         Parameters
         ----------
-        delta_type: str
-            One of ["additive", "multiplicative", "no_delta"]. Type of delta-change used.
-        precipitation_model_type: str
-            One of ["censored", "hurdle", "ignore_zeros"]. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details.
-        precipitation_amounts_distribution: scipy.stats.rv_continuous
-            Distribution used for precipitation amounts. For the censored model only scipy.stats.gamma is possible.
-        precipitation_censoring_threshold: float
+        precipitation_model_type : str
+            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details. TODO: reference
+        precipitation_amounts_distribution : scipy.stats.rv_continuous
+            Distribution used for precipitation amounts. For the censored model only :py:data:`scipy.stats.gamma` is possible.
+        precipitation_censoring_threshold : float
             The censoring-value if a censored precipitation model is used.
-        precipitation_hurdle_model_randomization: bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details.
-        precipitation_hurdle_model_kwds_for_distribution_fit: dict
-            Dict of parameters used for the distribution fit inside a hurdle model. Standard: location of distribution is fixed at zero (floc = 0) to stabilise Gamma distribution fits in scipy.
+        precipitation_hurdle_model_randomization : bool
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details. TODO: reference
+        precipitation_hurdle_model_kwds_for_distribution_fit : dict
+            Dict of parameters used for the distribution fit inside a hurdle model. Default: ``{"floc": 0, "fscale": None} location of distribution is fixed at zero (``floc = 0``) to stabilise Gamma distribution fits in scipy.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 

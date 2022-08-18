@@ -22,8 +22,20 @@ class StatisticalModel(ABC):
 
     """
     Abstract functionality to wrap an arbitrary statistical model given by a fit-method, a cdf and a ppf.
-    This can be used to pass a self-defined model that is fitted in a debiaser to each location for eg. quantile-mapping.
-    In principle this is similar to scipy.stats.rv_continuous, however the user has the option to provide an own fit-method. Thus this is able to represent a broader class of statistical models
+
+    This can be used to pass a self-defined model to a debiaser, that is then fitted and used at each location.
+    In principle this is similar to ``scipy.stats.rv_continuous``, however the user has the option to provide an own fit-method. Thus this is able to represent a broader class of statistical models.
+
+    Examples
+    --------
+
+    :py:class:`gen_PrecipitationHurdleModel` is a child-class of StatisticalModel used to generate a precipitation hurdle model. For example if we want to use a precipitation hurdle model in Quantile mapping, assuming a generalised gamma distribution for amounts we can do:
+
+    >>> hurdle_model = gen_PrecipitationHurdleModel(distribution = scipy.stats.gengamma)
+    >>> debiaser = QuantileMapping.from_variable("pr", distribution = hurdle_model)
+
+    .. warning:: This is an advanced feature and requires some knowledge of the workings of the debiaser and the statistical model passed/fitted. For example :py:class:`CDFt` does not require a model as parameter and in :py:class:`ISIMIP` `pr` values are split into zero and non-zero values prior to fitting: so Statistical Models do not need to account for the zero-character.
+
     """
 
     @abstractmethod
@@ -35,6 +47,7 @@ class StatisticalModel(ABC):
         ----------
         data : np.ndarray
             Array containing values on which the model is to fit.
+
         Returns
         -------
         tuple
@@ -88,7 +101,10 @@ class StatisticalModel(ABC):
 class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
     """
     Represents a precipitation model where zero values are ignored and a cdf is only fitted to amounts.
+
     In the cdf zero values are mapped to -np.inf and in the inverse cdf values of -np.inf are mapped to zero.
+
+    :py:data:`PrecipitationGammaModelIgnoreZeroValues` is a concrete precipitation model ignoring zero-values with a gamma distribution for amounts.
 
     Parameters
     ----------
@@ -179,17 +195,16 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
     """
     Represents a precipitation hurdle model.
 
-    A hurdle-model is a two-step process: binomially it is determined if it rains (with probability p0 of no rain) and
-        then we assume that theamounts follow a given distribution (often gamma) described by a cdf F_A. Mathematically:
+    A hurdle-model is a two-step process: binomially it is determined if it rains (with probability :math:`p_0` of no rain) and then we assume that theamounts follow a given distribution (often gamma) described by a cdf :math:`F_A`. Mathematically:
 
-    P(X = 0) = p0,
-    P(0 < X <= x) = p0 + (1-p0) F_A(x)
+    .. math:: P(X = 0) = p_0,
+    .. math:: P(0 < X <= x) = p_0 + (1-p_0) \\cdot F_A(x)
 
-    Parameters
+    Attributes
     ----------
-    self.distribution : scipy.stats.rv_continuous
+    distribution : scipy.stats.rv_continuous
         Distribution assumed for the precipitation amounts.
-    self.randomization : bool
+    randomization : bool
         Whether cdf-values for x == 0 (no rain) shall be randomized uniformly within (0, p0).
         Helps for quantile mapping and controlling the zero-inflation.
 
@@ -230,8 +245,7 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
 
     def cdf(self, x: np.ndarray, *fit: tuple) -> np.ndarray:
         """
-        Returns cdf-values of a vector x for the cdf of a precipitation hurdle-model. If self.cdf_randomization = True then cdf-values for x == 0
-            (no rain) are randomized between (0, p0).
+        Returns cdf-values of a vector x for the cdf of a precipitation hurdle-model. If self.cdf_randomization = True then cdf-values for x == 0 (no rain) are randomized between (0, p0).
 
         Parameters
         ----------
@@ -290,17 +304,17 @@ PrecipitationHurdleModelGammaWithoutCDFRandomization = gen_PrecipitationHurdleMo
 class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
     """
     Represents a left censored precipitation gamma model.
+
     A left censored gamma model is a gamma distribution where all values under a given threshold are censored: not observed. Those are represented by zero
     This is useful when a slightly higher threshold is used to account for the drizzle effect in climate models.
 
-    In the cdf before calculating all values below the censoring value are first randomized between (0, censoring_threshold). In the ppf values below
-        the censoring_threshold are again set to zero. This handles possible inflation in quantile mapping by the censoring-value.
+    In the cdf before calculating all values below the censoring value are first randomized between (0, `censoring_threshold`). In the ppf values below the censoring_threshold are again set to zero. This handles possible inflation in quantile mapping by the censoring-value.
 
-    Parameters
+    Attributes
     ----------
-    self.censoring_threshold : float
+    censoring_threshold : float
         Value under which observations are censored.
-    self.censor_in_ppf : bool
+    censor_in_ppf : bool
         If in the ppf mapping values under the threshold are to be censored.
     """
 
@@ -444,13 +458,17 @@ def IECDF(x):
 
 def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
     """
-    Return the values of the the inverse empirical cdf of x evaluated at p:
+    Return the values of the the inverse empirical CDF of x evaluated at p:
 
-    x = np.random.random(1000)
-    p = np.linspace(0, 1, 100)
-    iecdf(x, p)
+    The call is delegated to :py:func:`np.quantile` with the method-argument determining what method is used.
 
-    The call is delegated to np.quantile with the method-argument determining whether eg. interpolation is used.
+    Examples
+    --------
+
+    >>> x = np.random.normal(size = 1000)
+    >>> p = np.linspace(0, 1, 100)
+    >>> iecdf(x, p)
+
 
     Parameters
     ----------
@@ -459,8 +477,9 @@ def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
     p : np.ndarray
         Array containing values between [0, 1] for which the inverse empirical cdf is evaluated.
     method : string
-        Method string for np.quantile
+        Method string for :py:func:`np.quantile`.
     **kwargs
+        Passed to :py:func:`np.quantile`.
 
     Returns
     -------
@@ -478,16 +497,24 @@ def iecdf(x: np.ndarray, p: np.ndarray, method: str = "inverted_cdf", **kwargs):
 
 def ecdf(x: np.ndarray, y: np.ndarray, method: str = "step_function") -> np.ndarray:
     """
-    Return the values of the empirical cdf of x evaluated at y:
+    Return the values of the empirical CDF of x evaluated at y.
 
-    x = np.random.random(1000)
-    y = np.random.random(100)
-    ecdf(x, y)
+    Three methods existd determined by method.
 
-    Three methods exist determined by method.
-        - method = "kernel_density": A kernel density estimate of the ecdf is used, using scipy.stat.rv_histogram.
-        - method = "linear_interpolation": Linear interpolation is used, starting from a grid of cdf-values.
-        - method = "step_function": The classical step-function.
+    1. ``method = "kernel_density"``: A kernel density estimate of the ecdf is used, using :py:class:`scipy.stats.rv_histogram`.
+
+    2. ``method = "linear_interpolation"``: Linear interpolation is used, starting from a grid of CDF-values.
+
+    3. ``method = "step_function"``: The classical step-function.
+
+
+    Examples
+    --------
+
+    >>> x = np.random.random(1000)
+    >>> y = np.random.random(100)
+    >>> ecdf(x, y)
+
 
     Parameters
     ----------

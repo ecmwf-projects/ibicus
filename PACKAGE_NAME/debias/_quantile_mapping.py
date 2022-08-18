@@ -26,7 +26,8 @@ default_settings = {
 @attrs.define
 class QuantileMapping(Debiaser):
     """
-    Implements (detrended) Quantile Mapping following Cannon et al. 2015 and Maraun 2016.
+    |br| Implements (detrended) Quantile Mapping following Cannon et al. 2015 and Maraun 2016.
+
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F` be a CDF. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_hist}}` and :math:`F_{\\text{obs}}`, so:
 
@@ -34,20 +35,23 @@ class QuantileMapping(Debiaser):
 
     If detrended quantile mapping is used then :math:`x_{\\text{cm_fut}}` is first rescaled and then the mapped value is scaled back either additively or multiplicatively. That means for additive detrending:
 
-    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut} + \\bar x_{\\text{cm_hist}} - \\bar x_{\\text{cm_fut}}})) + \\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut}} + \\bar x_{\\text{cm_hist}} - \\bar x_{\\text{cm_fut}})) + \\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}}
 
     and for multiplicative detrending.
 
-    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}(F_{\\text{cm_hist}}(x_{\\text{cm_fut} \\cdot \\frac{\\bar x_{\\text{cm_hist}}}{\\bar x_{\\text{cm_fut}}}})) \\cdot \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}
+    .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs}}\\left(F_{\\text{cm_hist}}\\left(x_{\\text{cm_fut}} \\cdot \\frac{\\bar x_{\\text{cm_hist}}}{\\bar x_{\\text{cm_fut}}}\\right)\\right) \\cdot \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}
 
     Here :math:`\\bar x_{\\text{cm_fut}}` designs the mean of :math:`x_{\\text{cm_fut}}` and similar for :math:`x_{\\text{cm_hist}}`.
     Detrended Quantile Mapping accounts for changes in the projected values and is thus trend-preserving in the mean.
+
+    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 
     **References**:
 
     - Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
     - Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211–220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
 
+    |br|
 
     Attributes
     ----------
@@ -55,9 +59,9 @@ class QuantileMapping(Debiaser):
         Distribution or statistical model used to compute the CDFs F.
         Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the StatisticalModel class (see utils).
     detrending: str
-        One of ["additive", "multiplicative", "no_detrending"]. Default: "no_detrending". What kind of scaling is applied to the future climate model data before quantile mapping.
+        One of ``["additive", "multiplicative", "no_detrending"]``. What kind of scaling is applied to the future climate model data before quantile mapping. Default: ``"no_detrending"``.
     variable: str
-        Variable for which the debiasing is done. Default: "unknown".
+        Variable for which the debiasing is done. Default: ``"unknown"``.
     """
 
     distribution: Union[
@@ -79,9 +83,9 @@ class QuantileMapping(Debiaser):
     @classmethod
     def for_precipitation(
         cls,
-        precipitation_model_type: str = "censored",
+        precipitation_model_type: str = "hurdle",
         precipitation_amounts_distribution=scipy.stats.gamma,
-        precipitation_censoring_threshold: float = 0.1,
+        precipitation_censoring_threshold: float = 0.1 / 86400,
         precipitation_hurdle_model_randomization: bool = True,
         precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
@@ -91,18 +95,16 @@ class QuantileMapping(Debiaser):
 
         Parameters
         ----------
-        detrending: str
-            One of ["additive", "multiplicative", "no_detrending"]. Type of delta-change used.
-        precipitation_model_type: str
-            One of ["censored", "hurdle", "ignore_zeros"]. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details.
-        precipitation_amounts_distribution: scipy.stats.rv_continuous
-            Distribution used for precipitation amounts. For the censored model only scipy.stats.gamma is possible.
-        precipitation_censoring_threshold: float
+        precipitation_model_type : str
+            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details (TODO: reference).
+        precipitation_amounts_distribution : scipy.stats.rv_continuous
+            Distribution used for precipitation amounts. For the censored model only ``scipy.stats.gamma`` is possible.
+        precipitation_censoring_threshold : float
             The censoring-value if a censored precipitation model is used.
-        precipitation_hurdle_model_randomization: bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details
-        precipitation_hurdle_model_kwds_for_distribution_fit: dict
-            Dict of parameters used for the distribution fit inside a hurdle model. Standard: location of distribution is fixed at zero (floc = 0) to stabilise Gamma distribution fits in scipy.
+        precipitation_hurdle_model_randomization : bool
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See ``utils.gen_PrecipitationHurdleModel`` for more details. TODO: reference
+        precipitation_hurdle_model_kwds_for_distribution_fit : dict
+            Dict of parameters used for the distribution fit inside a hurdle model. Default: location of distribution is fixed at zero (``floc = 0``) to stabilise Gamma distribution fits in scipy.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
 

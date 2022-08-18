@@ -6,9 +6,25 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""Variable module - Standard variable-definitions"""
+"""
+:py:mod:`Variable` module - Standard definitions of climatic variables.
 
-from typing import Union
+The variables below represent all variables currently recognized by the package and mapped onto default arguments by some of the debiasers using the :py:func:`from_variable` classmethod of a debiaser. However by setting class parameters oneself it is possible to use debiasers for other variables than the one below.
+
+.. autosummary::
+    hurs
+    pr
+    prsnratio
+    psl
+    rlds
+    rsds
+    sfcWind
+    tas
+    tasmin
+    tasmax
+    tasrange
+    tasskew
+"""
 
 import attrs
 import numpy as np
@@ -19,6 +35,19 @@ import PACKAGE_NAME.utils as utils
 
 @attrs.define(eq=False)
 class Variable:
+    """
+    Variable class: abstract interface for all climatic variables.
+
+    Attributes
+    ----------
+    name : str
+        Name of climatic variable.
+    unit : str
+        Unit of climatic variable.
+    reasonable_physical_range : list
+        List of upper and lower bound of expectable reasonable physical range of climatic variable.
+    """
+
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     unit: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     reasonable_physical_range: list = attrs.field(default=None)
@@ -35,27 +64,79 @@ class Variable:
 
 
 hurs = Variable(name="Daily mean near-surface relative humidity", unit="%")
+"""
+Daily mean near-surface relative humidity, unit: %
+"""
+
 pr = Variable(name="Daily mean precipitation", unit="kg m-2 s-1", reasonable_physical_range=[0, np.inf])
-# prsn = Variable(name = "Daily mean snowfall flux", unit="kg m-2 s-1")
+"""
+Daily mean precipitation, unit: kg m-2 s-1
+"""
+
+prsn = Variable(name="Daily mean snowfall flux", unit="kg m-2 s-1")
+"""
+Daily mean snowfall flux, unit: kg m-2 s-1
+"""
+
 prsnratio = Variable("Daily mean snowfall flux / Daily mean precipitation", unit="1")
+"""
+Daily mean snowfall flux / Daily mean precipitation, unit: 1
+"""
+
 psl = Variable(name="Daily mean sea-level pressure", unit="Pa")
+"""
+Daily mean sea-level pressure, unit: Pa
+"""
+
 rlds = Variable(name="Daily mean surface downwelling longwave radiation", unit="W m-2")
+"""
+Daily mean surface downwelling longwave radiation, unit: W m-2
+"""
+
 rsds = Variable(name="Daily mean surface downwelling shortwave radiation", unit="W m-2")
+"""
+Daily mean surface downwelling shortwave radiation, unit: W m-2
+"""
+
 sfcwind = Variable(name="Daily mean near-surface wind speed", unit="m s-1")
+"""
+Daily mean near-surface wind speed, unit: m s-1
+"""
+
 tas = Variable(name="Daily mean near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+"""
+Daily mean near-surface air temperature, unit: K
+"""
+
 tasmin = Variable(name="Daily minimum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+"""
+Daily minimum near-surface air temperature, unit: K
+"""
+
 tasmax = Variable(name="Daily maximum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+"""
+Daily maximum near-surface air temperature, unit: K
+"""
+
 tasrange = Variable(
     name="Daily near-surface air temperature range (tasmax-tasmin)", unit="K", reasonable_physical_range=[0, 400]
 )
+"""
+Daily near-surface air temperature range (tasmax-tasmin), unit: K
+"""
+
 tasskew = Variable(
     name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 400]
 )
+"""
+Daily near-surface air temperature skew (tas-tasmin)/tasrange, unit: 1
+"""
 
 
 str_to_variable_class = {
     "hurs": hurs,
     "pr": pr,
+    "prsn": prsn,
     "prsnratio": prsnratio,
     "ps": psl,
     "psl": psl,
@@ -63,7 +144,6 @@ str_to_variable_class = {
     "rsds": rsds,
     "sfcwind": sfcwind,
     "tas": tas,
-    "t2m": tas,
     "tasmin": tasmin,
     "tasmax": tasmax,
     "tasrange": tasrange,

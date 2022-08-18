@@ -4,4 +4,7 @@ API reference
 .. toctree::
    :maxdepth: 4
 
-   PACKAGE_NAME
+   debias
+   evaluate
+   utils
+   variables

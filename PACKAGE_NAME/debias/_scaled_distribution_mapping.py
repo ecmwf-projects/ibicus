@@ -37,33 +37,36 @@ default_settings = {
 @attrs.define
 class ScaledDistributionMapping(Debiaser):
     """
-    Implements Scaled Distribution Matching (SDM) following Switanek et al. 2017.
+    |br| Implements Scaled Distribution Matching (SDM) following Switanek et al. 2017.
+
     SDM scales the observed distribution by changes in magnitude and additionally likelihood of events -- either multiplicatively for precipitation or additively for temperature.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math:`F` design a parametric cdf.
+    Let :math:`F` design a parametric CDF.
 
-    1) Temperature: absolute scaled distribution mapping
+    1. Temperature (``tas``): absolute scaled distribution mapping
 
-    For temperature a scaling is first calculated as:
+    First CDFs are fitted to both historical and future climate model values as well as observations. Usually for ``tas`` a normal distribution is used. Then a scaling is calculated as:
 
     .. math:: \\text{scaling} = [F^{-1}_{\\text{cm_fut}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))] * \\frac{\\sigma_\\text{obs}}{\\sigma_\\text{cm_hist}}
 
-    where :math:`\\sigma_\\text{obs}` and :math:`\\sigma_\\text{cm_hist}` refers to the standard deviation of a normal distribution fitted to obs and cm_hist. Then given the CDFs for obs, cm_hist, cm_fut recurrence intervals for all three are calculated as:
+    where :math:`\\sigma_\\text{obs}` and :math:`\\sigma_\\text{cm_hist}` refers to the standard deviation of a normal distribution fitted to obs and cm_hist. Given the CDFs for obs, cm_hist, cm_fut then recurrence intervals for all three are calculated as:
 
     .. math:: \\text{RI} = \\frac{1}{0.5 - \\|CDF - 0.5\\|}
 
     and a scaled recurrence interval (RI) and CDF as:
 
-    .. math:: \\text{RI}_\\{text{scaled}} = \\text{max}(1, \\frac{\\text{RI}_{\\text{obs}} \\cdot \\text{RI}_{\\text{cm_fut}}}{\\text{RI}_{\\text{cm_hist}}})
+    .. math:: \\text{RI}_{\\text{scaled}} = \\text{max}\\left(1, \\frac{\\text{RI}_{\\text{obs}} \\cdot \\text{RI}_{\\text{cm_fut}}}{\\text{RI}_{\\text{cm_hist}}}\\right)
 
-    .. math:: \\text{CDF}_{\\text{scaled}} = 0.5 + \\text{sgn}(\\text{CDF}_{\\text{obs}} - 0.5) \\cdot \\|  0.5 - \\frac{1}{\\text{RI}_{\\text{scaled}}} \\|
+    .. math:: \\text{CDF}_{\\text{scaled}} = 0.5 + \\text{sgn}(\\text{CDF}_{\\text{obs}} - 0.5) \\cdot \\left|  0.5 - \\frac{1}{\\text{RI}_{\\text{scaled}}} \\right|.
 
     Then the adjusted values are given as follows:
 
     .. math:: F^{-1}_{\\text{obs}}(\\text{CDF}_{\\text{scaled}}) + \\text{scaling}
 
-    2) Precipitation: relative scaled distribution mapping
+    |br|
+
+    2. Precipitation (``pr``): relative scaled distribution mapping
 
     For precipitation first in obs, cm_hist and cm_fut all values below a given threshold are set to zero rain. Let :math:`\\text{# rain}` design the number of rain days and :math:`\\text{# total}` the total number of days. The bias corrected number of rain days is calculated as:
 
@@ -81,28 +84,27 @@ class ScaledDistributionMapping(Debiaser):
 
     .. warning:: The relative SDM method does not currently allow correcting the number of precipitation days in cm_fut upwards, so to convert dry into rainy days. Should the calculated expected number of rainy days be higher than what is given inside the future climate model then the number of rainy days is left unadjusted. The method focuses on the biggest precipitation values, so this should not be an issue for most applications. However if such a correction is required this method might not be appropriate.
 
-    Default distributions are:
-
-    - tas: normal
-    - pr: gamma
 
     **Reference**:
 
     - Switanek, M. B., Troch, P. A., Castro, C. L., Leuprecht, A., Chang, H.-I., Mukherjee, R., & Demaria, E. M. C. (2017). Scaled distribution mapping: a bias correction method that preserves raw climate model projected changes. In Hydrology and Earth System Sciences (Vol. 21, Issue 6, pp. 2649–2666). Copernicus GmbH. https://doi.org/10.5194/hess-21-2649-2017.
 
+    |br|
+
     Attributes
     ----------
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
+    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Method used for the fit to the historical and future climate model outputs as well as the observations.
-    mapping_type: str
-        One of ["absolute", "relative"]. Type of SDM used. Default are "absolute" for tas and "relative" for pr
-    pr_lower_threshold: float
-        Lower threshold used for setting precipitation values to zero in relative SDM. Only used if mapping_type = "relative".
+        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel``(TODO: reference) class.
+    mapping_type : str
+        One of ``["absolute", "relative"]``. Type of SDM used. Default are "absolute" for ``tas`` and ``"relative"`` for ``pr``.
+    pr_lower_threshold : float
+        Lower threshold used for setting precipitation values to zero in relative SDM. Only used if ``mapping_type = "relative"``.
 
-    distribution_fit_kwargs: dict
-        Dict of additional arguments passed to the self.distribution.fit-method. Useful for fixing certain parameters of a distribution. Default: {} (empty dict)
-    cdf_threshold: float
-        Threshold to round CDF-values away from zero and one.
+    distribution_fit_kwargs : dict
+        Dict of additional arguments passed to the ``distribution.fit``-method. Useful for fixing certain parameters of a distribution. Default: ``{}`` (empty dict).
+    cdf_threshold : float
+        Threshold to round CDF-values away from zero and one. Default: ``1e-5``.
     """
 
     # Core algorithm

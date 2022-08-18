@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import logging
 from typing import Union
 
 import attrs
@@ -23,9 +24,9 @@ default_settings = {
 @attrs.define
 class DeltaChange(Debiaser):
     """
-    Class DeltaChange representing debiasing via so-called delta change scaling following Maraun 2016 as reference.
+    |br| Implements delta change scaling following Maraun 2016 as reference.
 
-    This is technically not a debiasing of a climate model because the future climate model output gets not directly transformed. Instead it only uses the models capturing of climate change to modify historical observations.
+    This is technically not a debiasing of a climate model because the future climate model output gets not directly transformed. Instead it only uses the models climate trend to modify historical observations. As such the output returned from :py:func:`apply` has the same number of timesteps as obs and not like other debiasers: as cm_fut.
 
     Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). Then in delta change a timeseries of future climate is generated as:
 
@@ -33,7 +34,7 @@ class DeltaChange(Debiaser):
 
     and for multiplicative change:
 
-    .. math:: x_{\\text{obs}} * \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}.
+    .. math:: x_{\\text{obs}} \\cdot \\frac{\\bar x_{\\text{cm_fut}}}{\\bar x_{\\text{cm_hist}}}.
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
@@ -43,20 +44,15 @@ class DeltaChange(Debiaser):
 
     - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
 
-    ...
+    |br|
 
     Attributes
     ----------
     variable : str
         Variable for which the debiasing is used
     delta_type : str
-        One of ["additive", "multiplicative"]. Determines whether additive or multiplicative scaling is used.
+        One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
 
-
-    Methods
-    -------
-    apply(obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray
-        Applies linear scaling at all given locations on a grid and returns the the debiased timeseries.
     """
 
     delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
@@ -66,7 +62,6 @@ class DeltaChange(Debiaser):
         return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
-        """Applies delta change at one location and returns the debiased timeseries."""
         if self.delta_type == "additive":
             return obs + (np.mean(cm_future) - np.mean(cm_hist))
         elif self.delta_type == "multiplicative":
@@ -74,9 +69,11 @@ class DeltaChange(Debiaser):
         else:
             raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
 
-    def apply(self, obs, cm_hist, cm_future):
-        print("----- Running debiasing -----")
-        Debiaser.check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
+    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", **kwargs):
+        Debiaser._set_up_logging(verbosity)
+        logging.info("----- Running debiasing for variable: %s -----" % self.variable)
+
+        obs, cm_hist, cm_future = Debiaser._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
             func=self.apply_location, output_size=obs.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future

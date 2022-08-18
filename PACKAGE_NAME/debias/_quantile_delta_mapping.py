@@ -42,7 +42,8 @@ default_settings = {
 @attrs.define
 class QuantileDeltaMapping(Debiaser):
     """
-    Implements Quantile Delta Mapping following Cannon et al. 2015.
+    |br| Implements Quantile Delta Mapping following Cannon et al. 2015.
+
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     The future climate projections :math:`x_{\\text{cm_fut}}` are adjusted in two steps: 1) they are bias corrected by quantile mapping and in the same time also detrended in all quantiles, 2) the trends in all quantiles -- as projected by the model -- are imposed again onto the bias corrected values.
 
@@ -83,40 +84,40 @@ class QuantileDeltaMapping(Debiaser):
     |br|
 
     Attributes
-    -----------
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
+    ----------
+    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Distribution or statistical model used to compute the CDF :math:`F` of observations and historical climate model values. |br|
         Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the StatisticalModel class (see utils).
-    trend_preservation: str
+    trend_preservation : str
         One of ``["absolute", "relative"]``. If ``"absolute"`` then absolute trend preservation is used, if ``"relative"`` then relative trend preservation is used. |brr|
 
-    censor_values_to_zero: bool
+    censor_values_to_zero : bool
         Whether values below a censoring threshold shall be censored to zero. Only relevant for precipitation. Default: ``False``.
-    censoring_threshold: float
+    censoring_threshold : float
         Threshold below which values shall be censored to zero if ``censor_values_to_zero = True``. Relevant mainly for precipitation. |br|
         If it is used (so ``censor_values_to_zero = True``) one needs to make sure that the distribution fits to censored data, knows the correct ``censoring_threshold`` and assumes all observations under the specified censoring_threshold are zero/censored. |br|
         If the standard for_precipitation and from_variable methods are used to construct the class this is ensured by default. However if this parameter is changed manually or own distributions for precipitation are specified problems can arise. |brr|
 
-    running_window_mode_over_years_of_cm_future: bool
+    running_window_mode_over_years_of_cm_future : bool
         Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
-    running_window_over_years_of_cm_future_length: int
+    running_window_over_years_of_cm_future_length : int
         Length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 31 years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
-    running_window_over_years_of_cm_future_step_length: int
+    running_window_over_years_of_cm_future_step_length : int
         Step length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 1 year). Only relevant if ``running_window_mode_over_years_of_cm_future = True``. |brr|
 
-    running_window_mode_within_year: bool
+    running_window_mode_within_year : bool
         Controls whether the methodology is applied in a running window over the year. Default: ``True``.
-    running_window_within_year_length: int
+    running_window_within_year_length : int
         Length of the running window over the year in days (default: 91 days). Only relevant if ``running_window_over_year = True``.
-    running_window_within_year_step_length: int
+    running_window_within_year_step_length : int
         Step length of the running window over the year in days (default 31 days). Only relevant if ``running_window_over_year = True``. |brr|
 
-    variable: str
+    variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``. |brr|
 
-    ecdf_method: str
+    ecdf_method : str
         One of ``["kernel_density", "linear_interpolation", "step_function"]``. Method used to calculate the empirical CDF. Default: ``"linear_interpolation"``.
-    cdf_threshold: Optional[float]
+    cdf_threshold : Optional[float]
         Threshold for the CDF-values to round away from 0 and 1. Default: None. It is then set to ``1 / (self.running_window_within_year_length * self.running_window_over_years_of_cm_future_length + 1)``
 
     """

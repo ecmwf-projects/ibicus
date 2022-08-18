@@ -14,7 +14,6 @@ import numpy as np
 
 from ..utils import (
     RunningWindowOverYears,
-    create_array_of_consecutive_dates,
     ecdf,
     iecdf,
     infer_and_create_time_arrays_if_not_given,
@@ -33,11 +32,12 @@ default_settings = {
 @attrs.define
 class CDFt(Debiaser):
     """
-    Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.
+    |br| Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.
+
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F` be an empirical cdf. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`, with:
 
-    .. math:: F_{\\text{obs_fut}} := F_{\\text{obs_hist}}(F^-1_{\\text{cm_hist}}(F_{\\text{cm_fut}})).
+    .. math:: F_{\\text{obs_fut}} := F_{\\text{obs_hist}}(F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}})).
 
     This means that :math:`x_{\\text{cm_fut}}` is mapped using the following:
 
@@ -45,7 +45,7 @@ class CDFt(Debiaser):
 
     All cdfs here are estimated empirically.
 
-    In case a delta_shift is used the future and historical climate model run are either additively shifted by the difference between observational mean and historical climate model mean or multiplicatively by the quotient between observational mean and historical climate model one. This means for an additive delta shift:
+    In case a delta_shift is used the future and historical climate model run are shifted prior to fitting empirical CDFs either additively by the difference between observational mean and historical climate model mean or multiplicatively by the quotient between observational mean and historical climate model one. This means for an additive delta shift:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
     .. math:: x_{\\text{cm_hist}} \\rightarrow x_{\\text{cm_hist}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
@@ -57,11 +57,11 @@ class CDFt(Debiaser):
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    This does an additional shift by the mean absolute or relative bias and ensures that the range of observations and cm_hist is approximately similar (important for the empirical CDFs).
+    After this shift by the mean absolute or relative bias values are mapped as above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. All CDFs :math:`F` here are estimated on the shifted values. This shifting ensures that the range of observations and cm_hist is approximately similar (important for the empirical CDFs).
 
-    If self.SSR = True then Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is used to correct the occurrence in addition to amounts (default for Precipitation). In there all zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
-    If self.apply_by_month = True (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
-    If self.running_window_mode = True (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
+    - If ``SSR = True`` then Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default for ``pr``). In there all zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
+    - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
+    - If ``running_window_mode = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
 
     .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
 
@@ -72,27 +72,28 @@ class CDFt(Debiaser):
     - Vrac, M., Drobinski, P., Merlo, A., Herrmann, M., Lavaysse, C., Li, L., & Somot, S. (2012). Dynamical and statistical downscaling of the French Mediterranean climate: uncertainty assessment. In Natural Hazards and Earth System Sciences (Vol. 12, Issue 9, pp. 2769–2784). Copernicus GmbH. https://doi.org/10.5194/nhess-12-2769-2012
     - Vrac, M., Noël, T., & Vautard, R. (2016). Bias correction of precipitation through Singularity Stochastic Removal: Because occurrences matter. In Journal of Geophysical Research: Atmospheres (Vol. 121, Issue 10, pp. 5237–5258). American Geophysical Union (AGU). https://doi.org/10.1002/2015jd024511
 
+    |br|
 
     Attributes
     ----------
-    SSR: bool
-        If Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is applied to adjust the number of zero values (only relevant for precipitation).
-    delta_shift: str
-        One of ["additive", "multiplicative", "no_shift"]. What kind of shift is applied to the data prior to fitting empirical distributions.
-    apply_by_month: bool
-        Whether CDF-t is applied month by month (default) to account for seasonality or onto the whole dataset at once.
-    running_window_mode: bool
-        Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities.
-    running_window_length_in_years: int
-        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if running_window_mode = True.
-    running_window_step_length_in_years: int
-        Step length of the running window in years: how many values are debiased inside the running window. Only relevant if running_window_mode = True.
-    variable: str
-        Variable for which the debiasing is done. Default: "unknown".
-    ecdf_method: str
-        One of ["kernel_density", "linear_interpolation", "step_function"], default: "linear_interpolation". Method to calculate the empirical CDF
-    iecdf_method: str
-        One of ["inverted_cdf","averaged_inverted_cdf", closest_observation","interpolated_inverted_cdf","hazen","weibull","linear","median_unbiased","normal_unbiased"], default "linear". Method to calculate the inverse empirical CDF (empirical quantile function).
+    SSR : bool
+        If Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is applied to adjust the number of zero values (only relevant for ``pr``).
+    delta_shift : str
+        One of ``["additive", "multiplicative", "no_shift"]``. What kind of shift is applied to the data prior to fitting empirical distributions.
+    apply_by_month : bool
+        Whether CDF-t is applied month by month (default) to account for seasonality or onto the whole dataset at once. Default: ``True``.
+    running_window_mode : bool
+        Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities. Default: ``True``.
+    running_window_length_in_years : int
+        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if ``running_window_mode = True``. Default: ``17``.
+    running_window_step_length_in_years : int
+        Step length of the running window in years: how many values are debiased inside the running window. Only relevant if ``running_window_mode = True``. Default: ``9``.
+    variable : str
+        Variable for which the debiasing is done. Default: ``"unknown"``.
+    ecdf_method : str
+        One of ``["kernel_density", "linear_interpolation", "step_function"]``. Method to calculate the empirical CDF. Default: ``"linear_interpolation"``.
+    iecdf_method : str
+        One of ``["inverted_cdf", "averaged_inverted_cdf", "closest_observation", "interpolated_inverted_cdf", "hazen", "weibull", "linear", "median_unbiased", "normal_unbiased"]``. Method to calculate the inverse empirical CDF (empirical quantile function). Default: ``"linear"``.
     """
 
     # CDFt parameters

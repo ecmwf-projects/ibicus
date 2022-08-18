@@ -23,7 +23,7 @@ default_settings = {
 @attrs.define
 class LinearScaling(Debiaser):
     """
-    Class LinearScaling representing debiasing via so-called linear scaling following Maraun 2016 as reference.
+    |br| Implements debiasing via linear scaling following Maraun 2016.
 
     In linear scaling the present day model bias is either subtracted or divided from the future climate model time-series.
 
@@ -33,30 +33,24 @@ class LinearScaling(Debiaser):
 
     and multiplicative scaling:
 
-    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} * \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}.
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} \\cdot \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}.
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    Multiplicative scaling is classically used for precipitation and additive scaling for temperature. Additive scaling amounts to a simple mean bias correction, whilst multiplicative one adjusts both mean and variance, but keeps their ration constant (Maraun 2016).
+    Multiplicative scaling is classically used for precipitation (`pr`) and additive scaling for temperature (`tas`). Additive scaling amounts to a simple mean bias correction, whilst multiplicative one adjusts both mean and variance, but keeps their ration constant (Maraun 2016).
 
     **References**:
 
     - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
 
-    ...
+    |br|
 
     Attributes
     ----------
     variable : str
         Variable for which the debiasing is used
     delta_type : str
-        One of ["additive", "multiplicative"]. Determines whether additive or multiplicative scaling is used.
-
-
-    Methods
-    -------
-    apply(obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray
-        Applies linear scaling at all given locations on a grid and returns the the debiased timeseries.
+        One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
     """
 
     delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
@@ -66,7 +60,6 @@ class LinearScaling(Debiaser):
         return super()._from_variable(cls, variable, default_settings, **kwargs)
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
-        """Applies linear scaling at one location and returns the debiased timeseries."""
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":
