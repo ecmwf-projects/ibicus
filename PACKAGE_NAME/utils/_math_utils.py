@@ -34,7 +34,7 @@ class StatisticalModel(ABC):
     >>> hurdle_model = gen_PrecipitationHurdleModel(distribution = scipy.stats.gengamma)
     >>> debiaser = QuantileMapping.from_variable("pr", distribution = hurdle_model)
 
-    .. warning:: This is an advanced feature and requires some knowledge of the workings of the debiaser and the statistical model passed/fitted. For example :py:class:`CDFt` does not require a model as parameter and in :py:class:`ISIMIP` `pr` values are split into zero and non-zero values prior to fitting: so Statistical Models do not need to account for the zero-character.
+    .. warning:: This is an advanced feature and requires some knowledge of the workings of the debiaser and the statistical model passed/fitted. For example :py:class:`CDFt` does not require a model as parameter and in :py:class:`ISIMIP` ``pr`` values are split into zero and non-zero values prior to fitting: so Statistical Models do not need to account for the zero-character.
 
     """
 

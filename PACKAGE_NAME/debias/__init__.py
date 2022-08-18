@@ -17,6 +17,7 @@ Debiasers currently implemented:
 .. autosummary::
     Debiaser
     LinearScaling
+    DeltaChange
     QuantileMapping
     ScaledDistributionMapping
     CDFt
