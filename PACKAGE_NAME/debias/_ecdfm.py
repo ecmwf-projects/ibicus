@@ -70,11 +70,11 @@ class ECDFM(Debiaser):
     @classmethod
     def for_precipitation(
         cls,
-        precipitation_model_type: str = "hurdle",
-        precipitation_amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
-        precipitation_censoring_threshold: float = 0.1,
-        precipitation_hurdle_model_randomization: bool = True,
-        precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
+        model_type: str = "hurdle",
+        amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
+        censoring_threshold: float = 0.1,
+        hurdle_model_randomization: bool = True,
+        hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
     ):
         """
@@ -82,15 +82,15 @@ class ECDFM(Debiaser):
 
         Parameters
         ----------
-        precipitation_model_type : str
+        model_type : str
             One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details. TODO: reference
-        precipitation_amounts_distribution : scipy.stats.rv_continuous
+        amounts_distribution : scipy.stats.rv_continuous
             Distribution used for precipitation amounts. For the censored model only :py:data:`scipy.stats.gamma` is possible.
-        precipitation_censoring_threshold : float
+        censoring_threshold : float
             The censoring-value if a censored precipitation model is used.
-        precipitation_hurdle_model_randomization : bool
+        hurdle_model_randomization : bool
             Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details. TODO: reference
-        precipitation_hurdle_model_kwds_for_distribution_fit : dict
+        hurdle_model_kwds_for_distribution_fit : dict
             Dict of parameters used for the distribution fit inside a hurdle model. Default: ``{"floc": 0, "fscale": None} location of distribution is fixed at zero (``floc = 0``) to stabilise Gamma distribution fits in scipy.
         **kwargs:
             All other class attributes that shall be set and where the standard values shall be overwritten.
@@ -99,11 +99,11 @@ class ECDFM(Debiaser):
         variable = pr
 
         method = map_standard_precipitation_method(
-            precipitation_model_type,
-            precipitation_amounts_distribution,
-            precipitation_censoring_threshold,
-            precipitation_hurdle_model_randomization,
-            precipitation_hurdle_model_kwds_for_distribution_fit,
+            model_type,
+            amounts_distribution,
+            censoring_threshold,
+            hurdle_model_randomization,
+            hurdle_model_kwds_for_distribution_fit,
         )
         parameters = {"distribution": method, "variable": variable.name}
         return cls(**{**parameters, **kwargs})

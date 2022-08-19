@@ -16,16 +16,39 @@ PACKAGE\_NAME.utils module
    :members:
    :undoc-members:
    :show-inheritance:
-   
 
-PACKAGE\_NAME.debias StatisticalModel abstract-class
+
+PACKAGE\_NAME.utils Convert variables
+-------------------------------------
+
+.. autofunction:: get_tasrange
+
+.. autofunction:: get_tasskew
+
+.. autofunction:: get_tasmin
+
+.. autofunction:: get_tasmax
+
+.. autofunction:: get_tasmin_tasmax
+
+.. autofunction:: get_tasrange_tasskew
+
+.. autofunction:: get_prsnratio
+
+.. autofunction:: get_pr
+
+.. autofunction:: get_prsn
+
+
+
+PACKAGE\_NAME.utils StatisticalModel abstract-class
 ----------------------------------------------------
 
 .. autoclass:: StatisticalModel
 	:members: fit, cdf, ppf
 
 
-PACKAGE\_NAME.debias gen\_PrecipitationIgnoreZeroValuesModel-class
+PACKAGE\_NAME.utils gen\_PrecipitationIgnoreZeroValuesModel-class
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: gen_PrecipitationIgnoreZeroValuesModel
@@ -39,14 +62,14 @@ PACKAGE\_NAME.debias gen\_PrecipitationHurdleModel-class
 	:members: fit, cdf, ppf
 
 
-PACKAGE\_NAME.debias gen\_PrecipitationGammaLeftCensoredModel-class
+PACKAGE\_NAME.utils gen\_PrecipitationGammaLeftCensoredModel-class
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: gen_PrecipitationGammaLeftCensoredModel
 	:members: fit, cdf, ppf
    
 
-PACKAGE\_NAME.debias Mathematical helpers
+PACKAGE\_NAME.utils Mathematical helpers
 -----------------------------------------
 
 .. autofunction:: ecdf
@@ -54,5 +77,3 @@ PACKAGE\_NAME.debias Mathematical helpers
 .. autofunction:: iecdf
 
 .. autofunction:: quantile_map_non_parametically
-
-P

@@ -73,9 +73,12 @@ class DeltaChange(Debiaser):
         Debiaser._set_up_logging(verbosity)
         logging.info("----- Running debiasing for variable: %s -----" % self.variable)
 
-        obs, cm_hist, cm_future = Debiaser._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
+        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
             func=self.apply_location, output_size=obs.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
         )
+
+        self._check_output(output)
+
         return output

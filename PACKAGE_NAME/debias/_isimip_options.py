@@ -126,7 +126,6 @@ isimip3_variable_settings = {
         "distribution": scipy.stats.norm,
         "trend_preservation_method": "additive",
         "detrending": True,
-        "reasonable_physical_range": [0, 400],  # TODO: needs to appear everywhere
     },
     tasrange: {
         "lower_bound": 0,

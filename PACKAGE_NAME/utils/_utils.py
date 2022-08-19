@@ -149,3 +149,265 @@ def infer_and_create_time_arrays_if_not_given(
         time_cm_future = create_array_of_consecutive_dates(cm_future.size)
 
     return time_obs, time_cm_hist, time_cm_future
+
+
+# ----- Variables ----- #
+
+# ----- tas, tasmin, tasmax, tasrange and tasskew ----- #
+def _get_tasmax_from_tasmin_and_range(tasrange, tasmin):
+    return tasrange + tasmin
+
+
+# Tasrange and skew
+def get_tasrange(tasmin: np.ndarray, tasmax: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`tasrange` from arrays of :py:data:`tasmin` and :py:data:`tasmax`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tasmin : np.ndarray
+        Numpy array of :py:data:`tasmin`-values.
+    tasmax : np.ndarray
+        Numpy array of :py:data:`tasmax`-values.
+
+    Returns
+    -------
+    tasrange : np.ndarray
+        Numpy array of :py:data:`tasrange` values
+    """
+    return tasmax - tasmin
+
+
+def get_tasskew(tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`tasskew` from arrays of :py:data:`tas`, :py:data:`tasmin` and :py:data:`tasmax`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tas : np.ndarray
+        Numpy array of :py:data:`tas`-values.
+    tasmin : np.ndarray
+        Numpy array of :py:data:`tasmin`-values.
+    tasmax : np.ndarray
+        Numpy array of :py:data:`tasmax`-values.
+
+    Returns
+    -------
+    tasskew : np.ndarray
+        Numpy array of :py:data:`tasskew` values
+    """
+    return (tas - tasmin) / (tasmin - tasmax)
+
+
+# Tasmin and max
+def get_tasmin(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`tasmin` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tas : np.ndarray
+        Numpy array of :py:data:`tas`-values.
+    tasrange : np.ndarray
+        Numpy array of :py:data:`tasrange`-values.
+    tasskew : np.ndarray
+        Numpy array of :py:data:`tasskew`-values.
+
+    Returns
+    -------
+    tasmin : np.ndarray
+        Numpy array of :py:data:`tasmin` values
+    """
+    return tas - tasskew * tasrange
+
+
+def get_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`tasmax` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tas : np.ndarray
+        Numpy array of :py:data:`tas`-values.
+    tasrange : np.ndarray
+        Numpy array of :py:data:`tasrange`-values.
+    tasskew : np.ndarray
+        Numpy array of :py:data:`tasskew`-values.
+
+    Returns
+    -------
+    tasmax : np.ndarray
+        Numpy array of :py:data:`tasmax` values
+    """
+    return _get_tasmax_from_tasmin_and_range(get_tasmin(tas, tasrange, tasskew), tasrange)
+
+
+# Both
+def get_tasmin_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy arrays of both :py:data:`tasmin` and :py:data:`tasmax` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tas : np.ndarray
+        Numpy array of :py:data:`tas`-values.
+    tasrange : np.ndarray
+        Numpy array of :py:data:`tasrange`-values.
+    tasskew : np.ndarray
+        Numpy array of :py:data:`tasskew`-values.
+
+    Returns
+    -------
+    tasmin : np.ndarray
+        Numpy array of :py:data:`tasmin` values
+    tasmax : np.ndarray
+        Numpy array of :py:data:`tasmax` values
+    """
+    tasmin = get_tasmin(tas, tasrange, tasskew)
+    tasmax = _get_tasmax_from_tasmin_and_range(tasmin, tasrange)
+    return tasmin, tasmax
+
+
+def get_tasrange_tasskew(tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy arrays of both :py:data:`tasrange` and :py:data:`tasskew` from arrays of :py:data:`tas`, :py:data:`tasmin` and :py:data:`tasmax`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formulas:
+
+    .. math:: \\text{tasrange} = \\text{tasmax} - \\text{tasmin}
+    .. math:: \\text{tasskew} = \\frac{\\text{tas} - \\text{tasmin}}{\\text{tasrange}}
+
+    Parameters
+    ----------
+    tas : np.ndarray
+        Numpy array of :py:data:`tas`-values.
+    tasmin : np.ndarray
+        Numpy array of :py:data:`tasmin`-values.
+    tasmax : np.ndarray
+        Numpy array of :py:data:`tasmax`-values.
+
+    Returns
+    -------
+    tasrange : np.ndarray
+        Numpy array of :py:data:`tasrange` values
+    tasskew : np.ndarray
+        Numpy array of :py:data:`tasskew` values
+    """
+    tasrange = get_tasrange(tasmin, tasmax)
+    tasskew = get_tasskew(tas, tasmin, tasmax)
+    return tasrange, tasskew
+
+
+# ----- pr, prsn and prsnratio ----- #
+
+
+def get_prsnratio(pr: np.ndarray, prsn: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`prsnratio` from arrays of :py:data:`pr` and :py:data:`prsn`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formula:
+
+    .. math:: \\text{prsnratio} = \\frac{\\text{prsn}}{\\text{pr}}
+
+    Parameters
+    ----------
+    pr : np.ndarray
+        Numpy array of :py:data:`pr`-values.
+    prsn : np.ndarray
+        Numpy array of :py:data:`prsn`-values.
+
+    Returns
+    -------
+    prsnration : np.ndarray
+        Numpy array of :py:data:`prsnratio` values
+    """
+    return prsn / pr
+
+
+def get_pr(prsn: np.ndarray, prsnratio: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`pr` from arrays of :py:data:`prsn` and :py:data:`prsnratio`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formula:
+
+    .. math:: \\text{prsnratio} = \\frac{\\text{prsn}}{\\text{pr}}
+
+    Parameters
+    ----------
+    pr : np.ndarray
+        Numpy array of :py:data:`prsn`-values.
+    prsn : np.ndarray
+        Numpy array of :py:data:`prsnratio`-values.
+
+    Returns
+    -------
+    pr : np.ndarray
+        Numpy array of :py:data:`pr` values
+    """
+    return prsn / prsnratio
+
+
+def get_prsn(pr: np.ndarray, prsnratio: np.ndarray) -> np.ndarray:
+    """
+    Calculates numpy array of :py:data:`prsn` from arrays of :py:data:`pr` and :py:data:`prsnratio`.
+
+    All input arrays need to have values at the same timesteps and locations.
+
+    Formula:
+
+    .. math:: \\text{prsnratio} = \\frac{\\text{prsn}}{\\text{pr}}
+
+    Parameters
+    ----------
+    pr : np.ndarray
+        Numpy array of :py:data:`pr`-values.
+    prsn : np.ndarray
+        Numpy array of :py:data:`prsnratio`-values.
+
+    Returns
+    -------
+    prsn : np.ndarray
+        Numpy array of :py:data:`prsn` values
+    """
+    return prsnratio * pr

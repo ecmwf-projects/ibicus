@@ -195,18 +195,6 @@ class ISIMIP(Debiaser):
     # Step 3
     detrending: bool = attrs.field(validator=attrs.validators.instance_of(bool))  # step 3
 
-    reasonable_physical_range: Optional[list] = attrs.field(default=None)
-
-    @reasonable_physical_range.validator
-    def validate_reasonable_physical_range(self, attribute, value):
-        if value is not None:
-            if len(value) != 2:
-                raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
-            if not all(isinstance(elem, (int, float)) for elem in value):
-                raise ValueError("reasonable_physical_range needs to be a list of floats")
-            if not value[0] < value[1]:
-                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
-
     # Variable bounds
     lower_bound: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
     lower_threshold: float = attrs.field(default=np.inf, validator=attrs.validators.instance_of(float), converter=float)
@@ -359,27 +347,6 @@ class ISIMIP(Debiaser):
 
     def get_proportion_of_days_beyond_upper_threshold(self, x):
         return self._get_mask_for_values_beyond_upper_threshold(x).mean()
-
-    def _check_reasonable_physical_range(self, obs_hist, cm_hist, cm_future):
-        if self.reasonable_physical_range is not None:
-            if np.any((obs_hist < self.reasonable_physical_range[0]) | (obs_hist > self.reasonable_physical_range[1])):
-                raise ValueError(
-                    "Values of obs_hist lie outside the reasonable physical range of %s"
-                    % self.reasonable_physical_range
-                )
-
-            if np.any((cm_hist < self.reasonable_physical_range[0]) | (cm_hist > self.reasonable_physical_range[1])):
-                raise ValueError(
-                    "Values of cm_hist lie outside the reasonable physical range of %s" % self.reasonable_physical_range
-                )
-
-            if np.any(
-                (cm_future < self.reasonable_physical_range[0]) | (cm_future > self.reasonable_physical_range[1])
-            ):
-                raise ValueError(
-                    "Values of cm_future lie outside the reasonable physical range of %s"
-                    % self.reasonable_physical_range
-                )
 
     @staticmethod
     def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
@@ -1074,7 +1041,6 @@ class ISIMIP(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        self._check_reasonable_physical_range(obs, cm_hist, cm_future)
 
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
             warning(
