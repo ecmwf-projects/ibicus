@@ -13,7 +13,6 @@ PACKAGE\_NAME.variables module
 ==============================
 
 .. automodule:: PACKAGE_NAME.variables
-   :undoc-members:
    :show-inheritance:
 
 PACKAGE\_NAME.debias Variable-class

@@ -152,30 +152,28 @@ str_to_variable_class = {
 
 
 def map_standard_precipitation_method(
-    precipitation_model_type: str = "censored",
-    precipitation_amounts_distribution=scipy.stats.gamma,
-    precipitation_censoring_threshold: float = 0.1,
-    precipitation_hurdle_model_randomization: bool = True,
-    precipitation_hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
+    model_type: str = "censored",
+    amounts_distribution=scipy.stats.gamma,
+    censoring_threshold: float = 0.1,
+    hurdle_model_randomization: bool = True,
+    hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
 ):
-    if precipitation_model_type == "censored":
-        if precipitation_model_type == "censored" and precipitation_amounts_distribution != scipy.stats.gamma:
+    if model_type == "censored":
+        if model_type == "censored" and amounts_distribution != scipy.stats.gamma:
             raise ValueError("Only the gamma distribution is supported for a censored precipitation model")
-        if precipitation_censoring_threshold < 0:
-            raise ValueError("precipitation_censoring_threshold needs to be >= 0")
-        method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=precipitation_censoring_threshold)
-    elif precipitation_model_type == "hurdle":
+        if censoring_threshold < 0:
+            raise ValueError("censoring_threshold needs to be >= 0")
+        method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=censoring_threshold)
+    elif model_type == "hurdle":
         method = utils.gen_PrecipitationHurdleModel(
-            distribution=precipitation_amounts_distribution,
-            fit_kwds=precipitation_hurdle_model_kwds_for_distribution_fit,
-            cdf_randomization=precipitation_hurdle_model_randomization,
+            distribution=amounts_distribution,
+            fit_kwds=hurdle_model_kwds_for_distribution_fit,
+            cdf_randomization=hurdle_model_randomization,
         )
-    elif precipitation_model_type == "ignore_zeros":
-        method = utils.gen_PrecipitationIgnoreZeroValuesModel(precipitation_amounts_distribution)
+    elif model_type == "ignore_zeros":
+        method = utils.gen_PrecipitationIgnoreZeroValuesModel(amounts_distribution)
     else:
-        raise ValueError(
-            "precipitation_model_type has wrong value. Needs to be one of ['censored', 'hurdle', 'ignore_zeros']"
-        )
+        raise ValueError("model_type has wrong value. Needs to be one of ['censored', 'hurdle', 'ignore_zeros']")
 
     return method
 
