@@ -12,109 +12,93 @@ import pandas as pd
 import scipy
 import seaborn
 
-from PACKAGE_NAME.evaluate import metrics
-
-metrics_dictionary = {
-    "frost": {
-        "variable": "tasmin",
-        "variablename": "2m daily minimum air temperature (K)",
-        "value": 273.15,
-        "threshold_sign": "lower",
-        "name": "Frost days",
-    },
-    "mean_warm_day": {
-        "variable": "tas",
-        "variablename": "2m daily mean air temperature (K)",
-        "value": 295,
-        "threshold_sign": "higher",
-        "name": "Warm days (mean)",
-    },
-    "mean_cold_day": {
-        "variable": "tas",
-        "variablename": "2m daily mean air temperature (K)",
-        "value": 273,
-        "threshold_sign": "lower",
-        "name": "Cold days (mean)",
-    },
-    "dry": {
-        "variable": "pr",
-        "variablename": "Precipitation",
-        "value": 0.000001,
-        "threshold_sign": "lower",
-        "name": "Dry days (mean)",
-    },
-    "wet": {
-        "variable": "pr",
-        "variable_name": "Precipitation",
-        "value": 1 / 86400,
-        "threshold_sign": "higher",
-        "name": "Wet days (daily total precipitation > 1 mm)",
-    },
-}
-
-variable_dictionary = {
-    "tas": {
-        "distribution": scipy.stats.norm,
-        "trend_preservation": "additive",
-        "detrending": True,
-        "name": "2m daily mean air temperature (K)",
-        "high_threshold": 295,
-        "low_threshold": 273,
-        "unit": "K",
-    },
-    "pr": {
-        "distribution": scipy.stats.gamma,
-        "trend_preservation": "mixed",
-        "detrending": False,
-        "name": "Total precipitation (m/day)",
-        "high_threshold": 0.0004,
-        "low_threshold": 0.00001,
-        "unit": "m/day",
-    },
-}
+from PACKAGE_NAME.variables import *
 
 
-def calculate_descriptive_statistics_trend_bias(variable, trend_type, raw_validate, raw_future, bc_validate, bc_future):
+
+
+def _calculate_mean_trend_bias(variable: str, trend_type: str, raw_validate: np.ndarray, raw_future: np.ndarray, bc_validate: np.ndarray, bc_future: np.ndarray) ->  np.ndarray:
 
     if trend_type == "additive":
 
-        bc_trend_mean = np.mean(bc_future, axis=0) - np.mean(bc_validate, axis=0)
-        raw_trend_mean = np.mean(raw_future, axis=0) - np.mean(raw_validate, axis=0)
-        bias_mean = 100 * (bc_trend_mean - raw_trend_mean) / raw_trend_mean
+        bc_trend = np.mean(bc_future, axis=0) - np.mean(bc_validate, axis=0)
+        raw_trend = np.mean(raw_future, axis=0) - np.mean(raw_validate, axis=0)
+        bias = 100 * (bc_trend - raw_trend) / raw_trend
 
-        bc_trend_lowqn = np.quantile(bc_future, 0.05, axis=0) - np.quantile(bc_validate, 0.05, axis=0)
-        raw_trend_lowqn = np.quantile(raw_future, 0.05, axis=0) - np.quantile(raw_validate, 0.05, axis=0)
-        bias_lowqn = 100 * (bc_trend_lowqn - raw_trend_lowqn) / raw_trend_lowqn
+    elif trend_type =="multiplicative":
+        
+        bc_trend = np.mean(bc_future, axis=0) / np.mean(bc_validate, axis=0)
+        raw_trend = np.mean(raw_future, axis=0) / np.mean(raw_validate, axis=0)
+        bias = 100 * (bc_trend - raw_trend) / raw_trend
+        
+    else:
 
-        bc_trend_highqn = np.quantile(bc_future, 0.95, axis=0) - np.quantile(bc_validate, 0.95, axis=0)
-        raw_trend_highqn = np.quantile(raw_future, 0.95, axis=0) - np.quantile(raw_validate, 0.95, axis=0)
-        bias_highqn = 100 * (bc_trend_highqn - raw_trend_highqn) / raw_trend_highqn
+        raise ValueError("trend type currently not supported")
+
+    return bias
+
+
+def _calculate_quantile_trend_bias(variable: str, trend_type: str, quantile: float, raw_validate: np.ndarray, raw_future: np.ndarray, bc_validate: np.ndarray, bc_future: np.ndarray) ->  np.ndarray:
+
+    if trend_type == "additive":
+
+        bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(bc_validate, quantile, axis=0)
+        raw_trend = np.quantile(raw_future, quantile, axis=0) - np.quantile(raw_validate, quantile, axis=0)
+        bias = 100 * (bc_trend - raw_trend) / raw_trend
+        
+    elif trend_type =="multiplicative":
+        
+        if np.quantile(bc_validate, quantile, axis=0)==0 or np.quantile(raw_validate, quantile, axis=0):
+            
+            raise Warning("Selected quantile is zero, cannot analyse multiplicative trend. Output will be automatically set to zero.")
+            
+        else:
+            
+            bc_trend = np.quantile(bc_future, quantile, axis=0) / np.quantile(bc_validate, quantile, axis=0)
+            raw_trend = np.quantile(raw_future, quantile, axis=0) / np.quantile(raw_validate, quantile, axis=0)
+            bias = 100 * (bc_trend - raw_trend) / raw_trend
 
     else:
 
-        print("trend type currently not supported")
+        raise ValueError("trend type currently not supported")
 
-    return (bias_mean, bias_lowqn, bias_highqn)
+    return bias
 
 
-def calculate_metrics_trend_bias(variable, metric, raw_validate, raw_future, bc_validate, bc_future):
+def _calculate_metrics_trend_bias(variable: str, metric, raw_validate: np.ndarray, raw_future: np.ndarray, bc_validate: np.ndarray, bc_future: np.ndarray) -> np.ndarray:
 
-    trend_raw = metrics.calculate_eot_probability(data=raw_future, threshold_name=metric) - metrics.calculate_probability(
-        data=raw_validate, threshold_name=metric
-    )
-
-    trend_bc = metrics.calculate_eot_probability(data=bc_future, threshold_name=metric) - metrics.calculate_probability(
-        data=bc_validate, threshold_name=metric
-    )
+    trend_raw = metric.calculate_exceedance_probability(raw_future) - metric.calculate_exceedance_probability(raw_validate)
+    
+    trend_bc = metric.calculate_exceedance_probability(bc_future) - metric.calculate_exceedance_probability(bc_validate)
 
     trend_bias = 100 * (trend_bc - trend_raw) / trend_raw
 
     return trend_bias
 
 
-def calculate_future_trend_bias(variable, metrics, raw_validate, raw_future, **debiased_cms):
 
-    # calculate 2d bias array for each of the metrics chosen, for each of the debiased cms, and append to numpy array
+def calculate_future_trend_bias(variable: str, metric_collection: np.ndarray, raw_validate: np.ndarray, raw_future: np.ndarray, **debiased_cms) -> np.ndarray:
+    
+    """
+    For each location, calculates the bias in the trend of the bias corrected model compared to the raw climate model for the following metrics: mean, 5% and 95% quantile (default) 
+    as well as metrics passed as arguments to function. Trend can be specified as either additive or multiplicative. Function returns numpy array with three columns: 
+    [Bias correction method, Metric, Bias value at certain location]
+
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    metrics: np.ndarray
+        1d numpy array of strings containing the keys of the metrics to be analysed. Example: metrics = ['dry', 'wet']
+    raw_validate: np.ndarray
+        Raw climate data set in validation period
+    raw_future: np.ndarray
+        Raw climate data set in future period
+    debiased_cms: np.ndarray
+        Keyword arguments given in format debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]
+        Example: QM = [tas_val_debiased_QM, tas_future_debiased_QM]
+
+    """
 
     trend_bias_data = np.empty((0, 3))
 
@@ -122,10 +106,20 @@ def calculate_future_trend_bias(variable, metrics, raw_validate, raw_future, **d
 
     for k in debiased_cms.keys():
 
-        # calculate mean, low quantile and high quantile
+        if len(debiased_cms[k])!=2:
+            
+            raise TypeError("Array of debiased climate datasets does not have correct length - should be two.")
 
-        mean_bias, lowqn_bias, highqn_bias = calculate_descriptive_statistics_trend_bias(
+        mean_bias = _calculate_mean_trend_bias(
             variable, "additive", raw_validate, raw_future, *debiased_cms[k]
+        )
+        
+        lowqn_bias = _calculate_quantile_trend_bias(
+            variable, "additive", 0.05, raw_validate, raw_future, *debiased_cms[k]
+        )
+        
+        highqn_bias = _calculate_quantile_trend_bias(
+            variable, "additive", 0.95, raw_validate, raw_future, *debiased_cms[k]
         )
 
         trend_bias_data = np.append(
@@ -161,10 +155,10 @@ def calculate_future_trend_bias(variable, metrics, raw_validate, raw_future, **d
             ),
             axis=0,
         )
-        if len(metrics) != 0:
-            for m in metrics:
+        if len(metric_collection) != 0:
+            for m in metric_collection:
 
-                metric_bias = calculate_metrics_trend_bias(variable, m, raw_validate, raw_future, *debiased_cms[k])
+                metric_bias = _calculate_metrics_trend_bias(variable, m, raw_validate, raw_future, *debiased_cms[k])
 
                 trend_bias_data = np.append(
                     trend_bias_data,
@@ -172,7 +166,7 @@ def calculate_future_trend_bias(variable, metrics, raw_validate, raw_future, **d
                         np.array(
                             [
                                 [k] * number_locations,
-                                [metrics_dictionary.get(m).get("name")] * number_locations,
+                                [m.name] * number_locations,
                                 np.transpose(np.ndarray.flatten(metric_bias)),
                             ]
                         )
@@ -183,7 +177,23 @@ def calculate_future_trend_bias(variable, metrics, raw_validate, raw_future, **d
     return trend_bias_data
 
 
-def plot_future_trend_bias(variable, bias_array):
+def plot_future_trend_bias(variable: str, bias_array: np.ndarray):
+    
+    """
+    Accepts ouput given by calculate_future_trend_bias (expects the following three columns: [Bias correction method, Metric, Bias value at certain location]),
+    transforms it from a numpy error to a pandas dataframe and creates
+    an overview boxplot of the bias in the trend of metrics existing in the input numpy array using seaborn.
+
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    bias_array: np.ndarray
+        Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]
+    """
+    
+    if bias_array.shape[1]!=3:
+        raise TypeError("Wrong input data format. Needs three columns Bias correction method, Metric, Bias value at certain location]. Use function calculate_future_trend_bias to generate input.")
 
     plot_data = pd.DataFrame(bias_array, columns=["Correction Method", "Metric", "Relative change bias (%)"])
     plot_data["Relative change bias (%)"] = pd.to_numeric(plot_data["Relative change bias (%)"])
@@ -194,7 +204,7 @@ def plot_future_trend_bias(variable, bias_array):
     )
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
     fig.suptitle(
-        "Bias in climate model trend between historical and future period \n {}".format(
-            variable_dictionary.get(variable).get("name")
+        "Bias in climate model trend between historical and future period \n {} ({})".format(
+            map_variable_str_to_variable_class(variable).name,  map_variable_str_to_variable_class(variable).unit
         )
     )
