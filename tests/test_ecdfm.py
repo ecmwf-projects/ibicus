@@ -73,41 +73,41 @@ class TestECDFM(unittest.TestCase):
 
         pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
         pr_2 = ECDFM.for_precipitation(
-            precipitation_model_type="censored",
-            precipitation_censoring_threshold=0.2,
-            precipitation_hurdle_model_randomization=False,
+            model_type="censored",
+            censoring_threshold=0.2,
+            hurdle_model_randomization=False,
         )
 
         assert pr_1 == pr_2
 
         pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.1))
-        pr_2 = ECDFM.for_precipitation(precipitation_model_type="censored", precipitation_censoring_threshold=0.2)
+        pr_2 = ECDFM.for_precipitation(model_type="censored", censoring_threshold=0.2)
 
         assert pr_1 != pr_2
 
         pr_1 = ECDFM.for_precipitation(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
         pr_2 = ECDFM.for_precipitation(
-            precipitation_model_type="censored",
-            precipitation_censoring_threshold=0.2,
-            precipitation_hurdle_model_randomization=False,
+            model_type="censored",
+            censoring_threshold=0.2,
+            hurdle_model_randomization=False,
         )
 
         assert pr_1 == pr_2
 
         pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
         pr_2 = ECDFM.for_precipitation(
-            precipitation_model_type="hurdle",
-            precipitation_censoring_threshold=0.2,
-            precipitation_hurdle_model_randomization=True,
+            model_type="hurdle",
+            censoring_threshold=0.2,
+            hurdle_model_randomization=True,
         )
 
         assert pr_1 == pr_2
 
         pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
         pr_2 = ECDFM.for_precipitation(
-            precipitation_model_type="hurdle",
-            precipitation_censoring_threshold=0.2,
-            precipitation_hurdle_model_randomization=False,
+            model_type="hurdle",
+            censoring_threshold=0.2,
+            hurdle_model_randomization=False,
         )
 
         assert pr_1 != pr_2
@@ -144,7 +144,7 @@ class TestECDFM(unittest.TestCase):
 
     def test_apply_location_pr(self):
         # Compare all values
-        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=False)
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
@@ -168,7 +168,7 @@ class TestECDFM(unittest.TestCase):
         assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Compare non-zero values
-        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=True)
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=True)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
@@ -201,7 +201,7 @@ class TestECDFM(unittest.TestCase):
         )
 
         # Test: corrects mean difference
-        pr = ECDFM.for_precipitation(precipitation_hurdle_model_randomization=False)
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
 
         obs = gen_precip_data(0.4, 1000, 5, 2)
         cm_hist = gen_precip_data(0.4, 1000, 5, 2) + 5
