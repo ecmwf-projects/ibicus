@@ -9,99 +9,53 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy
 import seaborn
 
-from PACKAGE_NAME.evaluate import metrics
+from PACKAGE_NAME.variables import *
 
-variable_dictionary = {
-    "tas": {
-        "distribution": scipy.stats.norm,
-        "trend_preservation": "additive",
-        "detrending": True,
-        "name": "2m daily mean air temperature (K)",
-        "high_threshold": 295,
-        "low_threshold": 273,
-        "unit": "K",
-    },
-    "pr": {
-        "distribution": scipy.stats.gamma,
-        "trend_preservation": "mixed",
-        "detrending": False,
-        "name": "Total precipitation (m/day)",
-        "high_threshold": 0.0004,
-        "low_threshold": 0.00001,
-        "unit": "m/day",
-    },
-}
+def _mean_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
+    
+    """
+    Calculates location-wise percentage bias of mean
+    """
 
-metrics_dictionary = {
-    "frost": {
-        "variable": "tasmin",
-        "variablename": "2m daily minimum air temperature (K)",
-        "value": 273.15,
-        "threshold_sign": "lower",
-        "name": "Frost days",
-    },
-    "mean_warm_day": {
-        "variable": "tas",
-        "variablename": "2m daily mean air temperature (K)",
-        "value": 295,
-        "threshold_sign": "higher",
-        "name": "Warm days (mean)",
-    },
-    "mean_cold_day": {
-        "variable": "tas",
-        "variablename": "2m daily mean air temperature (K)",
-        "value": 273,
-        "threshold_sign": "lower",
-        "name": "Cold days (mean)",
-    },
-    "dry": {
-        "variable": "pr",
-        "variablename": "Precipitation",
-        "value": 0.000001,
-        "threshold_sign": "lower",
-        "name": "Dry days (mean)",
-    },
-    "wet": {
-        "variable": "pr",
-        "variable_name": "Precipitation",
-        "value": 1 / 86400,
-        "threshold_sign": "higher",
-        "name": "Wet days (daily total precipitation > 1 mm)",
-    },
-}
+    mean_bias = 100 * (np.mean(obs_data, axis=0) - np.mean(cm_data, axis=0)) / np.mean(obs_data, axis=0)
+
+    return mean_bias
 
 
-def _descriptive_statistics_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
+def _quantile_marginal_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray):
+    
+    """
+    Calculates location-wise percentage bias of specified quantile
+    """
 
-    mean_obs = np.mean(obs_data, axis=0)
-    lowpc_obs = np.quantile(obs_data, 0.05, axis=0)
-    highpc_obs = np.quantile(obs_data, 0.95, axis=0)
+    if quantile<0 or quantile>1:
+        raise ValueError('Quantile needs to be between 0 and 1')
 
-    mean_bias = 100 * (mean_obs - np.mean(cm_data, axis=0)) / mean_obs
+    qn_obs = np.quantile(obs_data, quantile, axis=0)
 
-    if np.any(lowpc_obs) == 0:
-        lowpc_bias = 0 * lowpc_obs
+    if np.any(qn_obs) == 0:
+        qn_bias = 0 * qn_obs
     else:
-        lowpc_bias = 100 * (lowpc_obs - np.quantile(cm_data, 0.05, axis=0)) / lowpc_obs
+        qn_bias = 100 * (qn_obs - np.quantile(cm_data, quantile, axis=0)) / qn_obs
 
-    highpc_bias = 100 * (highpc_obs - np.quantile(cm_data, 0.95, axis=0)) / highpc_obs
-
-    return (mean_bias, lowpc_bias, highpc_bias)
+    return qn_bias
 
 
-def _metrics_marginal_bias(metric: str, obs_data: np.ndarray, cm_data: np.ndarray):
+def _metrics_marginal_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
+    
+    """
+    Calculates location-wise percentage bias of metric specified
+    """
 
-    obs_metric = metrics.calculate_eot_probability(data=obs_data, threshold_name=metric)
+    obs_metric = metric.calculate_exceedance_probability(dataset=obs_data)
 
-    cm_metric = metrics.calculate_eot_probability(data=cm_data, threshold_name=metric)
+    cm_metric = metric.calculate_exceedance_probability(dataset=cm_data)
 
     bias = 100 * (obs_metric - cm_metric) / obs_metric
 
     return bias
-
 
 def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data) -> np.ndarray:
     
@@ -127,8 +81,14 @@ def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data
 
     for k, cm_data in cm_data.items():
 
-        mean_bias, lowqn_bias, highqn_bias = _descriptive_statistics_marginal_bias(
+        mean_bias = _mean_marginal_bias(
             obs_data=obs_data, cm_data=cm_data
+        )
+        lowqn_bias = _quantile_marginal_bias(
+            quantile = 0.05, obs_data=obs_data, cm_data=cm_data
+        )
+        highqn_bias = _quantile_marginal_bias(
+            quantile = 0.95, obs_data=obs_data, cm_data=cm_data
         )
 
         marginal_bias_data = np.append(
@@ -176,7 +136,7 @@ def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data
                         np.array(
                             [
                                 [k] * number_locations,
-                                [metrics_dictionary.get(m).get("name")] * number_locations,
+                                [m.name] * number_locations,
                                 np.transpose(np.ndarray.flatten(metric_bias)),
                             ]
                         )
@@ -187,7 +147,7 @@ def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data
     return marginal_bias_data
 
 
-def plot_marginal_bias(variable: str, bias_array: np.ndarray, metrics: np.ndarray):
+def plot_marginal_bias(variable: str, bias_array: np.ndarray):
 
     """
     Takes numpy array containing the location-wise percentage bias of different metrics and outputs two boxplots,
@@ -200,7 +160,7 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray, metrics: np.ndarra
     bias_array: np.ndarray
         Numpy array containing percentage bias for descriptive statistics and specified metrics. Has to be output of
         the function calculate_marginal_bias to be in correct format
-    metrics: np.array
+    metrics: np.ndarray
         Array of strings containing the names of the metrics that are to be plotted.
 
     """
@@ -226,7 +186,7 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray, metrics: np.ndarra
     )
     [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
 
-    fig.suptitle("{} - Bias".format(variable_dictionary.get(variable).get("name")))
+    fig.suptitle("{} ({}) - Bias".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit))
 
 
 def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_data):
@@ -251,7 +211,7 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_dat
     plot_number = number_biascorrections
 
     fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5))
-    fig.suptitle("Distribution {} over entire area".format(variable_dictionary.get(variable).get("name")))
+    fig.suptitle("Distribution {} ({}) over entire area".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit))
 
     i = 0
     for k, cm_data in cm_data.items():

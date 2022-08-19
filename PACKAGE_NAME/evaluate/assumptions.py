@@ -17,38 +17,17 @@ import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
 from scipy.stats import norm
 
-variable_dictionary = {
-    "tas": {
-        "distribution": scipy.stats.norm,
-        "trend_preservation": "additive",
-        "detrending": True,
-        "name": "2m daily mean air temperature (K)",
-        "high_threshold": 295,
-        "low_threshold": 273,
-        "unit": "K",
-    },
-    "pr": {
-        "distribution": scipy.stats.gamma,
-        "trend_preservation": "mixed",
-        "detrending": False,
-        "name": "Total precipitation (m/day)",
-        "high_threshold": 0.0004,
-        "low_threshold": 0.00001,
-        "unit": "m/day",
-    },
-}
+from PACKAGE_NAME.variables import *
 
 
-def calculate_aic_goodness_of_fit(variable, dataset, distribution_names=["default"]):
+
+def calculate_aic_goodness_of_fit(variable, dataset, distribution_names):
 
     aic = np.empty((0, 4))
 
     for distribution_name in distribution_names:
 
-        if distribution_name == "default":
-            distribution = variable_dictionary.get(variable).get("distribution")
-        else:
-            distribution = distribution_name
+        distribution = distribution_name
 
         for i in range(dataset.shape[1]):
             for j in range(dataset.shape[2]):
@@ -73,16 +52,11 @@ def plot_aic_goodness_of_fit(variable, aic_data):
     fig = plt.figure(figsize=(10, 6))
 
     seaborn.boxplot(data=aic_data, x="Distribution", y="AIC_value", palette="colorblind")
-    
-    return(fig)
 
 
-def plot_worst_fit_aic(variable, dataset, aic, data_type, distribution_name="default", number_bins=100):
+def plot_worst_fit_aic(variable, dataset, aic, data_type, distribution_name, number_bins=100):
 
-    if distribution_name == "default":
-        distribution = variable_dictionary.get(variable).get("distribution")
-    else:
-        distribution = distribution_name
+    distribution = distribution_name
 
     x_location = aic.loc[aic["AIC_value"].idxmax()]["x"]
     y_location = aic.loc[aic["AIC_value"].idxmax()]["y"]
@@ -99,20 +73,17 @@ def plot_worst_fit_aic(variable, dataset, aic, data_type, distribution_name="def
     p = distribution.pdf(x, *fit)
 
     plt.plot(x, p, "k", linewidth=2)
-    title = "{} {}, distribution = {} \n Location = ({}, {})".format(
-        data_type, variable_dictionary.get(variable).get("name"), distribution_name, x_location, y_location
+    title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
+        data_type, map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit, distribution_name, x_location, y_location
     )
     plt.title(title)
 
     return fig
 
 
-def plot_quantile_residuals(dataset, variable, data_type, distribution_name="default"):
+def plot_quantile_residuals(dataset, variable, data_type, distribution_name):
 
-    if distribution_name == "default":
-        distribution = variable_dictionary.get(variable).get("distribution")
-    else:
-        distribution = distribution_name
+    distribution = distribution_name
 
     fit = distribution.fit(dataset)
     q = distribution.cdf(dataset, *fit)
@@ -122,7 +93,7 @@ def plot_quantile_residuals(dataset, variable, data_type, distribution_name="def
     fig, ax = plt.subplots(1, 3, figsize=(14, 4))
 
     fig.suptitle(
-        "{} - {}. Distribution = {}".format(variable_dictionary.get(variable).get("name"), data_type, distribution_name)
+        "{} ({}) - {}. Distribution = {}".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit, data_type, distribution_name)
     )
 
     x = range(0, len(q))

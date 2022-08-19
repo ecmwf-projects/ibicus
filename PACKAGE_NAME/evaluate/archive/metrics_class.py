@@ -17,8 +17,6 @@ from scipy.ndimage import measurements
 
 import matplotlib as plt
 
-import matplotlib.pyplot as pltpy
-
 import seaborn
 
 import math
@@ -257,7 +255,7 @@ class Metric:
         spatial_data = self.calculate_spatial_clusters(**climate_data)
         spatiotemporal_data = self.calculate_spatiotemporal_clusters(**climate_data)
 
-        fig, ax = pltpy.subplots(1, 3, figsize=(16, 6))
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
 
         seaborn.violinplot(
             ax=ax[0], data=temporal_data, x="Metric", y="Spell length (days)", palette="colorblind", hue="Correction Method"
@@ -289,10 +287,10 @@ class Metric:
       
 
 # pr metrics
-dry_days = Metric(name = 'Dry days \n (< 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'lower')
-wet_days = Metric(name = 'Wet days \n (> 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'higher')
-R10mm = Metric(name = 'Very wet days \n (> 10 mm/day)', variable = 'pr', threshold_value = 10/86400, threshold_sign = 'higher')
-R20mm = Metric(name = 'Extremely wet days \n (> 20 mm/day)', variable = 'pr', threshold_value = 20/86400, threshold_sign = 'higher')
+dry_days = Metric(name = 'Dry days (< 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'lower')
+wet_days = Metric(name = 'Wet days (> 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'higher')
+R10mm = Metric(name = 'Very wet days (> 10 mm/day)', variable = 'pr', threshold_value = 10/86400, threshold_sign = 'higher')
+R20mm = Metric(name = 'Extremely wet days (> 20 mm/day)', variable = 'pr', threshold_value = 20/86400, threshold_sign = 'higher')
 
 # tas metrics
 warm_days = Metric(name = 'Warm days (mean)', variable = 'tas', threshold_value = 295, threshold_sign = 'higher')

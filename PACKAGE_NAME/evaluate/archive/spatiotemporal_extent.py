@@ -14,6 +14,7 @@ from pylab import arange
 from scipy.ndimage import measurements
 
 from PACKAGE_NAME.evaluate import metrics
+from PACKAGE_NAME.variables import *
 
 metrics_dictionary = {
     "frost": {
@@ -54,7 +55,7 @@ metrics_dictionary = {
 }
 
 
-def calculate_spell_length(metric, min_length, **climate_data):
+def _calculate_spell_length(metric: str, min_length: int, **climate_data):
 
     spell_length_array = np.empty((0, 3))
 
@@ -95,7 +96,7 @@ def calculate_spell_length(metric, min_length, **climate_data):
     return plot_data
 
 
-def calculate_spatiotemporal_clusters(metric, **climate_data):
+def _calculate_spatiotemporal_clusters(metric: str, **climate_data):
 
     clusters_array = np.empty((0, 3))
 
@@ -125,7 +126,7 @@ def calculate_spatiotemporal_clusters(metric, **climate_data):
     return spatiotemporal_clusters
 
 
-def calculate_spatial_clusters(metric, **climate_data):
+def _calculate_spatial_clusters(metric: str, **climate_data):
 
     clusters_array = np.empty((0, 3))
 
@@ -166,26 +167,74 @@ def calculate_spatial_clusters(metric, **climate_data):
     return spatial_clusters
 
 
-def calculate_clusters(metric, min_length, **climate_data):
+def calculate_clusters(metric: str, min_length: int, **climate_data):
+    
+    """
+    Calculates temporal, spatial and spatiotemporal extent of specified threshold metric. 
+    Outputs three pandas dataframes.
 
-    temporal_data = calculate_spell_length(metric, min_length, **climate_data)
-    spatial_data = calculate_spatial_clusters(metric, **climate_data)
-    spatiotemporal_data = calculate_spatiotemporal_clusters(metric, **climate_data)
+
+    Parameters
+    ----------
+    metric: str
+        Metric key, specified in metrics dictionary
+    min_length: int
+        Minimum temporal spell length analysed
+    climate_data: 
+        Keyword arguments assigning key to np.ndarray. Example: obs = tas_obs_validate, QM = tas_val_debiased_QM.
+
+    """
+
+    temporal_data = _calculate_spell_length(metric, min_length, **climate_data)
+    spatial_data = _calculate_spatial_clusters(metric, **climate_data)
+    spatiotemporal_data = _calculate_spatiotemporal_clusters(metric, **climate_data)
 
     return (temporal_data, spatial_data, spatiotemporal_data)
 
 
-def plot_clusters_distribution(thresholdname, plot_data, clustertype):
+
+def plot_clusters_kde(metric: str, plot_data: pd.DataFrame, clustertype: str):
+    
+    """
+    Takes pandas dataframe as input and outputs kde plot of spatial, temporal or spatiotemporal extent distribution for
+    debiasers present in data.
+
+    Parameters
+    ----------
+    metric: str
+        Metric key, specified in metrics dictionary
+    plot_data: pd.DataFrame
+        Data frame containing data to be plotted. Should be of type output by calculate_clusters function
+    clustertype: str
+        Used to generate plot title. Should be 'temporal', 'spatial' or 'spatiotemporal' but no calculation error occurs if this is not the case.
+
+    """
 
     seaborn.set_style("white")
     p = seaborn.displot(
         x=plot_data.keys()[2], data=plot_data, kind="kde", palette="colorblind", hue="Correction Method"
     )
     p.fig.subplots_adjust(top=0.9)
-    p.fig.suptitle("{} - {} distribution".format(metrics_dictionary.get(thresholdname).get("name"), clustertype))
+    p.fig.suptitle("{} - {} distribution".format(metrics_dictionary.get(metric).get("name"), clustertype))
 
 
-def plot_clusters_distribution_histograms(plot_data, metric, debiasers, clustertype):
+def plot_clusters_histograms(metric: str, plot_data: pd.DataFrame, debiasers: np.ndarray, clustertype: str):
+    
+    """
+    Takes pandas dataframe as input and outputs histogram plots contrasting extent distribution of climate model with that of observational data and raw climate model data
+
+    Parameters
+    ----------
+    metric: str
+        Metric key, specified in metrics dictionary
+    plot_data: pd.DataFrame
+        Data frame containing data to be plotted. Should be of type output by calculate_clusters function
+    debiasers: np.ndarray
+        Array of string values detailing the debiasers analysed
+    clustertype: str
+        Used to generate plot title. Should be 'temporal', 'spatial' or 'spatiotemporal' but no calculation error occurs if this is not the case.
+
+    """
 
     plot_data_subset = {}
 
@@ -210,7 +259,22 @@ def plot_clusters_distribution_histograms(plot_data, metric, debiasers, clustert
     return fig
 
 
-def plot_extent_distributions(temporal_data, spatial_data, spatiotemporal_data):
+def plot_clusters_violinplots(temporal_data: pd.DataFrame, spatial_data: pd.DataFrame, spatiotemporal_data: pd.DataFrame):
+    
+    """
+    Takes pandas dataframes of temporal, spatial and spatiotemporal extent as input and outputs three violinplot
+    comparing observational data to the raw climate and all debiasers specified in the dataframes. 
+
+    Parameters
+    ----------
+    temporal_data: pd.DataFrame
+        pandas dataframe of type output by function _calculate_spell_length
+    spatial_data: pd.DataFrame
+        pandas dataframe of type output by function _calculate_spatial_clusters
+    spatiotemporal_data: pd.DataFrame
+        pandas dataframe of type output by function _calculate_spatiotemporal_clusters
+
+    """
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 6))
 
