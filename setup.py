@@ -17,7 +17,8 @@ def read(fname):
     return io.open(file_path, encoding="utf-8").read()
 
 
-install_requires = ["numpy"]
+install_requires = ["numpy>=1.22", "attrs>=21.3.0", "pandas", "matplotlib", "seaborn", "scipy", "statsmodels", "tqdm"]
+
 tests_require = ["pytest"]
 
 meta = {}
@@ -30,9 +31,7 @@ setuptools.setup(
     version=meta["__version__"],
     description=meta.get("__description__", ""),
     long_description=read("README.rst"),
-    author=meta.get(
-        "__author__", "European Centre for Medium-Range Weather Forecasts (ECMWF)"
-    ),
+    author=meta.get("__author__", "European Centre for Medium-Range Weather Forecasts (ECMWF)"),
     author_email=meta.get("__author_email__", "software.support@ecmwf.int"),
     license="Apache License Version 2.0",
     url="https://github.com/esowc/python-package-template",

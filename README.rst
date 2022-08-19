@@ -7,14 +7,14 @@ python-package-template-repo
 
 Debiasers implemented:
 
-- [x] Linear Scaling
-- [x] Quantile Mapping (with delta change)
-- [x] Quantile Delta Mapping following Cannon et al. 2015
-- [x] Equidistant CDF Matching following Li et al. 2010
-- [ ] Scaled Distribution Mapping following Switanek 2017
-- [ ] ISIMIP
-- [ ] CDFt
-- [x] Delta Change
+- Linear Scaling
+- Delta Change
+- Quantile Mapping (with delta change)
+- Quantile Delta Mapping following Cannon et al. 2015
+- Equidistant CDF Matching following Li et al. 2010
+- Scaled Distribution Mapping following Switanek 2017
+- CDFt following Michelangeli et al. 2009
+- ISIMIP following Lange 2019
 
 A template repository for developing Python packages
 
