@@ -8,7 +8,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Optional, Union
 
 import attrs
 import numpy as np
@@ -45,11 +45,24 @@ class Debiaser(ABC):
     ----------
     variable : str
         Variable that is meant to be debiased, by an initialisation of the debiaser. Default: ``"unknown"``.
+    reasonable_physical_range : Optional[list]
+        Reasonable physical range of the variable to debias in the form ``[lower_bound, upper_bound]``. It is checked against and warnings are raise if values fall outside the range. Default: ``None``.
     """
 
     variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str), eq=False)
+    reasonable_physical_range: Optional[list] = attrs.field(default=None, eq=False)
 
-    # Constructors
+    @reasonable_physical_range.validator
+    def _validate_reasonable_physical_range(self, attribute, value):
+        if value is not None:
+            if len(value) != 2:
+                raise ValueError("reasonable_physical_range should have only a lower and upper physical bound")
+            if not all(isinstance(elem, (int, float)) for elem in value):
+                raise ValueError("reasonable_physical_range needs to be a list of floats")
+            if not value[0] < value[1]:
+                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
+
+    # ----- Constructors ----- #
     # Helper for downstream classes
     def _from_variable(
         child_class,
@@ -74,7 +87,6 @@ class Debiaser(ABC):
         **kwargs:
             All other class attributes that shall be set and where the standard values for variable shall be overwritten.
         """
-
         if not isinstance(variable, Variable):
             variable_object = map_variable_str_to_variable_class(variable)
         else:
@@ -87,9 +99,10 @@ class Debiaser(ABC):
             )
 
         parameters = {
+            "variable": variable_object.name,
+            "reasonable_physical_range": variable_object.reasonable_physical_range,
             **default_settings_general,
             **default_settings_variable[variable_object],
-            "variable": variable_object.name,
         }
         return child_class(**{**parameters, **kwargs})
 
@@ -132,6 +145,15 @@ class Debiaser(ABC):
     def _contains_inf_nan(x):
         return np.any(np.logical_or(np.isnan(x), np.isinf(x)))
 
+    def _not_if_or_nan_vals_outside_reasonable_physical_range(self, x):
+        if self.reasonable_physical_range is not None:
+            return not np.all(
+                (x >= self.reasonable_physical_range[0]) & (x <= self.reasonable_physical_range[1])
+                | np.isinf(x)
+                | np.isnan(x)
+            )
+        return False
+
     @staticmethod
     def _has_float_dtype(x):
         return np.issubdtype(x.dtype, np.floating)
@@ -159,8 +181,7 @@ class Debiaser(ABC):
 
     # ----- Input checks ----- #
 
-    @staticmethod
-    def _check_inputs_and_convert_if_possible(obs, cm_hist, cm_future):
+    def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
 
         # correct type
         if not Debiaser._is_correct_type(obs):
@@ -209,6 +230,23 @@ class Debiaser(ABC):
                 "cm_future contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
             )
 
+        # in reasonable physical range:
+        if self._not_if_or_nan_vals_outside_reasonable_physical_range(obs):
+            logging.warning(
+                "obs contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                % (self.reasonable_physical_range, self.variable)
+            )
+        if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_hist):
+            logging.warning(
+                "cm_hist contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                % (self.reasonable_physical_range, self.variable)
+            )
+        if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_future):
+            logging.warning(
+                "cm_future contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                % (self.reasonable_physical_range, self.variable)
+            )
+
         # masked arrays
         if Debiaser._is_masked_array(obs):
             if Debiaser._masked_array_contains_invalid_values(obs):
@@ -242,6 +280,19 @@ class Debiaser(ABC):
             cm_future = Debiaser._fill_masked_array_with_nan(cm_future)
 
         return obs, cm_hist, cm_future
+
+    def _check_output(self, output):
+        if Debiaser._contains_inf_nan(output):
+            logging.warning(
+                "The debiaser output contains inf or nan values. This might be due to inf or nan values inside the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully"
+            )
+
+        # in reasonable physical range:
+        if self._not_if_or_nan_vals_outside_reasonable_physical_range(output):
+            logging.warning(
+                "The debiaser output contains values outside the reasonable physical range of %s for the variable: %s. This might be due to values outside the range in the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully."
+                % (self.reasonable_physical_range, self.variable)
+            )
 
     # ----- Helpers ----- #
 
@@ -326,9 +377,12 @@ class Debiaser(ABC):
         Debiaser._set_up_logging(verbosity)
         logging.info("----- Running debiasing for variable: %s -----" % self.variable)
 
-        obs, cm_hist, cm_future = Debiaser._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
+        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
         output = Debiaser.map_over_locations(
             self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future, **kwargs
         )
+
+        self._check_output(output)
+
         return output

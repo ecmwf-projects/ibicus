@@ -53,7 +53,7 @@ class Variable:
     reasonable_physical_range: list = attrs.field(default=None)
 
     @reasonable_physical_range.validator
-    def validate_reasonable_physical_range(self, attribute, value):
+    def _validate_reasonable_physical_range(self, attribute, value):
         if value is not None:
             if len(value) != 2:
                 raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
