@@ -15,6 +15,8 @@ import pandas as pd
 from pylab import arange
 from scipy.ndimage import measurements
 
+from PACKAGE_NAME import utils
+
 import matplotlib as plt
 
 import matplotlib.pyplot as pltpy
@@ -24,11 +26,11 @@ import seaborn
 import math
 
 @attrs.define(eq = False)
-class Metric:
+class ThresholdMetric:
     key: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
-    threshold_value: float = attrs.field(default="unknown", validator=attrs.validators.instance_of(float), converter = float)
+    threshold_value: np.ndarray = attrs.field(default=None, validator=attrs.validators.instance_of((np.ndarray, type(None))), converter = np.array)
     threshold_sign: str = attrs.field(default=None, validator=attrs.validators.instance_of((str, type(None))))
     
     def calculate_instances_of_threshold_exceedance(self, dataset):
@@ -49,11 +51,15 @@ class Metric:
 
         if self.threshold_sign == "higher":
 
-            instances_of_threshold_exceedance = (instances_of_threshold_exceedance > self.threshold_value).astype(int)
+            instances_of_threshold_exceedance = (instances_of_threshold_exceedance > self.threshold_value[0]).astype(int)
 
         elif self.threshold_sign == "lower":
 
-            instances_of_threshold_exceedance = (instances_of_threshold_exceedance < self.threshold_value).astype(int)
+            instances_of_threshold_exceedance = (instances_of_threshold_exceedance < self.threshold_value[0]).astype(int)
+            
+        elif self.threshold_sign == 'between':
+            
+            instances_of_threshold_exceedance = (self.threshold_value[0] < instances_of_threshold_exceedance < instances_of_threshold_exceedance[1]).astype(int)
 
         else:
             raise ValueError('Invalid threshold sign. Modify threshold_sign to either higher or lower in class instantiation')
@@ -66,10 +72,13 @@ class Metric:
         eot_matrix = np.copy(dataset)
         
         if self.threshold_sign == "higher":
-            eot_matrix[eot_matrix < self.threshold_value] = 0
+            eot_matrix[eot_matrix < self.threshold_value[0]] = 0
             
         elif self.threshold_sign == "lower":  
-            eot_matrix[eot_matrix > self.threshold_value] = 0
+            eot_matrix[eot_matrix > self.threshold_value[0]] = 0
+            
+        elif self.threshold_sign == "between":  
+            eot_matrix[self.threshold_value[0] < eot_matrix < self.threshold_value[1]] = 0
             
         else:
             raise ValueError('Invalid threshold sign. Modify threshold_sign to either higher or lower in class instantiation')
@@ -96,11 +105,6 @@ class Metric:
         threshold_probability = np.einsum('ijk -> jk', threshold_data)/threshold_data.shape[0]
 
         return threshold_probability
-        
-        
-    def calculate_exceedances_per_time_period(self, dataset, time_period):
-        print('to-do')
-        
         
         
     def calculate_spell_length(self, minimum_length, **climate_data):
@@ -142,7 +146,6 @@ class Metric:
         plot_data["Spell length (days)"] = pd.to_numeric(plot_data["Spell length (days)"])
     
         return plot_data
-    
     
         
     def calculate_spatial_clusters(self, **climate_data):
@@ -283,22 +286,96 @@ class Metric:
             hue="Correction Method",
         )
         ax[2].set_title("Spatiotemporal cluster size")
+        
+        
+        
+
     
 
 
+    
+    
+    
+    
+    
+    
+@attrs.define
+class AccumulativeThresholdMetric(ThresholdMetric):  
+    
+    def calculate_value_above_threshold(self, dataset, percentage = True):
+        
+        eot_matrix = self.filter_threshold_exceedances(dataset)
+        
+        years_in_dataset = dataset.shape[0]/365
+        
+        if percentage is True:
+        
+            exceedance_amount = 100*np.einsum('ijk -> jk', eot_matrix)/np.einsum('ijk -> jk', dataset)
+        
+        else:
+            
+            exceedance_amount = np.einsum('ijk -> jk', eot_matrix)/years_in_dataset
+        
+        return exceedance_amount
+        
+        
+    def calculate_annual_value_above_threshold(self, dataset, time_dictionary, time_specification, time_func=utils.year, percentage = True):
+        
+        eot_matrix = self.filter_threshold_exceedances(dataset)
+        
+        time_array = time_func(time_dictionary[time_specification])
+        
+        years = np.unique(time_array)
+        
+        threshold_exceedances = np.zeros((years.shape[0], dataset.shape[1], dataset.shape[2]))
+        
+        for j in range(eot_matrix.shape[1]):
+            for k in range(eot_matrix.shape[2]):
+                
+                if percentage is True:
+                    
+                    threshold_exceedances[:, j, k] = np.asarray([(eot_matrix[time_array==i, j,k].sum()) for i in years]) / np.asarray([(dataset[time_array==i, j,k].sum()) for i in years])
+                    
+                else:
+                    
+                    threshold_exceedances[:, j, k] = [(eot_matrix[time_array==i, j,k].sum()) for i in years]
+        
+        return threshold_exceedances
+    
+    
+    def calculate_intensity_index(self, dataset):
+    
+        eot_value_matrix = self.filter_threshold_exceedances(dataset)
+
+        eot_threshold_matrix = self.calculate_instances_of_threshold_exceedance(dataset)
+
+        intensity_index = np.einsum('ijk -> jk', eot_value_matrix) / np.einsum('ijk -> jk', eot_threshold_matrix)
+    
+        return(intensity_index)
       
 
 # pr metrics
-dry_days = Metric(name = 'Dry days \n (< 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'lower')
-wet_days = Metric(name = 'Wet days \n (> 1 mm/day)', variable = 'pr', threshold_value = 1/86400, threshold_sign = 'higher')
-R10mm = Metric(name = 'Very wet days \n (> 10 mm/day)', variable = 'pr', threshold_value = 10/86400, threshold_sign = 'higher')
-R20mm = Metric(name = 'Extremely wet days \n (> 20 mm/day)', variable = 'pr', threshold_value = 20/86400, threshold_sign = 'higher')
+dry_days = AccumulativeThresholdMetric(name = 'Dry days \n (< 1 mm/day)', variable = 'pr', threshold_value = [1/86400], threshold_sign = 'lower')
+wet_days = AccumulativeThresholdMetric(name = 'Wet days \n (> 1 mm/day)', variable = 'pr', threshold_value = [1/86400], threshold_sign = 'higher')
+R10mm = AccumulativeThresholdMetric(name = 'Very wet days \n (> 10 mm/day)', variable = 'pr', threshold_value = [10/86400], threshold_sign = 'higher')
+R20mm = AccumulativeThresholdMetric(name = 'Extremely wet days \n (> 20 mm/day)', variable = 'pr', threshold_value = [20/86400], threshold_sign = 'higher')
 
 # tas metrics
-warm_days = Metric(name = 'Warm days (mean)', variable = 'tas', threshold_value = 295, threshold_sign = 'higher')
-cold_days = Metric(name = 'Cold days (mean)', variable = 'tas', threshold_value = 275, threshold_sign = 'lower') 
+warm_days = ThresholdMetric(name = 'Warm days (mean)', variable = 'tas', threshold_value = [295], threshold_sign = 'higher')
+cold_days = ThresholdMetric(name = 'Cold days (mean)', variable = 'tas', threshold_value = [275], threshold_sign = 'lower') 
 
 # tasmin metrics 
-frost_days = Metric(name = 'Frost days (tasmin<0°C)', variable = 'tas', threshold_value = 273.13, threshold_sign = 'lower') 
+frost_days = ThresholdMetric(name = 'Frost days \n  (tasmin<0°C)', variable = 'tasmin', threshold_value = [273.13], threshold_sign = 'lower')
+tropical_nights = ThresholdMetric(name = 'Tropical Nights \n (tasmin>20°C)', variable = 'tasmin', threshold_value = [293.13], threshold_sign = 'higher') 
+
+# tasmax metrics
+summer_days = ThresholdMetric(name = 'Summer days \n  (tasmax>25°C)', variable = 'tasmax', threshold_value = [298.15], threshold_sign = 'higher') 
+icing_days = ThresholdMetric(name = 'Icing days \n (tasmax<0°C)', variable = 'tasmax', threshold_value = [273.13], threshold_sign = 'lower') 
+
+
+
+
+
+
 
       
