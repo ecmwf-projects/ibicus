@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
-from pylab import arange
 from scipy.ndimage import measurements
 
 from PACKAGE_NAME import utils
@@ -120,12 +119,17 @@ class ThresholdMetric:
 
     def calculate_exceedance_probability(self, dataset: np.ndarray) -> np.ndarray:
         """
-        Returns the probability of exceeding a specified threshold at each location (across the entire time period).
+        Returns the probability of metrics occurrence (threshold exceedance/underceedance or inside/outside range), at each location (across the entire time period).
 
         Parameters
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected
+
+        Returns
+        -------
+        np.ndarray
+            Probability of metric occurrence at each location.
         """
 
         threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
@@ -148,7 +152,7 @@ class ThresholdMetric:
 
     def calculate_spell_length(self, minimum_length: int, **climate_data) -> pd.DataFrame:
         """
-        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics occurrence (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
+        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics occurrences (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
 
         A spell length is defined as the number of days that a threshold is continuesly exceeded, underceeded or where values are continuously between or outside the threshold (depending on `self.threshold_type`).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser as specified in `**climate_data`, 'Metric' - name of the threshold metric, 'Spell length - individual spell length counts'.
@@ -160,8 +164,13 @@ class ThresholdMetric:
         climate_data :
             Keyword arguments, providing the input data to investigate.
 
-        Example of how this function is used:
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of spell lengths of metrics occurrences.
 
+        Example
+        -------
         >>> dry_days.calculate_spell_length(minimum_length = 4, obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
@@ -193,64 +202,53 @@ class ThresholdMetric:
 
     def calculate_spatial_clusters(self, **climate_data):
         """
-        Converts input climate data into a pandas Dataframe of spatial extents of threshold exceedances.
+        Returns a `py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
-        The spatial extent is defined as the percentage of the area where the threshold is exceeded, given that it is exceeded at one location.
+        The spatial extent is defined as the percentage of the area where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`), given that it is exceeded at one location.
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatial extent (% of area)'
 
         Parameters
         ----------
-        climate_data :
+        **climate_data :
             Keyword arguments, providing the input data to investigate.
 
-        Example of how this function is used:
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of spatial extends of metrics occurrences.
 
+        Example
+        -------
         >>> dry_days.calculate_spatial_extent(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
-        clusters_array = np.empty((0, 3))
+        spatial_clusters_dfs = []
+        for climate_data_key, climate_data_value in climate_data.items():
 
-        for k in climate_data.keys():
+            threshold_data = self.calculate_instances_of_threshold_exceedance(dataset=climate_data_value)
+            spatial_clusters = np.einsum("ijk -> i", threshold_data) / np.prod(threshold_data.shape[1:])
+            spatial_clusters = spatial_clusters[spatial_clusters != 0]
 
-            spatial_count = np.array([])
-
-            number_gridpoints = climate_data[k].shape[1] * climate_data[k].shape[2]
-
-            threshold_data = self.calculate_instances_of_threshold_exceedance(dataset=climate_data[k])
-
-            for i in range(threshold_data.shape[0]):
-
-                count = np.sum(threshold_data[i, :, :]) / number_gridpoints
-                spatial_count = np.append(spatial_count, count)
-
-            spatial_count = spatial_count[spatial_count != 0]
-
-            clusters_array = np.append(
-                clusters_array,
-                np.transpose(
-                    np.array(
-                        [
-                            [k] * len(spatial_count),
-                            [self.name] * len(spatial_count),
-                            np.transpose(spatial_count),
-                        ]
-                    )
-                ),
-                axis=0,
+            spatial_clusters_dfs.append(
+                pd.DataFrame(
+                    data={
+                        "Correction Method": [climate_data_key] * spatial_clusters.size,
+                        "Metric": [self.name] * spatial_clusters.size,
+                        "Spatial extent (% of area)": spatial_clusters,
+                    }
+                )
             )
 
-        spatial_clusters = pd.DataFrame(
-            clusters_array, columns=["Correction Method", "Metric", "Spatial extent (% of area)"]
-        )
-        spatial_clusters["Spatial extent (% of area)"] = pd.to_numeric(spatial_clusters["Spatial extent (% of area)"])
+        plot_data = pd.concat(spatial_clusters_dfs)
+        plot_data["Spatial extent (% of area)"] = pd.to_numeric(plot_data["Spatial extent (% of area)"])
 
-        return spatial_clusters
+        return plot_data
 
     def calculate_spatiotemporal_clusters(self, **climate_data):
         """
-        Converts input climate data into a pandas Dataframe detailing the size of individual spatiotemporal clusters of threshold exceedances.
+        Returns a `py:class:`pd.DataFrame` of sizes of individual spatiotemporal clusters of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
-        A spatiotemporal cluster is defined as a connected set (in time and/or space) of threshold exceedances.
+        A spatiotemporal cluster is defined as a connected set (in time and/or space) where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatiotemporal cluster size'
 
         Parameters
@@ -258,47 +256,46 @@ class ThresholdMetric:
         climate_data :
             Keyword arguments, providing the input data to investigate.
 
-        Example of how this function is used:
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of sizes of individual spatiotemporal clusters of metrics occurrences.
 
+        Example
+        -------
         >>> dry_days.calculate_spatiotemporal_clusters(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
-        clusters_array = np.empty((0, 3))
+        spatiotemporal_clusters_dfs = []
+        for climate_data_key, climate_data_value in climate_data.items():
 
-        for k in climate_data.keys():
+            threshold_data = self.calculate_instances_of_threshold_exceedance(dataset=climate_data_value)
+            threshold_data_lw, _ = measurements.label(threshold_data)
+            area = measurements.sum(threshold_data, threshold_data_lw, index=np.arange(threshold_data_lw.max() + 1))
 
-            threshold_data = self.calculate_instances_of_threshold_exceedance(dataset=climate_data[k])
-            threshold_data_lw, threshold_data_num = measurements.label(threshold_data)
-            area = measurements.sum(threshold_data, threshold_data_lw, index=arange(threshold_data_lw.max() + 1))
-
-            clusters_array = np.append(
-                clusters_array,
-                np.transpose(np.array([[k] * len(area), [self.name] * len(area), np.transpose(area)])),
-                axis=0,
+            spatiotemporal_clusters_dfs.append(
+                pd.DataFrame(
+                    data={
+                        "Correction Method": [climate_data_key] * area.size,
+                        "Metric": [self.name] * area.size,
+                        "Spatiotemporal cluster size": area,
+                    }
+                )
             )
 
-        spatiotemporal_clusters = pd.DataFrame(
-            clusters_array, columns=["Correction Method", "Metric", "Spatiotemporal cluster size"]
-        )
-        spatiotemporal_clusters["Spatiotemporal cluster size"] = pd.to_numeric(
-            spatiotemporal_clusters["Spatiotemporal cluster size"]
-        )
+        plot_data = pd.concat(spatiotemporal_clusters_dfs)
+        plot_data["Spatiotemporal cluster size"] = pd.to_numeric(plot_data["Spatiotemporal cluster size"])
 
-        return spatiotemporal_clusters
+        return plot_data
 
-    def plot_clusters_violinplots(self, minimum_length, **climate_data):
+    def violinplots_clusters(self, minimum_length, **climate_data):
         """
-        Takes pandas dataframes of temporal, spatial and spatiotemporal extent as input and outputs three violinplot comparing the obs/raw/debiasers specified in the dataframes.
+        Returns three violinplots with distributions of temporal, spatial and spatiotemporal extends of metric occurrences, comparing all climate dataset specified in `**climate_data`.
 
         Parameters
         ----------
-        temporal_data: pd.DataFrame
-            pandas dataframe of type output by function _calculate_spell_length
-        spatial_data: pd.DataFrame
-            pandas dataframe of type output by function _calculate_spatial_clusters
-        spatiotemporal_data: pd.DataFrame
-            pandas dataframe of type output by function _calculate_spatiotemporal_clusters
-
+        minimum length : int
+            Minimum spell length (in days) investigated for temporal extends.
         """
 
         temporal_data = self.calculate_spell_length(minimum_length, **climate_data)
@@ -341,14 +338,16 @@ class ThresholdMetric:
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
     """
-    Child-class of ThresholdMetric class. Adds functionalities for metrics that are accumulative such as precipitation.
+    Class for climate metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
 
+    An example of such a metric is total precipitation by very wet days (days > 10mm precipitation).
     """
 
-    def calculate_mean_value_beyond_threshold(self, dataset: np.ndarray, percentage: bool = True) -> np.ndarray:
-
+    def calculate_mean_annual_value_beyond_threshold(self, dataset: np.ndarray, percentage: bool = True) -> np.ndarray:
         """
-        Calculates mean total or percentage value beyond threshold, returns 2d array with one value per location.
+        Calculates mean annual value of the climatic variable value when the threshold condition is met for each location.
+
+        If percentage = True the result is given as percentage of the total annual value.
 
         Parameters
         ----------
@@ -359,23 +358,17 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         """
 
         eot_matrix = self.filter_threshold_exceedances(dataset)
-
         years_in_dataset = dataset.shape[0] / 365
 
         if percentage is True:
-
             exceedance_amount = 100 * np.einsum("ijk -> jk", eot_matrix) / np.einsum("ijk -> jk", dataset)
-
         else:
-
             exceedance_amount = np.einsum("ijk -> jk", eot_matrix) / years_in_dataset
-
         return exceedance_amount
 
     def calculate_annual_value_beyond_threshold(
         self, dataset: np.ndarray, time_dictionary, time_specification: str, time_func=utils.year, percentage=False
     ) -> np.ndarray:
-
         """
         Calculates annual total or percentage value beyond threshold for each year in the dataset.
 
@@ -429,11 +422,8 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         """
 
         eot_value_matrix = self.filter_threshold_exceedances(dataset)
-
         eot_threshold_matrix = self.calculate_instances_of_threshold_exceedance(dataset)
-
         intensity_index = np.einsum("ijk -> jk", eot_value_matrix) / np.einsum("ijk -> jk", eot_threshold_matrix)
-
         return intensity_index
 
 
@@ -441,15 +431,30 @@ class AccumulativeThresholdMetric(ThresholdMetric):
 dry_days = AccumulativeThresholdMetric(
     name="Dry days \n (< 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="lower"
 )
+"""
+Dry days (< 1 mm/day) for `pr`.
+"""
+
 wet_days = AccumulativeThresholdMetric(
     name="Wet days \n (> 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="higher"
 )
+"""
+Wet days \n (> 1 mm/day) for `pr`.
+"""
+
 R10mm = AccumulativeThresholdMetric(
     name="Very wet days \n (> 10 mm/day)", variable="pr", threshold_value=10 / 86400, threshold_type="higher"
 )
+"""
+Very wet days \n (> 10 mm/day) for `pr`.
+"""
+
 R20mm = AccumulativeThresholdMetric(
     name="Extremely wet days \n (> 20 mm/day)", variable="pr", threshold_value=20 / 86400, threshold_type="higher"
 )
+"""
+Very wet days \n (> 10 mm/day) for `pr`.
+"""
 
 # tas metrics
 warm_days = ThresholdMetric(name="Mean warm days (K)", variable="tas", threshold_value=295, threshold_type="higher")
