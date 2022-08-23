@@ -427,7 +427,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         return intensity_index
 
 
-# pr metrics
+# ----- pr metrics ----- #
 dry_days = AccumulativeThresholdMetric(
     name="Dry days \n (< 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="lower"
 )
@@ -439,39 +439,60 @@ wet_days = AccumulativeThresholdMetric(
     name="Wet days \n (> 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="higher"
 )
 """
-Wet days \n (> 1 mm/day) for `pr`.
+Wet days (> 1 mm/day) for `pr`.
 """
 
 R10mm = AccumulativeThresholdMetric(
     name="Very wet days \n (> 10 mm/day)", variable="pr", threshold_value=10 / 86400, threshold_type="higher"
 )
 """
-Very wet days \n (> 10 mm/day) for `pr`.
+Very wet days (> 10 mm/day) for `pr`.
 """
 
 R20mm = AccumulativeThresholdMetric(
     name="Extremely wet days \n (> 20 mm/day)", variable="pr", threshold_value=20 / 86400, threshold_type="higher"
 )
 """
-Very wet days \n (> 10 mm/day) for `pr`.
+Extremely wet days (> 20 mm/day) for `pr`.
 """
 
-# tas metrics
+# ----- tas metrics ----- #
 warm_days = ThresholdMetric(name="Mean warm days (K)", variable="tas", threshold_value=295, threshold_type="higher")
+"""
+Warm days (>295K) for `tas`.
+"""
+
 cold_days = ThresholdMetric(name="Mean cold days (K)", variable="tas", threshold_value=275, threshold_type="lower")
+"""
+Cold days (<275) for `tas`.
+"""
 
 # tasmin metrics
 frost_days = ThresholdMetric(
     name="Frost days \n  (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower"
 )
+"""
+Frost days (<0°C) for `tasmin`.
+"""
+
 tropical_nights = ThresholdMetric(
     name="Tropical Nights \n (tasmin>20°C)", variable="tasmin", threshold_value=293.13, threshold_type="higher"
 )
+"""
+Tropical Nights (>20°C) for `tasmin`.
+"""
 
-# tasmax metrics
+# ----- tasmax metrics ----- #
 summer_days = ThresholdMetric(
     name="Summer days \n  (tasmax>25°C)", variable="tasmax", threshold_value=298.15, threshold_type="higher"
 )
+"""
+Summer days (>25°C) for `tasmax`.
+"""
+
 icing_days = ThresholdMetric(
     name="Icing days \n (tasmax<0°C)", variable="tasmax", threshold_value=273.13, threshold_type="lower"
 )
+"""
+Icing days (<0°C) for `tasmax`.
+"""
