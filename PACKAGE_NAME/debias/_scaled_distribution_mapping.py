@@ -33,8 +33,7 @@ default_settings = {
 }
 
 
-# Reference Switanek et al. 2017
-@attrs.define
+@attrs.define(slots=False)
 class ScaledDistributionMapping(Debiaser):
     """
     |br| Implements Scaled Distribution Matching (SDM) following Switanek et al. 2017.

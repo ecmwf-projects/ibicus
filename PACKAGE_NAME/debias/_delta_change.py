@@ -21,7 +21,7 @@ default_settings = {
 }
 
 
-@attrs.define
+@attrs.define(slots=False)
 class DeltaChange(Debiaser):
     """
     |br| Implements delta change scaling following Maraun 2016 as reference.

@@ -21,7 +21,7 @@ default_settings = {
 }
 
 
-@attrs.define
+@attrs.define(slots=False)
 class ECDFM(Debiaser):
     """
     |br| Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.

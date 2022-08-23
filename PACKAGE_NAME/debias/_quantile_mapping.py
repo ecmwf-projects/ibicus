@@ -23,7 +23,7 @@ default_settings = {
 }
 
 
-@attrs.define
+@attrs.define(slots=False)
 class QuantileMapping(Debiaser):
     """
     |br| Implements (detrended) Quantile Mapping following Cannon et al. 2015 and Maraun 2016.

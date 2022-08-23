@@ -38,8 +38,7 @@ default_settings = {
 }
 
 
-# Reference Cannon et al. 2015
-@attrs.define
+@attrs.define(slots=False)
 class QuantileDeltaMapping(Debiaser):
     """
     |br| Implements Quantile Delta Mapping following Cannon et al. 2015.

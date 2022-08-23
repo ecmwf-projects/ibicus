@@ -37,7 +37,7 @@ from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 
 
 # Reference TODO
-@attrs.define
+@attrs.define(slots=False)
 class ISIMIP(Debiaser):
     """
     |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology following Lange 2019 and Lange 2021.

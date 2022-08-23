@@ -29,7 +29,7 @@ default_settings = {
 }
 
 
-@attrs.define
+@attrs.define(slots=False)
 class CDFt(Debiaser):
     """
     |br| Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.

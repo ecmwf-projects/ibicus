@@ -20,7 +20,7 @@ default_settings = {
 }
 
 
-@attrs.define
+@attrs.define(slots=False)
 class LinearScaling(Debiaser):
     """
     |br| Implements debiasing via linear scaling following Maraun 2016.
