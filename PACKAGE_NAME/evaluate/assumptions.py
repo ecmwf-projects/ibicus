@@ -7,6 +7,8 @@
 # nor does it submit to any jurisdiction.
 
 
+from typing import Optional, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,107 +16,109 @@ import scipy
 import scipy.stats
 import seaborn
 import statsmodels.api as sm
-from scipy.stats import norm
 from statsmodels.graphics.tsaplots import plot_acf
 
 from PACKAGE_NAME.variables import *
 
 
-def calculate_aic_goodness_of_fit(variable: str, dataset: np.ndarray, distribution_names: np.ndarray) -> pd.DataFrame:
+def _calculate_aic(dataset, distribution):
 
+    fit = distribution.fit(dataset)
+
+    k = len(fit)
+    logLik = np.sum(distribution.logpdf(dataset, *fit))
+
+    return 2 * k - 2 * (logLik)
+
+
+def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.DataFrame:
     """
-    Calculates Akaike Information Criterion at each location for each of the distributions specified.
+    Calculates the Akaike Information Criterion (AIC) at each location for each of the distributions specified.
+
+    .. warning:: `*distributions` can currently only be :py:class:`scipy.stats.rv_continuous` and not as usually also :py:class:`StatisticalModel`.
 
     Parameters
     ----------
     variable: str
         Variable name, has to be given in standard form specified in documentation.
     dataset : np.ndarray
-        Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-    distribution_names:
-        Distribution functions to be tested, elements are scipy.stats.rv_continuous
+        Input data, either observations or climate projections dataset to be analysed, numeric entries expected.
+    *distributions : list[scipy.stats.rv_continuous]
+        Distributions to be tested, elements are scipy.stats.rv_continuous
 
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with all locations, distributions and associated AIC values.
     """
 
-    aic = np.empty((0, 4))
+    aic = []
+    for distribution in distributions:
+        for i, j in np.ndindex(dataset.shape[1:]):
+            aic.append([i, j, _calculate_aic(dataset[:, i, j], distribution), distribution.name])
 
-    for distribution_name in distribution_names:
-
-        distribution = distribution_name
-
-        for i in range(dataset.shape[1]):
-            for j in range(dataset.shape[2]):
-
-                fit = distribution.fit(dataset[:, i, j])
-
-                k = len(fit)
-                logLik = np.sum(distribution.logpdf(dataset[:, i, j], *fit))
-                # logLik = np.sum(math.log(distribution.pdf(dataset[:, i, j], *fit)))
-                aic_location = 2 * k - 2 * (logLik)
-
-                aic = np.append(aic, [[i, j, aic_location, distribution_name]], axis=0)
-
-    aic_dataframe = pd.DataFrame(aic, columns=["x", "y", "AIC_value", "Distribution"])
-    aic_dataframe["AIC_value"] = pd.to_numeric(aic_dataframe["AIC_value"])
+    aic_dataframe = pd.DataFrame(aic, columns=["x", "y", "AIC value", "Distribution"])
+    aic_dataframe["AIC_value"] = pd.to_numeric(aic_dataframe["AIC value"])
 
     return aic_dataframe
 
 
-def plot_aic_goodness_of_fit(variable: str, aic_data: pd.DataFrame):
-
+def plot_aic(variable: str, aic_values: pd.DataFrame):
     """
-    Boxplot of AIC.
+    Creates a boxplot of AIC values across all locations.
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    aic_data: DataFrame
-        Pandas dataframe of type output by calculate_aic_goodness_of_fit.
+    aic_values : pd.DataFrame
+        Pandas dataframe of type of output by calculate_aic_goodness_of_fit.
 
     """
 
-    seaborn.boxplot(data=aic_data, x="Distribution", y="AIC_value", palette="colorblind")
+    return seaborn.boxplot(data=aic_values, x="Distribution", y="AIC value", palette="colorblind")
 
 
-def plot_worst_fit_aic(
+def plot_fit_worst_aic(
     variable: str,
     dataset: np.ndarray,
-    aic: np.ndarray,
     data_type: str,
-    distribution_name: scipy.stats.rv_continuous,
-    number_bins=100,
+    distribution: scipy.stats.rv_continuous,
+    nr_bins: Union[int, str] = "auto",
+    aic_values: Optional[pd.DataFrame] = None,
 ):
-
     """
-    Plots histogram and fit at location of worst AIC.
+    Plots a histogram and overlayed fit at the location of worst AIC.
+
+    .. warning:: `distribution` can currently only be :py:class:`scipy.stats.rv_continuous` and not as usually also :py:class:`StatisticalModel`.
 
     Parameters
     ----------
     variable : str
         Variable name, has to be given in standard form specified in documentation.
     dataset : np.ndarray
-        Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-    aic: pd.DataFrame
-        Pandas dataframe of type output by calculate_aic_goodness_of_fit.
+        Input data, either observations or climate projections dataset to be analysed, numeric entries expected.
     data_type : pd.DataFrame
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
-    distribution_name : scipy.rv_continuous
-        Name of the distribution analysed, used for title only.
-
+    distribution : scipy.stats.rv_continuous
+        Distribution providing fit
+    nr_bins : Union[int, str] = "auto"
+        Number of bins used for the histogram. Either :py:class:int` or `"auto"` (default).
+    aic_values : Optional[pd.DataFrame] = None
+        Pandas dataframe of type output by calculate_aic_goodness_of_fit. If `None` then they are recalculated;
     """
+    if aic_values is None:
+        aic_values = calculate_aic(variable, dataset, distribution)
 
-    distribution = distribution_name
-
-    x_location = aic.loc[aic["AIC_value"].idxmax()]["x"]
-    y_location = aic.loc[aic["AIC_value"].idxmax()]["y"]
+    x_location = aic_values.loc[aic_values["AIC_value"].idxmax()]["x"]
+    y_location = aic_values.loc[aic_values["AIC_value"].idxmax()]["y"]
     data_slice = dataset[:, int(x_location), int(y_location)]
 
     fit = distribution.fit(data_slice)
 
     fig = plt.figure(figsize=(8, 6))
 
-    plt.hist(data_slice, bins=number_bins, density=True, label=data_type, alpha=0.5)
+    plt.hist(data_slice, bins=nr_bins, density=True, label=data_type, alpha=0.5)
     xmin, xmax = plt.xlim()
 
     x = np.linspace(xmin, xmax, 100)
@@ -125,7 +129,7 @@ def plot_worst_fit_aic(
         data_type,
         map_variable_str_to_variable_class(variable).name,
         map_variable_str_to_variable_class(variable).unit,
-        distribution_name,
+        distribution.name,
         x_location,
         y_location,
     )
@@ -135,35 +139,32 @@ def plot_worst_fit_aic(
 
 
 def plot_quantile_residuals(
-    variable: str, dataset: np.ndarray, data_type: str, distribution_name: scipy.stats.rv_continuous
+    variable: str, dataset: np.ndarray, distribution: scipy.stats.rv_continuous, data_type: str
 ):
-
     """
-    Plots timeseries and autocorrelation function of quantile residuals, as well as QQ-plot of normalized quantile residuals at one location
+    Plots timeseries and autocorrelation function of quantile residuals, as well as a QQ-plot of normalized quantile residuals at one location.
 
     Parameters
     ----------
     variable: str
         Variable name, has to be given in standard form specified in documentation.
     dataset : np.ndarray
-        Input data, either observations or climate projectionsdataset at one location, numeric entries expected.
+        1d numpy array. Input data, either observations or climate projections dataset at one location, numeric entries expected.
+    distribution: scipy.stats.rv_continuous
+        Name of the distribution analysed, used for title only.
     data_type: str
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
-    distribution_name: scipy.stats.rv_continuous
-        Name of the distribution analysed, used for title only.
 
-    Example code:
+    Example
+    -------
 
-    >>> tas_obs_plot_gof = assumptions.plot_quantile_residuals(variable = 'tas', dataset = tas_obs[:,0,0], data_type = 'observation data', distribution_name = scipy.stats.norm)
+    >>> tas_obs_plot_gof = assumptions.plot_quantile_residuals(variable = 'tas', dataset = tas_obs[:,0,0], distribution = scipy.stats.norm, data_type = 'observation data')
 
     """
 
-    distribution = distribution_name
-
     fit = distribution.fit(dataset)
     q = distribution.cdf(dataset, *fit)
-
-    q_normal = norm.ppf(q)
+    q_normal = scipy.stats.norm.ppf(q)
 
     fig, ax = plt.subplots(1, 3, figsize=(14, 4))
 
@@ -172,7 +173,7 @@ def plot_quantile_residuals(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
             data_type,
-            distribution_name,
+            distribution.name,
         )
     )
 
