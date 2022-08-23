@@ -132,13 +132,26 @@ class ThresholdMetric:
         threshold_probability = np.einsum("ijk -> jk", threshold_data) / threshold_data.shape[0]
         return threshold_probability
 
+    @staticmethod
+    def _calculate_spell_lengths_one_location(mask_threshold_condition_one_location):
+        return np.diff(
+            np.where(
+                np.concatenate(
+                    (
+                        [mask_threshold_condition_one_location[0]],
+                        mask_threshold_condition_one_location[:-1] != mask_threshold_condition_one_location[1:],
+                        [True],
+                    )
+                )
+            )[0]
+        )[::2]
+
     def calculate_spell_length(self, minimum_length: int, **climate_data) -> pd.DataFrame:
         """
-        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics
-        Converts input climate data into a pandas Dataframe of individual spell lengths counted across locations in the dataframe.
+        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics occurrence (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
 
-        A spell length is defined as the number of days that a threshold is continuesly exceeded.
-        The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spell length (days) - individual spell length counts'
+        A spell length is defined as the number of days that a threshold is continuesly exceeded, underceeded or where values are continuously between or outside the threshold (depending on `self.threshold_type`).
+        The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser as specified in `**climate_data`, 'Metric' - name of the threshold metric, 'Spell length - individual spell length counts'.
 
         Parameters
         ----------
@@ -152,41 +165,29 @@ class ThresholdMetric:
         >>> dry_days.calculate_spell_length(minimum_length = 4, obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
-        spell_length_array = np.empty((0, 3))
+        spell_length_dfs = []
+        for climate_data_key, climate_data_value in climate_data.items():
+            mask_threshold_condition = self._get_mask_threshold_condition(climate_data_value)
 
-        for k in climate_data.keys():
-
-            threshold_data = self.calculate_instances_of_threshold_exceedance(climate_data[k])
-            spell_length = np.array([])
-
-            for i in range(threshold_data.shape[1]):
-                for j in range(threshold_data.shape[2]):
-                    N = 0
-                    for t in range(threshold_data.shape[0]):
-                        if threshold_data[t, i, j] == 1:
-                            N = N + 1
-                        elif (threshold_data[t, i, j] == 0) and (N != 0):
-                            spell_length = np.append(spell_length, N)
-                            N = 0
-
+            spell_length = []
+            for i, j in np.ndindex(climate_data_value.shape[1:]):
+                spell_length.append(
+                    ThresholdMetric._calculate_spell_lengths_one_location(mask_threshold_condition[:, i, j])
+                )
+            spell_length = np.concatenate(spell_length)
             spell_length = spell_length[spell_length > minimum_length]
 
-            spell_length_array = np.append(
-                spell_length_array,
-                np.transpose(
-                    np.array(
-                        [
-                            [k] * len(spell_length),
-                            [self.name] * len(spell_length),
-                            np.transpose(spell_length),
-                        ]
-                    )
-                ),
-                axis=0,
+            spell_length_dfs.append(
+                pd.DataFrame(
+                    data={
+                        "Correction Method": [climate_data_key] * spell_length.size,
+                        "Metric": [self.name] * spell_length.size,
+                        "Spell length": spell_length,
+                    }
+                )
             )
-
-        plot_data = pd.DataFrame(spell_length_array, columns=["Correction Method", "Metric", "Spell length (days)"])
-        plot_data["Spell length (days)"] = pd.to_numeric(plot_data["Spell length (days)"])
+        plot_data = pd.concat(spell_length_dfs)
+        plot_data["Spell length"] = pd.to_numeric(plot_data["Spell length"])
 
         return plot_data
 
