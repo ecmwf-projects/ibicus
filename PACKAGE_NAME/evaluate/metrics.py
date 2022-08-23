@@ -17,34 +17,49 @@ from scipy.ndimage import measurements
 
 from PACKAGE_NAME import utils
 
-import matplotlib as plt
-
-import matplotlib.pyplot as pltpy
+import matplotlib.pyplot as plt
 
 import seaborn
 
-import math
-
 @attrs.define(eq = False)
 class ThresholdMetric:
-    key: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
+    
+    """
+    Organises the definition and functionalities of threshold metrics. Enables to implement a subsection of the Climdex climate extreme indices (https://www.climdex.org/learn/indices/)
+    
+    Every threshold metric is defined through the following attributes:
+        
+    Attributes
+    ----------
+    name : str
+        Name this metric will be given in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: "unknown"
+    variable : str
+        Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: "unknown"
+    threshold_value : np.ndarray
+        Numeric value in the unit of the variable in the data. Threshold metrics whose threshold_sign is 'higher' or 'lower' should have an array with one entry here,
+        threshold metrics with threshold sign 'between' should have one entry here. Default: None
+    threshold_sign : str
+        'higher', 'lower' or 'between'. Indicates whether we are either interested in values above the threshold value ('higher'), values below the threshold value ('lower'),
+        or values between the threshold values ('between)'. Default: None
+                                                
+    Example : warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_sign = 'higher')
+
+    """
+
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     threshold_value: np.ndarray = attrs.field(default=None, validator=attrs.validators.instance_of((np.ndarray, type(None))), converter = np.array)
     threshold_sign: str = attrs.field(default=None, validator=attrs.validators.instance_of((str, type(None))))
     
-    def calculate_instances_of_threshold_exceedance(self, dataset):
+    def calculate_instances_of_threshold_exceedance(self, dataset: np.ndarray) -> np.ndarray:
         
         """
-        Converts np.ndarray of input data (observations or climate projections) into 1-0 np.ndarray of same dimensions based on
-        threshold value and sign. Assignes 1 if value is below/above specified threshold (exceedance over threshold - eot), 0 otherwise.
+        Converts input array into array of ones and zeros - assignes 1 if value is below/above specified threshold, 0 otherwise.
 
         Parameters
         ----------
-        dataset: np.ndarray
-            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected
-        threshold_name: str
-            Name of threshold metric specified in the metrics dictionary
+        dataset : np.ndarray
+            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
         """
 
         instances_of_threshold_exceedance = np.copy(dataset)
@@ -67,7 +82,16 @@ class ThresholdMetric:
         return instances_of_threshold_exceedance
     
     
-    def filter_threshold_exceedances(self, dataset):
+    def filter_threshold_exceedances(self, dataset: np.ndarray) -> np.ndarray:
+        
+        """
+        Keeps all values beyond the given threshold, assigns zero to all others.
+
+        Parameters
+        ----------
+        dataset : np.ndarray
+            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        """
         
         eot_matrix = np.copy(dataset)
         
@@ -86,18 +110,15 @@ class ThresholdMetric:
         return eot_matrix
             
         
-    def calculate_exceedance_probability(self, dataset):
+    def calculate_exceedance_probability(self, dataset: np.ndarray) -> np.ndarray:
         
         """
-        Calculates the probability of exceeding a specified threshold at each location,
-        building on the function calculate_matrix.
+        Calculates the probability of exceeding a specified threshold at each location averaged across the entire time period.
         
         Parameters
         ----------
-        dataset: np.ndarray
+        dataset : np.ndarray
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected
-        threshold_name: str
-            Name of threshold metric specified in the metrics dictionary
         """
         
         threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
@@ -107,7 +128,25 @@ class ThresholdMetric:
         return threshold_probability
         
         
-    def calculate_spell_length(self, minimum_length, **climate_data):
+    def calculate_spell_length(self, minimum_length: int, **climate_data) -> pd.DataFrame:
+        
+        """
+        Converts input climate data into a pandas Dataframe of individual spell lengths counted across locations in the dataframe.
+        
+        A spell length is defined as the number of days that a threshold is continuesly exceeded. 
+        The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spell length (days) - individual spell length counts'
+        
+        Parameters
+        ----------
+        minimum length : int
+            Minimum spell length (in days) investigated.
+        climate_data :
+            Keyword arguments, providing the input data to investigate.
+            
+        Example of how this function is used:
+            
+        >>> dry_days.calculate_spell_length(minimum_length = 4, obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
+        """
         
         spell_length_array = np.empty((0, 3))
     
@@ -149,6 +188,22 @@ class ThresholdMetric:
     
         
     def calculate_spatial_clusters(self, **climate_data):
+        
+        """
+        Converts input climate data into a pandas Dataframe of spatial extents of threshold exceedances.
+        
+        The spatial extent is defined as the percentage of the area where the threshold is exceeded, given that it is exceeded at one location.
+        The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatial extent (% of area)'
+        
+        Parameters
+        ----------
+        climate_data :
+            Keyword arguments, providing the input data to investigate.
+            
+        Example of how this function is used:
+            
+        >>> dry_days.calculate_spatial_extent(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
+        """
         
         clusters_array = np.empty((0, 3))
 
@@ -192,6 +247,22 @@ class ThresholdMetric:
         
     def calculate_spatiotemporal_clusters(self, **climate_data):
         
+        """
+        Converts input climate data into a pandas Dataframe detailing the size of individual spatiotemporal clusters of threshold exceedances.
+        
+        A spatiotemporal cluster is defined as a connected set (in time and/or space) of threshold exceedances.
+        The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatiotemporal cluster size'
+        
+        Parameters
+        ----------
+        climate_data :
+            Keyword arguments, providing the input data to investigate.
+            
+        Example of how this function is used:
+            
+        >>> dry_days.calculate_spatiotemporal_clusters(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
+        """
+        
         clusters_array = np.empty((0, 3))
 
         for k in climate_data.keys():
@@ -218,23 +289,6 @@ class ThresholdMetric:
         )
 
         return spatiotemporal_clusters
-        
-    def calculate_amount_over_threshold_per_time_period(self, dataset, aggregation, dates, time_period):
-        
-        # TO-DO
-        
-        if aggregation=='year':
-            
-            eot_matrix = self.filter_threshold_exceedances(dataset)
-
-            count_length = math.floor(dates.get(time_period).shape[0]/365)
-
-            annual_count = np.empty([])
-
-            for count in range(count_length):
-    
-                start = count*365
-                annual_count = np.append(annual_count, np.sum(eot_matrix[start:start+365, 0,0]))
             
             
     
@@ -242,8 +296,7 @@ class ThresholdMetric:
     def plot_clusters_violinplots(self, minimum_length, **climate_data):
         
         """
-        Takes pandas dataframes of temporal, spatial and spatiotemporal extent as input and outputs three violinplot
-        comparing observational data to the raw climate and all debiasers specified in the dataframes. 
+        Takes pandas dataframes of temporal, spatial and spatiotemporal extent as input and outputs three violinplot comparing the obs/raw/debiasers specified in the dataframes.
 
         Parameters
         ----------
@@ -260,7 +313,7 @@ class ThresholdMetric:
         spatial_data = self.calculate_spatial_clusters(**climate_data)
         spatiotemporal_data = self.calculate_spatiotemporal_clusters(**climate_data)
 
-        fig, ax = pltpy.subplots(1, 3, figsize=(16, 6))
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
 
         seaborn.violinplot(
             ax=ax[0], data=temporal_data, x="Metric", y="Spell length (days)", palette="colorblind", hue="Correction Method"
@@ -302,7 +355,23 @@ class ThresholdMetric:
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):  
     
-    def calculate_value_above_threshold(self, dataset, percentage = True):
+    """
+    Child-class of ThresholdMetric class. Adds functionalities for metrics that are accumulative such as precipitation.
+
+    """
+    
+    def calculate_mean_value_beyond_threshold(self, dataset: np.ndarray, percentage: bool = True) -> np.ndarray:
+        
+        """
+        Calculates mean total or percentage value beyond threshold, returns 2d array with one value per location.
+
+        Parameters
+        ----------
+        dataset : np.ndarray
+            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        percentage : bool
+            Function calculates percentage value if True, absolut annual value if False. Default: True
+        """
         
         eot_matrix = self.filter_threshold_exceedances(dataset)
         
@@ -319,7 +388,24 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         return exceedance_amount
         
         
-    def calculate_annual_value_above_threshold(self, dataset, time_dictionary, time_specification, time_func=utils.year, percentage = True):
+    def calculate_annual_value_beyond_threshold(self, dataset: np.ndarray, time_dictionary, time_specification: str, time_func=utils.year, percentage = False) -> np.ndarray:
+        
+        """
+        Calculates annual total or percentage value beyond threshold for each year in the dataset.
+
+        Parameters
+        ----------
+        dataset : np.ndarray
+            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        time_dictionary : dict
+            Dictionary of dates, specified from original netCDF4 input files.
+        time_specification : str
+            Dictionary keyword pointing to the dates needed for this dataset.
+        time_func : functions
+            Points to utils function to either extract days or months.
+        percentage : bool
+            Function calculates percentage value if True, absolut annual value if False. Default: False
+        """
         
         eot_matrix = self.filter_threshold_exceedances(dataset)
         
@@ -344,6 +430,17 @@ class AccumulativeThresholdMetric(ThresholdMetric):
     
     
     def calculate_intensity_index(self, dataset):
+        
+        """
+        Calculates the amount beyond a threshold divided by the number of instance the threshold is exceeded.
+        
+        Designed to calculate the simple precipitation intensity index but can be used for other variables.
+
+        Parameters
+        ----------
+        dataset : np.ndarray
+            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        """
     
         eot_value_matrix = self.filter_threshold_exceedances(dataset)
 
@@ -354,6 +451,9 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         return(intensity_index)
       
 
+
+
+
 # pr metrics
 dry_days = AccumulativeThresholdMetric(name = 'Dry days \n (< 1 mm/day)', variable = 'pr', threshold_value = [1/86400], threshold_sign = 'lower')
 wet_days = AccumulativeThresholdMetric(name = 'Wet days \n (> 1 mm/day)', variable = 'pr', threshold_value = [1/86400], threshold_sign = 'higher')
@@ -361,8 +461,8 @@ R10mm = AccumulativeThresholdMetric(name = 'Very wet days \n (> 10 mm/day)', var
 R20mm = AccumulativeThresholdMetric(name = 'Extremely wet days \n (> 20 mm/day)', variable = 'pr', threshold_value = [20/86400], threshold_sign = 'higher')
 
 # tas metrics
-warm_days = ThresholdMetric(name = 'Warm days (mean)', variable = 'tas', threshold_value = [295], threshold_sign = 'higher')
-cold_days = ThresholdMetric(name = 'Cold days (mean)', variable = 'tas', threshold_value = [275], threshold_sign = 'lower') 
+warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_sign = 'higher')
+cold_days = ThresholdMetric(name = 'Mean cold days (K)', variable = 'tas', threshold_value = [275], threshold_sign = 'lower') 
 
 # tasmin metrics 
 frost_days = ThresholdMetric(name = 'Frost days \n  (tasmin<0°C)', variable = 'tasmin', threshold_value = [273.13], threshold_sign = 'lower')

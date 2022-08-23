@@ -18,15 +18,6 @@ PACKAGE\_NAME.evaluate module
    :show-inheritance:
   
 
-PACKAGE\_NAME.evaluate.marginal
--------------------------------
-
-.. automodule:: PACKAGE_NAME.evaluate.marginal
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 PACKAGE\_NAME.evaluate.metrics 
 ------------------------------
 
@@ -35,6 +26,14 @@ PACKAGE\_NAME.evaluate.metrics
    :undoc-members:
    :show-inheritance:
 
+PACKAGE\_NAME.evaluate.marginal
+-------------------------------
+
+.. automodule:: PACKAGE_NAME.evaluate.marginal
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
 PACKAGE\_NAME.evaluate.spatial 
 ------------------------------
 
@@ -44,28 +43,28 @@ PACKAGE\_NAME.evaluate.spatial
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.spatiotemporal_correlation 
--------------------------------------------------
+PACKAGE\_NAME.evaluate.correlation 
+----------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.spatiotemporal_correlation
+.. automodule:: PACKAGE_NAME.evaluate.correlation
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.spatiotemporal_extent 
---------------------------------------------
+PACKAGE\_NAME.evaluate.trend
+----------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.spatiotemporal_extent
+.. automodule:: PACKAGE_NAME.evaluate.trend
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.testing_assumptions 
-------------------------------------------
+PACKAGE\_NAME.evaluate.assumptions 
+----------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.spatiotemporal_extent
+.. automodule:: PACKAGE_NAME.evaluate.assumptions
    :members:
    :undoc-members:
    :show-inheritance:

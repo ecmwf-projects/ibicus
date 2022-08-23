@@ -67,11 +67,11 @@ def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data
     
     Parameters
     ----------
-    metrics: np.array
+    metrics : np.array
         Array of strings containing the names of the metrics that are to be assessed.
-    obs_data: np.ndarray
+    obs_data : np.ndarray
         observational dataset in validation period
-    **cm_data: 
+    **cm_data : 
         Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
         covering all debiasers that are to be compared
     """
@@ -155,12 +155,12 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray):
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    bias_array: np.ndarray
+    bias_array : np.ndarray
         Numpy array containing percentage bias for descriptive statistics and specified metrics. Has to be output of
         the function calculate_marginal_bias to be in correct format
-    metrics: np.ndarray
+    metrics : np.ndarray
         Array of strings containing the names of the metrics that are to be plotted.
 
     """
@@ -197,11 +197,11 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_dat
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    data_obs: np.ndarray
+    data_obs : np.ndarray
         Flattened entry of all observed values over the area, numeric entries expected
-    bin_number: int
+    bin_number : int
         Number of bins plotted in histogram, set to 100 by default
 
     """

@@ -21,7 +21,21 @@ from PACKAGE_NAME.variables import *
 
 
 
-def calculate_aic_goodness_of_fit(variable, dataset, distribution_names):
+def calculate_aic_goodness_of_fit(variable: str, dataset: np.ndarray, distribution_names: np.ndarray) -> pd.DataFrame:
+    
+    """
+    Calculates Akaike Information Criterion at each location for each of the distributions specified.
+
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    dataset : np.ndarray
+        Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+    distribution_names: 
+        Distribution functions to be tested, elements are scipy.stats.rv_continuous
+
+    """
 
     aic = np.empty((0, 4))
 
@@ -47,14 +61,42 @@ def calculate_aic_goodness_of_fit(variable, dataset, distribution_names):
     return aic_dataframe
 
 
-def plot_aic_goodness_of_fit(variable, aic_data):
+def plot_aic_goodness_of_fit(variable: str, aic_data: pd.DataFrame):
+    
+    """
+    Boxplot of AIC.
 
-    fig = plt.figure(figsize=(10, 6))
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    aic_data: DataFrame
+        Pandas dataframe of type output by calculate_aic_goodness_of_fit.
+
+    """
 
     seaborn.boxplot(data=aic_data, x="Distribution", y="AIC_value", palette="colorblind")
 
 
-def plot_worst_fit_aic(variable, dataset, aic, data_type, distribution_name, number_bins=100):
+def plot_worst_fit_aic(variable: str, dataset: np.ndarray, aic: np.ndarray, data_type: str, distribution_name: scipy.stats.rv_continuous, number_bins=100):
+    
+    """
+    Plots histogram and fit at location of worst AIC.
+
+    Parameters
+    ----------
+    variable : str
+        Variable name, has to be given in standard form specified in documentation.
+    dataset : np.ndarray
+        Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+    aic: pd.DataFrame
+        Pandas dataframe of type output by calculate_aic_goodness_of_fit.
+    data_type : pd.DataFrame
+        Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
+    distribution_name : scipy.rv_continuous
+        Name of the distribution analysed, used for title only.
+
+    """
 
     distribution = distribution_name
 
@@ -81,7 +123,27 @@ def plot_worst_fit_aic(variable, dataset, aic, data_type, distribution_name, num
     return fig
 
 
-def plot_quantile_residuals(dataset, variable, data_type, distribution_name):
+def plot_quantile_residuals(variable: str, dataset: np.ndarray, data_type: str , distribution_name: scipy.stats.rv_continuous):
+    
+    """
+    Plots timeseries and autocorrelation function of quantile residuals, as well as QQ-plot of normalized quantile residuals at one location
+
+    Parameters
+    ----------
+    variable: str
+        Variable name, has to be given in standard form specified in documentation.
+    dataset : np.ndarray
+        Input data, either observations or climate projectionsdataset at one location, numeric entries expected.
+    data_type: str
+        Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
+    distribution_name: scipy.stats.rv_continuous
+        Name of the distribution analysed, used for title only.
+        
+    Example code:
+        
+    >>> tas_obs_plot_gof = assumptions.plot_quantile_residuals(variable = 'tas', dataset = tas_obs[:,0,0], data_type = 'observation data', distribution_name = scipy.stats.norm)
+
+    """
 
     distribution = distribution_name
 

@@ -86,15 +86,15 @@ def calculate_future_trend_bias(variable: str, metric_collection: np.ndarray, ra
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    metrics: np.ndarray
+    metrics : np.ndarray
         1d numpy array of strings containing the keys of the metrics to be analysed. Example: metrics = ['dry', 'wet']
-    raw_validate: np.ndarray
+    raw_validate : np.ndarray
         Raw climate data set in validation period
     raw_future: np.ndarray
         Raw climate data set in future period
-    debiased_cms: np.ndarray
+    debiased_cms : np.ndarray
         Keyword arguments given in format debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]
         Example: QM = [tas_val_debiased_QM, tas_future_debiased_QM]
 
