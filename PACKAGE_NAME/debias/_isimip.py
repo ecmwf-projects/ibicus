@@ -36,7 +36,6 @@ from ._debiaser import Debiaser
 from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 
 
-# Reference TODO
 @attrs.define(slots=False)
 class ISIMIP(Debiaser):
     """
