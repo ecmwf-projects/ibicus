@@ -13,8 +13,9 @@ import seaborn
 
 from PACKAGE_NAME.variables import *
 
+
 def _mean_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
-    
+
     """
     Calculates location-wise percentage bias of mean
     """
@@ -25,13 +26,13 @@ def _mean_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
 
 
 def _quantile_marginal_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray):
-    
+
     """
     Calculates location-wise percentage bias of specified quantile
     """
 
-    if quantile<0 or quantile>1:
-        raise ValueError('Quantile needs to be between 0 and 1')
+    if quantile < 0 or quantile > 1:
+        raise ValueError("Quantile needs to be between 0 and 1")
 
     qn_obs = np.quantile(obs_data, quantile, axis=0)
 
@@ -44,7 +45,7 @@ def _quantile_marginal_bias(quantile: float, obs_data: np.ndarray, cm_data: np.n
 
 
 def _metrics_marginal_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
-    
+
     """
     Calculates location-wise percentage bias of metric specified
     """
@@ -57,21 +58,22 @@ def _metrics_marginal_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
 
     return bias
 
+
 def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data) -> np.ndarray:
-    
+
     """
     Calculates location-wise percentage bias of different metrics, comparing observations to climate model output during the validation period.
-    Default metrics include mean, 5th and 95th perecentile, 
+    Default metrics include mean, 5th and 95th perecentile,
     calculated in _descriptive_statistics_marginal_bias. Additional metrics can be specified in the metrics input argument,
     bias is calculated in _metrics_marginal_bias
-    
+
     Parameters
     ----------
     metrics : np.array
         Array of strings containing the names of the metrics that are to be assessed.
     obs_data : np.ndarray
         observational dataset in validation period
-    **cm_data : 
+    **cm_data :
         Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
         covering all debiasers that are to be compared
     """
@@ -81,15 +83,9 @@ def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data
 
     for k, cm_data in cm_data.items():
 
-        mean_bias = _mean_marginal_bias(
-            obs_data=obs_data, cm_data=cm_data
-        )
-        lowqn_bias = _quantile_marginal_bias(
-            quantile = 0.05, obs_data=obs_data, cm_data=cm_data
-        )
-        highqn_bias = _quantile_marginal_bias(
-            quantile = 0.95, obs_data=obs_data, cm_data=cm_data
-        )
+        mean_bias = _mean_marginal_bias(obs_data=obs_data, cm_data=cm_data)
+        lowqn_bias = _quantile_marginal_bias(quantile=0.05, obs_data=obs_data, cm_data=cm_data)
+        highqn_bias = _quantile_marginal_bias(quantile=0.95, obs_data=obs_data, cm_data=cm_data)
 
         marginal_bias_data = np.append(
             marginal_bias_data,
@@ -151,7 +147,7 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray):
 
     """
     Takes numpy array containing the location-wise percentage bias of different metrics and outputs two boxplots,
-    one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics.  
+    one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics.
 
     Parameters
     ----------
@@ -164,7 +160,6 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray):
         Array of strings containing the names of the metrics that are to be plotted.
 
     """
-
 
     plot_data = pd.DataFrame(bias_array, columns=["Correction Method", "Metric", "Percentage bias"])
     plot_data["Percentage bias"] = pd.to_numeric(plot_data["Percentage bias"])
@@ -186,7 +181,11 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray):
     )
     [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
 
-    fig.suptitle("{} ({}) - Bias".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit))
+    fig.suptitle(
+        "{} ({}) - Bias".format(
+            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+        )
+    )
 
 
 def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_data):
@@ -211,7 +210,11 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_dat
     plot_number = number_biascorrections
 
     fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5))
-    fig.suptitle("Distribution {} ({}) over entire area".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit))
+    fig.suptitle(
+        "Distribution {} ({}) over entire area".format(
+            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+        )
+    )
 
     i = 0
     for k, cm_data in cm_data.items():
@@ -220,6 +223,6 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_dat
         ax[i].hist(cm_data, bins=bin_number, alpha=0.5, label="Climate model")
         ax[i].set_title(k)
         ax[i].legend()
-        i=i+1
+        i = i + 1
 
     return fig

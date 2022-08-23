@@ -14,15 +14,14 @@ import scipy
 import scipy.stats
 import seaborn
 import statsmodels.api as sm
-from statsmodels.graphics.tsaplots import plot_acf
 from scipy.stats import norm
+from statsmodels.graphics.tsaplots import plot_acf
 
 from PACKAGE_NAME.variables import *
 
 
-
 def calculate_aic_goodness_of_fit(variable: str, dataset: np.ndarray, distribution_names: np.ndarray) -> pd.DataFrame:
-    
+
     """
     Calculates Akaike Information Criterion at each location for each of the distributions specified.
 
@@ -32,7 +31,7 @@ def calculate_aic_goodness_of_fit(variable: str, dataset: np.ndarray, distributi
         Variable name, has to be given in standard form specified in documentation.
     dataset : np.ndarray
         Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-    distribution_names: 
+    distribution_names:
         Distribution functions to be tested, elements are scipy.stats.rv_continuous
 
     """
@@ -62,7 +61,7 @@ def calculate_aic_goodness_of_fit(variable: str, dataset: np.ndarray, distributi
 
 
 def plot_aic_goodness_of_fit(variable: str, aic_data: pd.DataFrame):
-    
+
     """
     Boxplot of AIC.
 
@@ -78,8 +77,15 @@ def plot_aic_goodness_of_fit(variable: str, aic_data: pd.DataFrame):
     seaborn.boxplot(data=aic_data, x="Distribution", y="AIC_value", palette="colorblind")
 
 
-def plot_worst_fit_aic(variable: str, dataset: np.ndarray, aic: np.ndarray, data_type: str, distribution_name: scipy.stats.rv_continuous, number_bins=100):
-    
+def plot_worst_fit_aic(
+    variable: str,
+    dataset: np.ndarray,
+    aic: np.ndarray,
+    data_type: str,
+    distribution_name: scipy.stats.rv_continuous,
+    number_bins=100,
+):
+
     """
     Plots histogram and fit at location of worst AIC.
 
@@ -116,15 +122,22 @@ def plot_worst_fit_aic(variable: str, dataset: np.ndarray, aic: np.ndarray, data
 
     plt.plot(x, p, "k", linewidth=2)
     title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
-        data_type, map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit, distribution_name, x_location, y_location
+        data_type,
+        map_variable_str_to_variable_class(variable).name,
+        map_variable_str_to_variable_class(variable).unit,
+        distribution_name,
+        x_location,
+        y_location,
     )
     plt.title(title)
 
     return fig
 
 
-def plot_quantile_residuals(variable: str, dataset: np.ndarray, data_type: str , distribution_name: scipy.stats.rv_continuous):
-    
+def plot_quantile_residuals(
+    variable: str, dataset: np.ndarray, data_type: str, distribution_name: scipy.stats.rv_continuous
+):
+
     """
     Plots timeseries and autocorrelation function of quantile residuals, as well as QQ-plot of normalized quantile residuals at one location
 
@@ -138,9 +151,9 @@ def plot_quantile_residuals(variable: str, dataset: np.ndarray, data_type: str ,
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
     distribution_name: scipy.stats.rv_continuous
         Name of the distribution analysed, used for title only.
-        
+
     Example code:
-        
+
     >>> tas_obs_plot_gof = assumptions.plot_quantile_residuals(variable = 'tas', dataset = tas_obs[:,0,0], data_type = 'observation data', distribution_name = scipy.stats.norm)
 
     """
@@ -155,7 +168,12 @@ def plot_quantile_residuals(variable: str, dataset: np.ndarray, data_type: str ,
     fig, ax = plt.subplots(1, 3, figsize=(14, 4))
 
     fig.suptitle(
-        "{} ({}) - {}. Distribution = {}".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit, data_type, distribution_name)
+        "{} ({}) - {}. Distribution = {}".format(
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
+            data_type,
+            distribution_name,
+        )
     )
 
     x = range(0, len(q))

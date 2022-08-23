@@ -7,18 +7,17 @@
 # nor does it submit to any jurisdiction.
 
 from itertools import chain
-
 from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from PACKAGE_NAME.variables import *
 from PACKAGE_NAME.evaluate import marginal
+from PACKAGE_NAME.variables import *
 
 
 def plot_bias_spatial(variable: str, statistic, metric, obs_data: np.ndarray, **cm_data):
-    
+
     """
     Calculates and plot bias at each location with respect to specified metric.
 
@@ -35,34 +34,42 @@ def plot_bias_spatial(variable: str, statistic, metric, obs_data: np.ndarray, **
         Keyword arguments specifying debiasers to be analysed. Example: QM = tas_val_debiased_QM or raw = tas_cm_validate
 
     """
-    
+
     plot_data = {}
-    
+
     for key, value in cm_data.items():
-        
-        if statistic=='mean':
+
+        if statistic == "mean":
             plot_data[key] = marginal._mean_marginal_bias(obs_data, value)
-            title = "{} ({}) \n Percentage bias of mean".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit)
-            
+            title = "{} ({}) \n Percentage bias of mean".format(
+                map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            )
+
         elif statistic.isnumeric():
-            
+
             plot_data[key] = marginal._quantile_marginal_bias(metric, obs_data, value)
-            title = "{} ({}) \n Percentage bias of {} % quantile ".format(map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit, str(100*metric))
-            
-        elif statistic=='metric':
-            
-            plot_data[key] = marginal._metrics_marginal_bias(metric = metric, obs_data = obs_data, cm_data = value)
-            title = "{} \n Percentage bias".format(metric.name)      
-                                   
+            title = "{} ({}) \n Percentage bias of {} % quantile ".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+                str(100 * metric),
+            )
+
+        elif statistic == "metric":
+
+            plot_data[key] = marginal._metrics_marginal_bias(metric=metric, obs_data=obs_data, cm_data=value)
+            title = "{} \n Percentage bias".format(metric.name)
+
         else:
-            raise ValueError('Metric not recognized, choose either a metric from the metrics dictionary, the mean, or a percentile.')
-        
+            raise ValueError(
+                "Metric not recognized, choose either a metric from the metrics dictionary, the mean, or a percentile."
+            )
+
     axis_max = max(
         abs(max(np.ndarray.flatten(np.vstack(list(chain(*plot_data.values())))))),
         abs(min(np.ndarray.flatten(np.vstack(list(chain(*plot_data.values())))))),
     )
     axis_min = -axis_max
-    
+
     fig_width = 6 * len(cm_data.keys())
     fig, ax = plt.subplots(1, len(cm_data.keys()), figsize=(fig_width, 5))
     fig.suptitle(title)
