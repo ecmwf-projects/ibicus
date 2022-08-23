@@ -8,6 +8,8 @@
 
 """Metrics module - Standard metric definitions"""
 
+from typing import Optional, Union
+
 import attrs
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,78 +23,90 @@ from PACKAGE_NAME import utils
 
 @attrs.define(eq=False)
 class ThresholdMetric:
-
     """
-    Organises the definition and functionalities of threshold metrics. Enables to implement a subsection of the Climdex climate extreme indices (https://www.climdex.org/learn/indices/)
+    Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold.
 
-    Every threshold metric is defined through the following attributes:
+    Organises the definition and functionalities of such metrics. Enables to implement a subsection of the `Climdex climate extreme indices<https://www.climdex.org/learn/indices/>`.
 
     Attributes
     ----------
-    name : str
-        Name this metric will be given in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: "unknown"
-    variable : str
-        Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: "unknown"
-    threshold_value : np.ndarray
-        Numeric value in the unit of the variable in the data. Threshold metrics whose threshold_sign is 'higher' or 'lower' should have an array with one entry here,
-        threshold metrics with threshold sign 'between' should have one entry here. Default: None
-    threshold_sign : str
-        'higher', 'lower' or 'between'. Indicates whether we are either interested in values above the threshold value ('higher'), values below the threshold value ('lower'),
-        or values between the threshold values ('between)'. Default: None
+    threshold_value : Union[float, list[float], tuple[float]]
+        Threshold value(s) for the variable (in the correct unit).
+        If `threshold_type = "higher"` or `threshold_type = "lower"` this is just a single `float` value and the metric is defined as exceedance or underceedance of that value.
+        If `threshold_type = "between"` or `threshold_type = "outside"` then this needs to be a list in the form: `[lower_bound, upper_bound]` and the metric is defined as falling in between, or falling outside these values.
+    threshold_type : str
+        One of `["higher", "lower", "between", "outside"]`. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, not strict including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
+    name : str = "unknown"
+        Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: `"unknown"`.
+    variable : str = "unknown"
+        Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: `"unknown"`.
 
-    Example : warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_sign = 'higher')
+    Example
+    -------
+
+    >>> warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_type = 'higher')
 
     """
 
+    threshold_value: Union[float, list] = attrs.field()
+    threshold_type: str = attrs.field(validator=attrs.validators.in_(["higher", "lower", "between", "outside"]))
     name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
     variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
-    threshold_value: np.ndarray = attrs.field(
-        default=None, validator=attrs.validators.instance_of((np.ndarray, type(None))), converter=np.array
-    )
-    threshold_sign: str = attrs.field(default=None, validator=attrs.validators.instance_of((str, type(None))))
+
+    def __attrs_post_init__(self):
+        if self.threshold_type in ["between", "outside"]:
+            if not isinstance(self.threshold_value, (list, tuple)):
+                raise ValueError(
+                    "threshold_value should be a list with a lower and upper bound for threshold_type = 'between'."
+                )
+            if len(self.threshold_value) != 2:
+                raise ValueError(
+                    "threshold_value should have only a lower and upper bound for threshold_type = 'between'."
+                )
+            if not all(isinstance(elem, (int, float)) for elem in self.threshold_value):
+                raise ValueError("threshold_value needs to be a list of floats")
+            if not self.threshold_value[0] < self.threshold_value[1]:
+                raise ValueError(
+                    "lower bounds needs to be smaller than upper bound in threshold_value for threshold_type = 'between'."
+                )
+        elif self.threshold_type in ["higher", "lower"]:
+            if not isinstance(self.threshold_value, (int, float)):
+                raise ValueError(
+                    "threshold_value needs to be either int or float for threshold_type = 'higher' or threshold_type = 'lower'."
+                )
+        else:
+            raise ValueError(
+                "Invalid threshold_type. Needs to be one of ['higher', 'lower', 'between']. Modify the class attribute."
+            )
+
+    def _get_mask_threshold_condition(self, x):
+        if self.threshold_type == "higher":
+            return x > self.threshold_value
+        elif self.threshold_type == "lower":
+            return x < self.threshold_value
+        elif self.threshold_type == "between":
+            return np.logical_and(x >= self.threshold_value[0], x <= self.threshold_value[1])
+        elif self.threshold_type == "outside":
+            return np.logical_and(x < self.threshold_value[0], x > self.threshold_value[1])
+        else:
+            raise ValueError(
+                "Invalid self.threshold_type. Needs to be one of ['higher', 'lower', 'between']. Modify the class attribute."
+            )
 
     def calculate_instances_of_threshold_exceedance(self, dataset: np.ndarray) -> np.ndarray:
-
         """
-        Converts input array into array of ones and zeros - assignes 1 if value is below/above specified threshold, 0 otherwise.
+        Returns an array of the same size as `dataset` containing 1 when the threshold condition is met and 0 when not.
 
         Parameters
         ----------
         dataset : np.ndarray
-            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+            Input data, either observations or climate projections to be analysed, numeric entries expected.
         """
-
-        instances_of_threshold_exceedance = np.copy(dataset)
-
-        if self.threshold_sign == "higher":
-
-            instances_of_threshold_exceedance = (instances_of_threshold_exceedance > self.threshold_value[0]).astype(
-                int
-            )
-
-        elif self.threshold_sign == "lower":
-
-            instances_of_threshold_exceedance = (instances_of_threshold_exceedance < self.threshold_value[0]).astype(
-                int
-            )
-
-        elif self.threshold_sign == "between":
-
-            instances_of_threshold_exceedance = (
-                self.threshold_value[0] < instances_of_threshold_exceedance < instances_of_threshold_exceedance[1]
-            ).astype(int)
-
-        else:
-            raise ValueError(
-                "Invalid threshold sign. Modify threshold_sign to either higher or lower in class instantiation"
-            )
-
-        return instances_of_threshold_exceedance
+        return self._get_mask_threshold_condition(dataset).astype(int)
 
     def filter_threshold_exceedances(self, dataset: np.ndarray) -> np.ndarray:
-
         """
-        Keeps all values beyond the given threshold, assigns zero to all others.
+        Returns an array containing the values of dataset where the threshold condition is met and zero where not.
 
         Parameters
         ----------
@@ -100,44 +114,27 @@ class ThresholdMetric:
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
         """
 
-        eot_matrix = np.copy(dataset)
-
-        if self.threshold_sign == "higher":
-            eot_matrix[eot_matrix < self.threshold_value[0]] = 0
-
-        elif self.threshold_sign == "lower":
-            eot_matrix[eot_matrix > self.threshold_value[0]] = 0
-
-        elif self.threshold_sign == "between":
-            eot_matrix[self.threshold_value[0] < eot_matrix < self.threshold_value[1]] = 0
-
-        else:
-            raise ValueError(
-                "Invalid threshold sign. Modify threshold_sign to either higher or lower in class instantiation"
-            )
-
-        return eot_matrix
+        mask_threshold_condition = self._get_mask_threshold_condition(dataset)
+        dataset[mask_threshold_condition] = 0
+        return dataset
 
     def calculate_exceedance_probability(self, dataset: np.ndarray) -> np.ndarray:
-
         """
-        Calculates the probability of exceeding a specified threshold at each location averaged across the entire time period.
+        Returns the probability of exceeding a specified threshold at each location (across the entire time period).
 
         Parameters
         ----------
         dataset : np.ndarray
-            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected
+            Input data, either observations or climate projections to be analysed, numeric entries expected
         """
 
         threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
-
         threshold_probability = np.einsum("ijk -> jk", threshold_data) / threshold_data.shape[0]
-
         return threshold_probability
 
     def calculate_spell_length(self, minimum_length: int, **climate_data) -> pd.DataFrame:
-
         """
+        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics
         Converts input climate data into a pandas Dataframe of individual spell lengths counted across locations in the dataframe.
 
         A spell length is defined as the number of days that a threshold is continuesly exceeded.
@@ -194,7 +191,6 @@ class ThresholdMetric:
         return plot_data
 
     def calculate_spatial_clusters(self, **climate_data):
-
         """
         Converts input climate data into a pandas Dataframe of spatial extents of threshold exceedances.
 
@@ -250,7 +246,6 @@ class ThresholdMetric:
         return spatial_clusters
 
     def calculate_spatiotemporal_clusters(self, **climate_data):
-
         """
         Converts input climate data into a pandas Dataframe detailing the size of individual spatiotemporal clusters of threshold exceedances.
 
@@ -291,7 +286,6 @@ class ThresholdMetric:
         return spatiotemporal_clusters
 
     def plot_clusters_violinplots(self, minimum_length, **climate_data):
-
         """
         Takes pandas dataframes of temporal, spatial and spatiotemporal extent as input and outputs three violinplot comparing the obs/raw/debiasers specified in the dataframes.
 
@@ -345,7 +339,6 @@ class ThresholdMetric:
 
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
-
     """
     Child-class of ThresholdMetric class. Adds functionalities for metrics that are accumulative such as precipitation.
 
@@ -423,7 +416,6 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         return threshold_exceedances
 
     def calculate_intensity_index(self, dataset):
-
         """
         Calculates the amount beyond a threshold divided by the number of instance the threshold is exceeded.
 
@@ -446,34 +438,34 @@ class AccumulativeThresholdMetric(ThresholdMetric):
 
 # pr metrics
 dry_days = AccumulativeThresholdMetric(
-    name="Dry days \n (< 1 mm/day)", variable="pr", threshold_value=[1 / 86400], threshold_sign="lower"
+    name="Dry days \n (< 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="lower"
 )
 wet_days = AccumulativeThresholdMetric(
-    name="Wet days \n (> 1 mm/day)", variable="pr", threshold_value=[1 / 86400], threshold_sign="higher"
+    name="Wet days \n (> 1 mm/day)", variable="pr", threshold_value=1 / 86400, threshold_type="higher"
 )
 R10mm = AccumulativeThresholdMetric(
-    name="Very wet days \n (> 10 mm/day)", variable="pr", threshold_value=[10 / 86400], threshold_sign="higher"
+    name="Very wet days \n (> 10 mm/day)", variable="pr", threshold_value=10 / 86400, threshold_type="higher"
 )
 R20mm = AccumulativeThresholdMetric(
-    name="Extremely wet days \n (> 20 mm/day)", variable="pr", threshold_value=[20 / 86400], threshold_sign="higher"
+    name="Extremely wet days \n (> 20 mm/day)", variable="pr", threshold_value=20 / 86400, threshold_type="higher"
 )
 
 # tas metrics
-warm_days = ThresholdMetric(name="Mean warm days (K)", variable="tas", threshold_value=[295], threshold_sign="higher")
-cold_days = ThresholdMetric(name="Mean cold days (K)", variable="tas", threshold_value=[275], threshold_sign="lower")
+warm_days = ThresholdMetric(name="Mean warm days (K)", variable="tas", threshold_value=295, threshold_type="higher")
+cold_days = ThresholdMetric(name="Mean cold days (K)", variable="tas", threshold_value=275, threshold_type="lower")
 
 # tasmin metrics
 frost_days = ThresholdMetric(
-    name="Frost days \n  (tasmin<0°C)", variable="tasmin", threshold_value=[273.13], threshold_sign="lower"
+    name="Frost days \n  (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower"
 )
 tropical_nights = ThresholdMetric(
-    name="Tropical Nights \n (tasmin>20°C)", variable="tasmin", threshold_value=[293.13], threshold_sign="higher"
+    name="Tropical Nights \n (tasmin>20°C)", variable="tasmin", threshold_value=293.13, threshold_type="higher"
 )
 
 # tasmax metrics
 summer_days = ThresholdMetric(
-    name="Summer days \n  (tasmax>25°C)", variable="tasmax", threshold_value=[298.15], threshold_sign="higher"
+    name="Summer days \n  (tasmax>25°C)", variable="tasmax", threshold_value=298.15, threshold_type="higher"
 )
 icing_days = ThresholdMetric(
-    name="Icing days \n (tasmax<0°C)", variable="tasmax", threshold_value=[273.13], threshold_sign="lower"
+    name="Icing days \n (tasmax<0°C)", variable="tasmax", threshold_value=273.13, threshold_type="lower"
 )
