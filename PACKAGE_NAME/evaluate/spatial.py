@@ -17,9 +17,8 @@ from PACKAGE_NAME.variables import *
 
 
 def plot_bias_spatial(variable: str, statistic, metric, obs_data: np.ndarray, **cm_data):
-
     """
-    Calculates and plot bias at each location with respect to specified metric.
+    Calculates and plots the bias at each location with respect to thhe specified metric.
 
     Parameters
     ----------

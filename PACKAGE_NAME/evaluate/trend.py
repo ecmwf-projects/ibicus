@@ -103,10 +103,10 @@ def _calculate_metrics_trend_bias(
 def calculate_future_trend_bias(
     variable: str, metric_collection: np.ndarray, raw_validate: np.ndarray, raw_future: np.ndarray, **debiased_cms
 ) -> np.ndarray:
-
     """
-    For each location, calculates the bias in the trend of the bias corrected model compared to the raw climate model for the following metrics: mean, 5% and 95% quantile (default)
-    as well as metrics passed as arguments to function. Trend can be specified as either additive or multiplicative. Function returns numpy array with three columns:
+    For each location, calculates the bias in the trend of the bias corrected model compared to the raw climate model for the following metrics: mean, 5% and 95% quantile (default) as well as metrics passed as arguments to the function.
+
+    Trend can be specified as either additive or multiplicative. Function returns numpy array with three columns:
     [Bias correction method, Metric, Bias value at certain location]
 
     Parameters
