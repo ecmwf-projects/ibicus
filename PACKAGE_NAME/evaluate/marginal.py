@@ -15,27 +15,23 @@ from PACKAGE_NAME.variables import *
 
 
 def _mean_marginal_bias(obs_data: np.ndarray, cm_data: np.ndarray):
-
     """
     Calculates location-wise percentage bias of mean
     """
 
     mean_bias = 100 * (np.mean(obs_data, axis=0) - np.mean(cm_data, axis=0)) / np.mean(obs_data, axis=0)
-
     return mean_bias
 
 
 def _quantile_marginal_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray):
-
     """
     Calculates location-wise percentage bias of specified quantile
     """
 
     if quantile < 0 or quantile > 1:
-        raise ValueError("Quantile needs to be between 0 and 1")
+        raise ValueError("quantile needs to be between 0 and 1")
 
     qn_obs = np.quantile(obs_data, quantile, axis=0)
-
     if np.any(qn_obs) == 0:
         qn_bias = 0 * qn_obs
     else:
@@ -45,129 +41,107 @@ def _quantile_marginal_bias(quantile: float, obs_data: np.ndarray, cm_data: np.n
 
 
 def _metrics_marginal_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
-
     """
     Calculates location-wise percentage bias of metric specified
     """
 
     obs_metric = metric.calculate_exceedance_probability(dataset=obs_data)
-
     cm_metric = metric.calculate_exceedance_probability(dataset=cm_data)
-
     bias = 100 * (obs_metric - cm_metric) / obs_metric
 
     return bias
 
 
-def calculate_marginal_bias(metrics: np.ndarray, obs_data: np.ndarray, **cm_data) -> np.ndarray:
-
+def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], **cm_data) -> np.ndarray:
     """
-    Calculates location-wise percentage bias of different metrics, comparing observations to climate model output during the validation period.
-    Default metrics include mean, 5th and 95th perecentile,
-    calculated in _descriptive_statistics_marginal_bias. Additional metrics can be specified in the metrics input argument,
-    bias is calculated in _metrics_marginal_bias
+    Return a :py:class:`pd.DataFrame` containing location-wise percentage bias of different metrics: mean, 5th and 95th percentile, as well as metrics specific in `metrics`, comparing observations to climate model output during a validation period.
 
     Parameters
     ----------
-    metrics : np.array
-        Array of strings containing the names of the metrics that are to be assessed.
     obs_data : np.ndarray
         observational dataset in validation period
+    metrics : list
+        Array of strings containing the names of the metrics that are to be assessed.
     **cm_data :
         Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
         covering all debiasers that are to be compared
     """
 
-    marginal_bias_data = np.empty((0, 3))
+    marginal_bias_dfs = []
     number_locations = len(np.ndarray.flatten(obs_data[1, :, :]))
 
-    for k, cm_data in cm_data.items():
+    for cm_data_key, cm_data in cm_data.items():
 
         mean_bias = _mean_marginal_bias(obs_data=obs_data, cm_data=cm_data)
+        marginal_bias_dfs.append(
+            pd.DataFrame(
+                data={
+                    "Correction Method": [cm_data_key] * number_locations,
+                    "Metric": ["Mean"] * number_locations,
+                    "Percentage bias": mean_bias.flatten(),
+                }
+            )
+        )
+
         lowqn_bias = _quantile_marginal_bias(quantile=0.05, obs_data=obs_data, cm_data=cm_data)
+        marginal_bias_dfs.append(
+            pd.DataFrame(
+                data={
+                    "Correction Method": [cm_data_key] * number_locations,
+                    "Metric": ["5% qn"] * number_locations,
+                    "Percentage bias": lowqn_bias.flatten(),
+                }
+            )
+        )
+
         highqn_bias = _quantile_marginal_bias(quantile=0.95, obs_data=obs_data, cm_data=cm_data)
-
-        marginal_bias_data = np.append(
-            marginal_bias_data,
-            np.transpose(
-                np.array(
-                    [[k] * number_locations, ["Mean"] * number_locations, np.transpose(np.ndarray.flatten(mean_bias))]
-                )
-            ),
-            axis=0,
+        marginal_bias_dfs.append(
+            pd.DataFrame(
+                data={
+                    "Correction Method": [cm_data_key] * number_locations,
+                    "Metric": ["95% qn"] * number_locations,
+                    "Percentage bias": highqn_bias.flatten(),
+                }
+            )
         )
 
-        marginal_bias_data = np.append(
-            marginal_bias_data,
-            np.transpose(
-                np.array(
-                    [[k] * number_locations, ["5% qn"] * number_locations, np.transpose(np.ndarray.flatten(lowqn_bias))]
+        for m in metrics:
+
+            metric_bias = _metrics_marginal_bias(m, obs_data, cm_data)
+
+            marginal_bias_dfs.append(
+                pd.DataFrame(
+                    data={
+                        "Correction Method": [cm_data_key] * number_locations,
+                        "Metric": [m.name] * number_locations,
+                        "Percentage bias": metric_bias.flatten(),
+                    }
                 )
-            ),
-            axis=0,
-        )
+            )
 
-        marginal_bias_data = np.append(
-            marginal_bias_data,
-            np.transpose(
-                np.array(
-                    [
-                        [k] * number_locations,
-                        ["95% qn"] * number_locations,
-                        np.transpose(np.ndarray.flatten(highqn_bias)),
-                    ]
-                )
-            ),
-            axis=0,
-        )
-        if len(metrics) != 0:
-
-            for m in metrics:
-
-                metric_bias = _metrics_marginal_bias(m, obs_data, cm_data)
-
-                marginal_bias_data = np.append(
-                    marginal_bias_data,
-                    np.transpose(
-                        np.array(
-                            [
-                                [k] * number_locations,
-                                [m.name] * number_locations,
-                                np.transpose(np.ndarray.flatten(metric_bias)),
-                            ]
-                        )
-                    ),
-                    axis=0,
-                )
-
-    return marginal_bias_data
+    plot_data = pd.concat(marginal_bias_dfs)
+    plot_data["Percentage bias"] = pd.to_numeric(plot_data["Percentage bias"])
+    return plot_data
 
 
-def plot_marginal_bias(variable: str, bias_array: np.ndarray):
-
+def plot_marginal_bias(variable: str, bias_df: pd.DataFrame):
     """
-    Takes numpy array containing the location-wise percentage bias of different metrics and outputs two boxplots,
-    one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics.
+    Returns boxplots plotting the distribution of location-wise percentage bias of different metrics, passed in `bias_array` and as calculated by `calculate_marginal_bias`.
+
+    Two wo boxplots are created: one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics.
 
     Parameters
     ----------
     variable : str
         Variable name, has to be given in standard form specified in documentation.
-    bias_array : np.ndarray
-        Numpy array containing percentage bias for descriptive statistics and specified metrics. Has to be output of
-        the function calculate_marginal_bias to be in correct format
-    metrics : np.ndarray
-        Array of strings containing the names of the metrics that are to be plotted.
-
+    bias_df : pd.DataFrame
+        :py:class:`pd.DataFrame` containing percentage bias for descriptive statistics and specified metrics. Output of :py:func:`calculate_marginal_bias`.
     """
 
-    plot_data = pd.DataFrame(bias_array, columns=["Correction Method", "Metric", "Percentage bias"])
-    plot_data["Percentage bias"] = pd.to_numeric(plot_data["Percentage bias"])
+    plot_data1 = bias_df[bias_df["Metric"].isin(["Mean", "5% qn", "95% qn"])]
+    plot_data2 = bias_df[~bias_df["Metric"].isin(["Mean", "5% qn", "95% qn"])]
 
-    plot_data1 = plot_data[plot_data["Metric"].isin(["Mean", "5% qn", "95% qn"])]
-    plot_data2 = plot_data[~plot_data["Metric"].isin(["Mean", "5% qn", "95% qn"])]
-
-    fig_width = 2 * plot_data["Metric"].nunique() + 3
+    fig_width = 2 * bias_df["Metric"].nunique() + 3
 
     fig, ax = plt.subplots(1, 2, figsize=(fig_width, 6))
 
@@ -189,7 +163,6 @@ def plot_marginal_bias(variable: str, bias_array: np.ndarray):
 
 
 def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_data):
-
     """
     Plots histogram over entire area. Expects a one-dimensional array as input, so 2d lat-long array has to be flattened using
     for example np.ndarray.flatten. This plot will be more meaningful for smaller areas.
@@ -205,11 +178,12 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number=100, **cm_dat
 
     """
 
-    number_biascorrections = len(debiased_cm_data.keys())
+    number_biascorrections = len(cm_data.keys())
     figure_length = number_biascorrections * 5
     plot_number = number_biascorrections
 
-    fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5))
+    fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5), squeeze=True)
+    print(ax)
     fig.suptitle(
         "Distribution {} ({}) over entire area".format(
             map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
