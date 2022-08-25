@@ -32,7 +32,7 @@ default_settings = {
 @attrs.define(slots=False)
 class CDFt(Debiaser):
     """
-    |br| Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.
+    |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     In this methodology, all cdfs are estimated empirically. Let :math:`F` therefore be an empirical cdf. 
@@ -56,7 +56,7 @@ class CDFt(Debiaser):
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    After this shift by the mean absolute or relative bias values are mapped as above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. 
+    After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. 
 
     - If ``SSR = True`` then Stochastic Singularity Removal (SSR) based on Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default setting for ``pr``). All zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
     - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take seasonality into account. Otherwise the method is applied to the whole year.

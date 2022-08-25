@@ -22,7 +22,7 @@ class Debiaser(ABC):
     """
     A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply debiasing.
 
-    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. There are two functions that every bias correction method needs and that are tinherited by each child class from the :py:class:`debiaser`:
+    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. In order to subclass the :py:class:`debiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
 
     - :py:func:`apply_location`: applies an initialised debiaser at one location. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future). Additionally ``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
