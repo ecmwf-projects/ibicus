@@ -26,7 +26,7 @@ default_settings = {
 @attrs.define(slots=False)
 class QuantileMapping(Debiaser):
     """
-    |br| Implements (detrended) Quantile Mapping following Cannon et al. 2015 and Maraun 2016.
+    |br| Implements (detrended) Quantile Mapping based on Cannon et al. 2015 and Maraun 2016.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F` be a CDF. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_hist}}` and :math:`F_{\\text{obs}}`, so:
@@ -44,7 +44,7 @@ class QuantileMapping(Debiaser):
     Here :math:`\\bar x_{\\text{cm_fut}}` designs the mean of :math:`x_{\\text{cm_fut}}` and similar for :math:`x_{\\text{cm_hist}}`.
     Detrended Quantile Mapping accounts for changes in the projected values and is thus trend-preserving in the mean.
 
-    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
+    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However, other models are also possible, :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 
     **References**:
 

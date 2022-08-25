@@ -36,16 +36,16 @@ default_settings = {
 @attrs.define(slots=False)
 class ScaledDistributionMapping(Debiaser):
     """
-    |br| Implements Scaled Distribution Matching (SDM) following Switanek et al. 2017.
+    |br| Implements Scaled Distribution Matching (SDM) based on Switanek et al. 2017.
 
-    SDM scales the observed distribution by changes in magnitude and additionally likelihood of events -- either multiplicatively for precipitation or additively for temperature.
+    SDM scales the observed distribution by changes in magnitude and additionally likelihood of events -- either multiplicatively (for precipitation) or additively (for temperature).
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math:`F` design a parametric CDF.
+    Let :math:`F` be a parametric CDF.
 
     1. Temperature (``tas``): absolute scaled distribution mapping
 
-    First CDFs are fitted to both historical and future climate model values as well as observations. Usually for ``tas`` a normal distribution is used. Then a scaling is calculated as:
+    First CDFs are fitted to both historical and future climate model values as well as observations. The default settings for ``tas`` use a normal distribution. Then the scaling is calculated as:
 
     .. math:: \\text{scaling} = [F^{-1}_{\\text{cm_fut}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))] * \\frac{\\sigma_\\text{obs}}{\\sigma_\\text{cm_hist}}
 

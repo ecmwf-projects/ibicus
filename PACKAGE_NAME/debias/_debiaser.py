@@ -22,15 +22,13 @@ class Debiaser(ABC):
     """
     A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply debiasing.
 
-    To be able to subclass the :py:class:`debiaser`-class every debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
+    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. There are two functions that every bias correction method needs and that are tinherited by each child class from the :py:class:`debiaser`:
 
     - :py:func:`apply_location`: applies an initialised debiaser at one location. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future). Additionally ``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
     - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as members and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
 
-    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. The :py:func:`apply` function, maps the debiaser :py:func:`apply_location` over locations,
-
-    This allows to always initialise and apply debiasers follows:
+     The :py:func:`apply` function, maps the debiaser :py:func:`apply_location` over locations. This allows to always initialise and apply debiasers follows:
 
     >>> debiaser = LinearScaling.from_variable("tas") # LinearScaling is a child-class of Debiaser
     >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
@@ -72,7 +70,7 @@ class Debiaser(ABC):
         **kwargs
     ):
         """
-        Instanciates a class given by ``child_class`` from a variable: either a string referring to a standard variable name or a :py:class:`Variable` object.
+        Instanciates a class given by ``child_class`` from a variable: either a string referring to a standard variable name following the CMIP convention or a :py:class:`Variable` object.
 
         Parameters
         ----------
@@ -94,7 +92,7 @@ class Debiaser(ABC):
 
         if variable_object not in default_settings_variable.keys():
             raise ValueError(
-                "Unfortunately currently no default settings exist for the variable '%s' in the debiaser %s. You can set the required class parameters manually by using the class constructor. This also allows more fine-grained optimization of the debiaser."
+                "Unfortunately currently no default settings exist for the variable '%s' in the debiaser %s. You can set the required class parameters manually by using the class constructor."
                 % (variable, child_class.__name__)
             )
 

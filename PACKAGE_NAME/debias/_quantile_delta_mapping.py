@@ -41,34 +41,28 @@ default_settings = {
 @attrs.define(slots=False)
 class QuantileDeltaMapping(Debiaser):
     """
-    |br| Implements Quantile Delta Mapping following Cannon et al. 2015.
+    |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    The future climate projections :math:`x_{\\text{cm_fut}}` are adjusted in two steps: 1) they are bias corrected by quantile mapping and in the same time also detrended in all quantiles, 2) the trends in all quantiles -- as projected by the model -- are imposed again onto the bias corrected values.
-
-    In step 1) values :math:`x_{\\text{cm_fut}} (t)` are first mapped onto:
-
-    .. math:: x_{\\text{cm_fut, bc}} (t) := F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t)))
-
-    Here :math:`\\hat F_{\\text{cm_fut}}^{(t)}` is the empirical CDF of future climate model values in a window around t. :math:`F^{-1}_{\\text{obs}}` is the inverse CDF estimated by fitting a distribution to observations.
-
-    In step 2) :math:`x_{\\text{cm_fut, bc}} (t)` is then adjusting by imposing the modeled trend in all quantiles onto the bias corrected values. If relative trends are to be preserved :math:`x_{\\text{cm_fut, bc}} (t)` is mapped as follows:
-
-    .. math:: x_{\\text{cm_fut, bc}} (t) \\rightarrow x_{\\text{cm_fut, bc}} (t) \\cdot \\Delta_{\\text{cm}}^{\\text{rel}} (t) = x_{\\text{cm_fut, bc}} (t) \\cdot \\frac{x_{\\text{cm_fut}} (t)}{F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}))}
-
-    and if absolute trends are to be preserved:
-
-    .. math:: x_{\\text{cm_fut, bc}} (t) \\rightarrow x_{\\text{cm_fut, bc}} (t) + \\Delta_{\\text{cm}}^{\\text{abs}} (t) = x_{\\text{cm_fut, bc}} (t) + x_{\\text{cm_fut}} (t) - F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)} ( x_{\\text{cm_fut}}))
-
-    Here :math:`F^{-1}_{\\text{cm_hist}}` is the inverse CDF estimated by fitting a distribution to the historical climate model run and :math:`\\hat F_{\\text{cm_fut}}^{(t)}` stands again for the empirical CDF fitted on a time window of future climate model values around t.
+    
+    Similar to the Equidistant CDF Matching Method based on Li et al. 2010 and implemented in :py:class:`ECDFM`, this method bias corrects the future climate model data directly using reference period observations. This is then multiplied by the quotient of future climate model data and a quantile mapping between past and future climate model data to account for the change from past to future period in all quantiles.
+    
+    In mathematical terms, the transformation can be written as:
+        
+    .. math:: x_{\\text{cm_fut, bc}} (t) = x_{\\text{cm_fut}} (t) \\cdot \\frac{F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t)))}{F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}))}
+    
+    This variation preserves relative trends. If absolute trends are to be preserved, the transformation is equivalent to the transformation introduced in Li et al 2010:
+        
+    .. math:: x_{\\text{cm_fut, bc}} (t) = x_{\\text{cm_fut}} (t) + F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t))) - F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)} ( x_{\\text{cm_fut}})).
+    
+    Hereby :math:`\\hat F_{\\text{cm_fut}}^{(t)}` is the empirical CDF of future climate model values in a window around t. :math:`F^{-1}_{\\text{obs}}` is the inverse CDF estimated by fitting a distribution to observations. :math:`F^{-1}_{\\text{cm_hist}}` is the inverse CDF estimated by fitting a distribution to the historical climate model run.
 
     Delta Quantile Mapping is approximately trend preserving in all quantiles because the absolute :math:`\\Delta_{\\text{cm}}^{\\text{abs}}` or relative change :math:`\\Delta_{\\text{cm}}^{\\text{rel}}` is calculated and applied for each quantile individually.
-
 
     Running window:
 
     - ``running_window_over_year``: controls whether the methodology and mapping is applied on a running window over the year to account for seasonality. ``running_window_over_year_length`` and ``running_window_over_year_step_length`` control the length (how many days are included in the running window) and step length (by how far the window is shifted and how many days inside are debiased) respectively. |brr|
-    - ``running_window_mode_over_years_of_cm_future`` controls whether a running window is used to estimate the empirical CDF :math:`\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t))` and time-dependent quantiles or if this is done statically on the whole future climate model run. ``running_window_over_years_of_cm_future_length`` and ``running_window_over_years_of_cm_future_step_length control`` the length and step length of this window respectively. Estimation this information in a running window has the advantage of accounting for changes in trends.
+    - ``running_window_mode_over_years_of_cm_future`` controls whether a running window is used to estimate the empirical CDF :math:`\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t))` and time-dependent quantiles or if this is done statically on the whole future climate model run. ``running_window_over_years_of_cm_future_length`` and ``running_window_over_years_of_cm_future_step_length control`` the length and step length of this window respectively. Estimating this information in a running window has the advantage of accounting for changes in trends.
 
     If both running windows are active then first the running window inside the year is used to account for seasonality. Values are chunked according to this one. Afterwards the running window over years is used and values are further split up. This is just a choice made for computational efficiency and the order of running window application/chunking does not matter.
 

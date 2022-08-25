@@ -8,11 +8,11 @@
 
 
 """
-:py:mod:`debias`-module: provides functionality to debias climate models
+:py:mod:`debias`-module: provides the necessary functionality to bias correct climate models.
 
-Basis is the :py:class:`Debiaser` class from which every debiaser inherits and which provides a unified interface to instantiate and apply debiasers.
+The foundation of the module is the :py:class:`Debiaser` class from which every debiaser inherits and which provides a unified interface to instantiate and apply debiasers .
 
-Debiasers currently implemented: 
+The following bias correction methodologies are currently implemented in the package, each based on the respective publication cited. 
 
 .. autosummary::
     Debiaser
@@ -25,6 +25,16 @@ Debiasers currently implemented:
     QuantileDeltaMapping
     ISIMIP
 
+**Methodology**
+
+For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the 'Why do we need bias correction?' page. 
+The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output. 
+This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
+For a detailed description of their methodology, we refer you to the class descriptions and the cited publications.
+
+TO-DO: insert table
+TO-DO: explain additive vs multiplicative change and why some variables have one or the other
+
 **Usage**
 
 .. testsetup::
@@ -32,13 +42,13 @@ Debiasers currently implemented:
         from PACKAGE_NAME.debias import ISIMIP, CDFt, QuantileMapping
 
 
-For applying debiasing in general three arrays of data are required:
+Three types of data are required in order to conduct bias correction for a given climatic variable:
 
-1. observations of the climatic variable: ``obs``.
+1. Observations / reanalysis data for given historical period: ``obs``.
 
-2. values of the climate model for the climatic variable during the observational/reference or historical period -- to calculate the bias: ``cm_hist``.
+2. Climate model simulation for same historical period as observations: ``cm_hist``.
 
-3. values of the climate model for the climatic variable during the application or future period -- the values to debias: ``cm_future``. 
+3. Climate model simulation for the period that is to be bias corrected, often a future period: ``cm_future``. 
 
 Let's generate some pseudo climate data:
 
@@ -46,21 +56,69 @@ Let's generate some pseudo climate data:
 >>> np.random.seed(12345)
 >>> obs, cm_hist, cm_future = np.random.normal(loc = 3, size = 40000).reshape((10000, 2, 2)), np.random.normal(loc = 5, size = 40000).reshape((10000, 2, 2)), np.random.normal(loc = 7, size = 40000).reshape((10000, 2, 2))
 
-Every debiaser can be instatiated using :py:func:`from_variable` and a standard abbrevation for a meteorological variable following the cs-convention (TODO: check)::
+Every debiaser can be instatiated using :py:func:`from_variable` and a standard abbrevation for a meteorological variable following the CMIP-convention::
 
 >>> debiaser = CDFt.from_variable("tas")
 
-This instantiates a debiaser with default settings for `"tas"`. Variables currently supported across debiasers are:: 
+This instantiates a debiaser with default settings for `"tas"` (daily mean 2m air surface temperature (K)). 
 
-["hurs", "pr", "prsnratio", "ps", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]
-
-Applying the initiliased debiaser is as easy as follows. Given some climate model data (cm_hist`, `cm_fut` and observations `obs` it is just:
+The following code the applies this debiaser, given the data 'obs', 'cm_hist' and 'cm_future'.
 
 >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
 
+
+
+**Variable support**
+
+Variables currently supported across debiasers include:: 
+
+["hurs", "pr", "prsnratio", "ps", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]
+
+However, whereas some bias correction methods such as ISIMIP have explicitly been published and implemented for all these variables 
+(tasmin and tasmax are not explicitely debiased but can be calculated from tas, tasrange and taskew), other methods have been published only for
+specific variables such as precipitation or temperature. Where possible, we have come up with informed choices for the default settings of other variables 
+as well. The following table provides an overview of which debiasers currently have which default settings for which variables. Setting in italics signify so-called
+'experimental default settings' that have been chosen by the creators of this package and have yet to show their usefulness in practice. 
+
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| Debiaser   |              | CDFt      | DeltaChange | ECDFM     | ISIMIP    | LinearScaling | QuantileMapping | QuantileDeltaMapping | ScaledDistributionMapping |
++============+==============+===========+=============+===========+===========+===============+=================+======================+===========================+
+| Parameter                 | column 3  |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| Variable   | Name and Unit|           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| hurs       | Cells may span columns.  |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| pr         |              |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| psl        |              |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| rlds       | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| rsds       | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| sfcWind    | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| tas        | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| tasrange   | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| tasskew    | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| tasmin     | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+| tasmax     | Name         |           |
++------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+
+
+.. note:: A warning message is shown for all variable-debiaser combinations that are still experimental.
+
+
 **Modifying parameters**
 
-Each debiaser has settings and parameters to modify its behavior. For each variable supported by a debiaser a set of default settings exists, however it highly encouraged to modify those. This is possible either by setting them in :py:func:`from_variable` or modifying the object attribute:
+In addition to these default setting settings, the user can also modify the settings and parameters of each debiaser.
+In particular for those default settings that are still experimental, it is highly recommended to try out some modifications.
+This is possible either by setting alternative settings in :py:func:`from_variable` or modifying the object attribute:
 
 >>> debiaser = CDFt.from_variable("tas", delta_shift = "no_shift")
 
@@ -69,26 +127,18 @@ or:
 >>> debiaser = CDFt.from_variable("tas")
 >>> debiaser.delta_shift = "no_shift"
 
-It is also possible to instantiate debiasers directly by setting the necessary parameters. This is useful to apply them to variables without current default settings:
+It is also possible to instantiate debiasers by directly setting the necessary parameters, bypassing :py:func:`from_variable`:
 
 >>> debiaser1 = CDFt()
 >>> from scipy.stats import norm
 >>> debiaser2 = QuantileMapping(distribution = norm, detrending = "none")
 
-We can also apply those debiasers and compare the results:
-
->>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future)
->>> debiased_cm_future2 = debiaser2.apply(obs, cm_hist, cm_future)
->>> print(debiased_cm1.mean())
->>> print(debiased_cm2.mean())
-
-.. note:: Some default settings for some variable-debiaser combinations might be experimental. A warning message is shown.
-
-When applying we can control the verbosity with: 
+When applying the debiaser we can control the verbosity with: 
 
 >>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, verbosity = "ERROR")
 
-TODO: table debiasers x variables. Also for each debiaser table of variables supported. Possibly communicate experimental default settings here
+
+
 
 
 """
