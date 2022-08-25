@@ -32,35 +32,34 @@ default_settings = {
 @attrs.define(slots=False)
 class CDFt(Debiaser):
     """
-    |br| Implements CDF-t following Michelangeli et al. 2009, Vrac et al. 2012, Famien et al. 2018 and Vrac et al. 2016 for precipitation.
+    |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math:`F` be an empirical cdf. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`, with:
+    In this methodology, all cdfs are estimated empirically. Let :math:`F` therefore be an empirical cdf. 
+    The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`, with:
 
     .. math:: F_{\\text{obs_fut}} := F_{\\text{obs_hist}}(F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}})).
 
-    This means that :math:`x_{\\text{cm_fut}}` is mapped using the following:
+    This means that :math:`x_{\\text{cm_fut}}` is mapped using the following formula:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow F^{-1}_{\\text{obs_fut}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) = F^{-1}_{\\text{cm_fut}}(F_{\\text{cm_hist}}(F^{-1}_{\\text{obs_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))))
 
-    All cdfs here are estimated empirically.
-
-    In case a delta_shift is used the future and historical climate model run are shifted prior to fitting empirical CDFs either additively by the difference between observational mean and historical climate model mean or multiplicatively by the quotient between observational mean and historical climate model one. This means for an additive delta shift:
+    Because an empirical CDF will not be able to map values outside its fitted range, a delta shift is applied to the future and historical climate model prior to fitting empirical CDFs. This ensures that the data is approximately in the same range. This delta shift can be additive:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
     .. math:: x_{\\text{cm_hist}} \\rightarrow x_{\\text{cm_hist}} + \\bar x_{\\text{obs}} - \\bar x_{\\text{cm_hist}}
 
-    and for a multiplicative delta shift:
+    or multiplicative:
 
     .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} \\cdot \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}
     .. math:: x_{\\text{cm_hist}} \\rightarrow x_{\\text{cm_hist}} \\cdot \\frac{\\bar x_{\\text{obs}}}{\\bar x_{\\text{cm_hist}}}
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    After this shift by the mean absolute or relative bias values are mapped as above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. All CDFs :math:`F` here are estimated on the shifted values. This shifting ensures that the range of observations and cm_hist is approximately similar (important for the empirical CDFs).
+    After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. 
 
-    - If ``SSR = True`` then Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default for ``pr``). In there all zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
-    - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take into account seasonality. Otherwise the method is applied to the whole year.
+    - If ``SSR = True`` then Stochastic Singularity Removal (SSR) based on Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default setting for ``pr``). All zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
+    - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take seasonality into account. Otherwise the method is applied to the whole year.
     - If ``running_window_mode = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
 
     .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
@@ -79,7 +78,7 @@ class CDFt(Debiaser):
     SSR : bool
         If Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is applied to adjust the number of zero values (only relevant for ``pr``).
     delta_shift : str
-        One of ``["additive", "multiplicative", "no_shift"]``. What kind of shift is applied to the data prior to fitting empirical distributions.
+        One of ``["additive", "multiplicative", "no_shift"]``. Type of shift applied to the data prior to fitting empirical distributions.
     apply_by_month : bool
         Whether CDF-t is applied month by month (default) to account for seasonality or onto the whole dataset at once. Default: ``True``.
     running_window_mode : bool

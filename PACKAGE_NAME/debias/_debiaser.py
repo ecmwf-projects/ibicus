@@ -22,15 +22,13 @@ class Debiaser(ABC):
     """
     A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply debiasing.
 
-    To be able to subclass the :py:class:`debiaser`-class every debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
+    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. In order to subclass the :py:class:`debiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
 
     - :py:func:`apply_location`: applies an initialised debiaser at one location. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future). Additionally ``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
     - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as members and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
 
-    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. The :py:func:`apply` function, maps the debiaser :py:func:`apply_location` over locations,
-
-    This allows to always initialise and apply debiasers follows:
+     The :py:func:`apply` function, maps the debiaser :py:func:`apply_location` over locations. This allows to always initialise and apply debiasers follows:
 
     >>> debiaser = LinearScaling.from_variable("tas") # LinearScaling is a child-class of Debiaser
     >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
@@ -73,7 +71,7 @@ class Debiaser(ABC):
         **kwargs,
     ):
         """
-        Instanciates a class given by ``child_class`` from a variable: either a string referring to a standard variable name or a :py:class:`Variable` object.
+        Instanciates a class given by ``child_class`` from a variable: either a string referring to a standard variable name following the CMIP convention or a :py:class:`Variable` object.
 
         Parameters
         ----------
@@ -84,7 +82,7 @@ class Debiaser(ABC):
         default_settings_variable : dict
             Dict of default settings for each variables. Has :py:class:`Variable`-objects as keys (eg. ``tas``, ``hurs``) and dicts as values which map to the class parameters and store the default settings for these variables.
         experimental_default_setting_variable : dict
-            Dict of experimental default settings for variables. Has :py:class:`Variable`-objects as keys (eg. ``tas``, ``hurs``) and dicts as values which map to the class parameters and store the default settings for these variables.
+            Dict of experimental default settings for variables. Same structure as ``default_settings_variable``, but keys should be mutually exclusive with those (or else a warning will be thrown and the standard default settings will be used). Throws a warning that the default settings for this variable are still experimental if used.
         default_settings_general : dict
             Dict of general default settings (not variable specific) for the debiaser. Settings in here get overwritten by the variable specific ones. Default: `{}` (empty dict).
         **kwargs:
@@ -93,7 +91,7 @@ class Debiaser(ABC):
         # Check default and experimental default settings
         if len(intersection := (default_settings_variable.keys() & experimental_default_setting_variable.keys())) != 0:
             logging.warning(
-                f"Default and experimental default settings are not mutually exclusive for variables: {intersection}. Please review!"
+                f"Default and experimental default settings are not mutually exclusive for variables: {intersection} in debiaser {child_class.__name__}. Standard default settings are taken, but please review!"
             )
 
         # Get variable arguments
@@ -109,7 +107,7 @@ class Debiaser(ABC):
             # If experimental default settings exist
             if variable_object in experimental_default_setting_variable.keys():
                 logging.warning(
-                    f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not be covered by the literature. Please review the results with care!"
+                    f"The default settings for variable {variable} in debiaser {child_class.name} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!"
                 )
                 variable_settings = experimental_default_setting_variable[variable_object]
             else:

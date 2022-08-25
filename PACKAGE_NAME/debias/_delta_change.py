@@ -24,11 +24,13 @@ default_settings = {
 @attrs.define(slots=False)
 class DeltaChange(Debiaser):
     """
-    |br| Implements delta change scaling following Maraun 2016 as reference.
+    |br| Implements 'delta change' method following Maraun 2016 as reference.
 
-    This is technically not a debiasing of a climate model because the future climate model output gets not directly transformed. Instead it only uses the models climate trend to modify historical observations. As such the output returned from :py:func:`apply` has the same number of timesteps as obs and not like other debiasers: as cm_fut.
+    This is technically not a bias correction method because the future climate model output is not transformed. Instead, the delta change method applies the climate change trend from the model to historical observations, therefore generating modified observations rather than a modified model output.
+    So the output by :py:func:`apply` from this method has the same number of timesteps as the obs data, and not the same number as cm_fut like other debiasers.
 
-    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). Then in delta change a timeseries of future climate is generated as:
+    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). 
+    For an additive change a future timeseries is generated as:
 
     .. math::  x_{\\text{obs}} +  (\\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}})
 
@@ -38,7 +40,7 @@ class DeltaChange(Debiaser):
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    Multiplicative change is classically used for precipitation and additive scaling for temperature.
+    Multiplicative change is typically used for precipitation and additive scaling for temperature.
 
     **References**:
 

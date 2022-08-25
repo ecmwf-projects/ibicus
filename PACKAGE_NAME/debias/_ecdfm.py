@@ -27,15 +27,17 @@ class ECDFM(Debiaser):
     |br| Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    Let :math:`F_{\\text{cm_hist}}` design a cdf fitted to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
+    Let :math:`F_{\\text{cm_hist}}` be the cdf fitted as a parametric distribution to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
 
-    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) 
 
-    Differences/biases are hereby adjusted for each quantile individually. The underlying assumption is that the difference (bias) in each quantile between model and observations, stays the same between historical and future period. This relaxes the assumption of classical Quantile Mapping that the climate distribution changes in the mean, but higher moments like variance and skewness are stationary (Li et al. 2010). TODO: check
+    The difference between the future climate model data and the future climate model data quantile mapped to historical climate model data (de facto future model data bias corrected to historical model data) is added to a quantile mapping bias correction between observations and future climate model data.
+    In essence, this method says that future climate model data can be bias corrected directly with reference period observations, if the quantile specific difference between present-day and future climate model simulations is taken into account.
+    This allows for changes in higher moments in the climate model, compared to standard Quantile Mapping where just the mean is assumed to change in future climate. 
 
-    The method was originally developed with monthly data in view, however it might also be suitable for daily one.
+    The method was originally developed with monthly data in view, however the authors of this package think that there is no reason for the method not to be applicable to daily data.
 
-    .. note:: Different than in most publications Li et al. use a  4-parameter beta distribution (:py:data:`scipy.stats.beta`) for ``tas`` instead of a normal distribution. This can be slow for the fit at times. Consider modifying the ``distribution`` parameter for ``tas``.
+    .. note:: As opposed to most other publications, Li et al. use a  4-parameter beta distribution (:py:data:`scipy.stats.beta`) for ``tas`` instead of a normal distribution. This can be slow for the fit at times. Consider modifying the ``distribution`` parameter for ``tas``.
 
     For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 

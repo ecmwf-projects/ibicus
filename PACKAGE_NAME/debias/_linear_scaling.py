@@ -33,9 +33,9 @@ experimental_default_settings = {
 @attrs.define(slots=False)
 class LinearScaling(Debiaser):
     """
-    |br| Implements debiasing via linear scaling following Maraun 2016.
+    |br| Implements debiasing via linear scaling based on Maraun 2016.
 
-    In linear scaling the present day model bias is either subtracted or divided from the future climate model time-series.
+    The present day model bias is calculated and then either subtracted or divided from the future climate model data.
 
     Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). Then additive linear scaling adjusts :math:`x_{\\text{cm_fut}}` as follows:
 
