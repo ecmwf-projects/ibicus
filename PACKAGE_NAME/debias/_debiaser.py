@@ -68,8 +68,9 @@ class Debiaser(ABC):
         child_class,
         variable: Union[str, Variable],
         default_settings_variable: dict,
+        experimental_default_setting_variable: dict = {},
         default_settings_general: dict = {},
-        **kwargs
+        **kwargs,
     ):
         """
         Instanciates a class given by ``child_class`` from a variable: either a string referring to a standard variable name or a :py:class:`Variable` object.
@@ -82,27 +83,46 @@ class Debiaser(ABC):
             String or Variable object referring to standard meteorological variable for which default settings can be used.
         default_settings_variable : dict
             Dict of default settings for each variables. Has :py:class:`Variable`-objects as keys (eg. ``tas``, ``hurs``) and dicts as values which map to the class parameters and store the default settings for these variables.
+        experimental_default_setting_variable : dict
+            Dict of experimental default settings for variables. Has :py:class:`Variable`-objects as keys (eg. ``tas``, ``hurs``) and dicts as values which map to the class parameters and store the default settings for these variables.
         default_settings_general : dict
             Dict of general default settings (not variable specific) for the debiaser. Settings in here get overwritten by the variable specific ones. Default: `{}` (empty dict).
         **kwargs:
             All other class attributes that shall be set and where the standard values for variable shall be overwritten.
         """
+        # Check default and experimental default settings
+        if len(intersection := (default_settings_variable.keys() & experimental_default_setting_variable.keys())) != 0:
+            logging.warning(
+                f"Default and experimental default settings are not mutually exclusive for variables: {intersection}. Please review!"
+            )
+
+        # Get variable arguments
         if not isinstance(variable, Variable):
             variable_object = map_variable_str_to_variable_class(variable)
         else:
             variable_object = variable
 
-        if variable_object not in default_settings_variable.keys():
-            raise ValueError(
-                "Unfortunately currently no default settings exist for the variable '%s' in the debiaser %s. You can set the required class parameters manually by using the class constructor. This also allows more fine-grained optimization of the debiaser."
-                % (variable, child_class.__name__)
-            )
+        # If default settings exist
+        if variable_object in default_settings_variable.keys():
+            variable_settings = default_settings_variable[variable_object]
+        else:
+            # If experimental default settings exist
+            if variable_object in experimental_default_setting_variable.keys():
+                logging.warning(
+                    f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not be covered by the literature. Please review the results with care!"
+                )
+                variable_settings = experimental_default_setting_variable[variable_object]
+            else:
+                raise ValueError(
+                    f"Unfortunately currently no default settings exist for the variable {variable} in the debiaser {child_class.__name__}. You can set the required class parameters manually by using the class constructor."
+                )
 
+        # Instantiate class
         parameters = {
             "variable": variable_object.name,
             "reasonable_physical_range": variable_object.reasonable_physical_range,
             **default_settings_general,
-            **default_settings_variable[variable_object],
+            **variable_settings,
         }
         return child_class(**{**parameters, **kwargs})
 
@@ -124,7 +144,7 @@ class Debiaser(ABC):
             Instance of the class for the given variable.
         """
         raise NotImplementedError(
-            "abstract classmethod from_variable of debiaser-class is not implemented and needs to be overwritten in child class of the debiaser-class."
+            f"abstract classmethod from_variable of debiaser-class is not implemented class {cls.__name__} inheriting from debiaser-class. It needs to be overwritten in the child class."
         )
 
     # ----- Helpers: Input checks ----- #
