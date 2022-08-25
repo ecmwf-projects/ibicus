@@ -24,9 +24,10 @@ from ..utils import (
     threshold_cdf_vals,
     year,
 )
-from ..variables import Variable, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
+# ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
     pr: {
@@ -36,25 +37,33 @@ default_settings = {
         "censoring_threshold": 0.05 / 86400,
     },
 }
+experimental_default_settings = {
+    hurs: {"distribution": scipy.stats.beta, "trend_preservation": "relative"},
+    psl: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
+    rlds: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
+    sfcwind: {"distribution": scipy.stats.gamma, "trend_preservation": "relative"},
+    tasmin: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
+    tasmax: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
+}
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class QuantileDeltaMapping(Debiaser):
     """
     |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    
+
     Similar to the Equidistant CDF Matching Method based on Li et al. 2010 and implemented in :py:class:`ECDFM`, this method bias corrects the future climate model data directly using reference period observations. This is then multiplied by the quotient of future climate model data and a quantile mapping between past and future climate model data to account for the change from past to future period in all quantiles.
-    
+
     In mathematical terms, the transformation can be written as:
-        
+
     .. math:: x_{\\text{cm_fut, bc}} (t) = x_{\\text{cm_fut}} (t) \\cdot \\frac{F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t)))}{F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}))}
-    
+
     This variation preserves relative trends. If absolute trends are to be preserved, the transformation is equivalent to the transformation introduced in Li et al 2010:
-        
+
     .. math:: x_{\\text{cm_fut, bc}} (t) = x_{\\text{cm_fut}} (t) + F^{-1}_{\\text{obs}}(\\hat F_{\\text{cm_fut}}^{(t)}(x_{\\text{cm_fut}}(t))) - F^{-1}_{\\text{cm_hist}}(\\hat F_{\\text{cm_fut}}^{(t)} ( x_{\\text{cm_fut}})).
-    
+
     Hereby :math:`\\hat F_{\\text{cm_fut}}^{(t)}` is the empirical CDF of future climate model values in a window around t. :math:`F^{-1}_{\\text{obs}}` is the inverse CDF estimated by fitting a distribution to observations. :math:`F^{-1}_{\\text{cm_hist}}` is the inverse CDF estimated by fitting a distribution to the historical climate model run.
 
     Delta Quantile Mapping is approximately trend preserving in all quantiles because the absolute :math:`\\Delta_{\\text{cm}}^{\\text{abs}}` or relative change :math:`\\Delta_{\\text{cm}}^{\\text{rel}}` is calculated and applied for each quantile individually.
@@ -179,7 +188,7 @@ class QuantileDeltaMapping(Debiaser):
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         if (variable == "pr" or variable == pr) and (censoring_threshold := kwargs.pop("censoring_threshold", None)):
             return QuantileDeltaMapping.for_precipitation(censoring_threshold, **kwargs)
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(cls, censoring_threshold: float = 0.05 / 86400, **kwargs):

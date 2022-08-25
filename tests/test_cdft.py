@@ -43,6 +43,35 @@ class TestCDFt(unittest.TestCase):
         pr = CDFt.from_variable("pr")
         assert pr.SSR is True
 
+        # Check default arguments
+        hurs = CDFt.from_variable("hurs")
+        assert hurs.delta_shift == "multiplicative"
+
+        pr = CDFt.from_variable("pr")
+        assert pr.delta_shift == "additive"
+        assert pr.SSR == True
+
+        psl = CDFt.from_variable("psl")
+        assert psl.delta_shift == "additive"
+
+        rlds = CDFt.from_variable("rlds")
+        assert rlds.delta_shift == "additive"
+
+        rsds = CDFt.from_variable("rsds")
+        assert rsds.delta_shift == "multiplicative"
+
+        sfcWind = CDFt.from_variable("sfcWind")
+        assert sfcWind.delta_shift == "multiplicative"
+
+        tas = CDFt.from_variable("tas")
+        assert tas.delta_shift == "additive"
+
+        tasmin = CDFt.from_variable("tasmin")
+        assert tasmin.delta_shift == "additive"
+
+        tasmax = CDFt.from_variable("tasmax")
+        assert tasmax.delta_shift == "additive"
+
     def test__init__(self):
         tas_1 = CDFt.from_variable("tas")
         tas_2 = CDFt()

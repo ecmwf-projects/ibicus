@@ -107,7 +107,7 @@ class Debiaser(ABC):
             # If experimental default settings exist
             if variable_object in experimental_default_setting_variable.keys():
                 logging.warning(
-                    f"The default settings for variable {variable} in debiaser {child_class.name} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!"
+                    f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!"
                 )
                 variable_settings = experimental_default_setting_variable[variable_object]
             else:

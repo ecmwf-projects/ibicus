@@ -12,15 +12,24 @@ import attrs
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
-from ..variables import Variable, map_standard_precipitation_method, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
+# ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"distribution": scipy.stats.beta},
     pr: {"distribution": PrecipitationHurdleModelGamma},
 }
+experimental_default_settings = {
+    hurs: {"distribution": scipy.stats.beta},
+    psl: {"distribution": scipy.stats.beta},
+    rlds: {"distribution": scipy.stats.beta},
+    sfcwind: {"distribution": scipy.stats.gamma},
+    tasmin: {"distribution": scipy.stats.beta},
+    tasmax: {"distribution": scipy.stats.beta},
+}
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class ECDFM(Debiaser):
     """
@@ -29,11 +38,11 @@ class ECDFM(Debiaser):
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F_{\\text{cm_hist}}` be the cdf fitted as a parametric distribution to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
 
-    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) 
+    .. math:: x_{\\text{cm_fut}} \\rightarrow x_{\\text{cm_fut}} - F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}})) + F^{-1}_{\\text{obs}}(F_{\\text{cm_fut}}(x_{\\text{cm_fut}}))
 
     The difference between the future climate model data and the future climate model data quantile mapped to historical climate model data (de facto future model data bias corrected to historical model data) is added to a quantile mapping bias correction between observations and future climate model data.
     In essence, this method says that future climate model data can be bias corrected directly with reference period observations, if the quantile specific difference between present-day and future climate model simulations is taken into account.
-    This allows for changes in higher moments in the climate model, compared to standard Quantile Mapping where just the mean is assumed to change in future climate. 
+    This allows for changes in higher moments in the climate model, compared to standard Quantile Mapping where just the mean is assumed to change in future climate.
 
     The method was originally developed with monthly data in view, however the authors of this package think that there is no reason for the method not to be applicable to daily data.
 
@@ -67,7 +76,7 @@ class ECDFM(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(

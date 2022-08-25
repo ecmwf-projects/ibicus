@@ -14,15 +14,24 @@ import scipy
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
-from ..variables import Variable, map_standard_precipitation_method, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
+# ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"distribution": scipy.stats.norm, "detrending": "additive"},
     pr: {"distribution": PrecipitationHurdleModelGamma, "detrending": "multiplicative"},
 }
+experimental_default_settings = {
+    hurs: {"distribution": scipy.stats.beta, "detrending": "multiplicative"},
+    psl: {"distribution": scipy.stats.beta, "detrending": "additive"},
+    rlds: {"distribution": scipy.stats.beta, "detrending": "additive"},
+    sfcwind: {"distribution": scipy.stats.gamma, "detrending": "multiplicative"},
+    tasmin: {"distribution": scipy.stats.beta, "detrending": "additive"},
+    tasmax: {"distribution": scipy.stats.beta, "detrending": "additive"},
+}
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class QuantileMapping(Debiaser):
     """
@@ -78,7 +87,7 @@ class QuantileMapping(Debiaser):
     # ----- Constructors -----
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     @classmethod
     def for_precipitation(

@@ -46,6 +46,34 @@ class TestLinearScaling(unittest.TestCase):
         with self.assertRaises(ValueError):
             LinearScaling(delta_type="none")
 
+        # Check default arguments
+        hurs = LinearScaling.from_variable("hurs")
+        assert hurs.delta_type == "multiplicative"
+
+        pr = LinearScaling.from_variable("pr")
+        assert pr.delta_type == "multiplicative"
+
+        psl = LinearScaling.from_variable("psl")
+        assert psl.delta_type == "additive"
+
+        rlds = LinearScaling.from_variable("rlds")
+        assert rlds.delta_type == "additive"
+
+        rsds = LinearScaling.from_variable("rsds")
+        assert rsds.delta_type == "multiplicative"
+
+        sfcWind = LinearScaling.from_variable("sfcWind")
+        assert sfcWind.delta_type == "multiplicative"
+
+        tas = LinearScaling.from_variable("tas")
+        assert tas.delta_type == "additive"
+
+        tasmin = LinearScaling.from_variable("tasmin")
+        assert tasmin.delta_type == "additive"
+
+        tasmax = LinearScaling.from_variable("tasmax")
+        assert tasmax.delta_type == "additive"
+
     def test__init__(self):
         tas_1 = LinearScaling.from_variable("tas")
         tas_2 = LinearScaling(delta_type="additive")

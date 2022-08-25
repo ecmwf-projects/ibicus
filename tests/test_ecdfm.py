@@ -52,6 +52,34 @@ class TestECDFM(unittest.TestCase):
         pr = ECDFM.from_variable("pr")
         assert pr.distribution == PrecipitationHurdleModelGamma
 
+        # Check default arguments
+        hurs = ECDFM.from_variable("hurs")
+        assert hurs.distribution == scipy.stats.beta
+
+        pr = ECDFM.from_variable("pr")
+        assert pr.distribution == PrecipitationHurdleModelGamma
+
+        psl = ECDFM.from_variable("psl")
+        assert psl.distribution == scipy.stats.beta
+
+        rlds = ECDFM.from_variable("rlds")
+        assert rlds.distribution == scipy.stats.beta
+
+        with self.assertRaises(ValueError):
+            ECDFM.from_variable("rsds")
+
+        sfcWind = ECDFM.from_variable("sfcWind")
+        assert sfcWind.distribution == scipy.stats.gamma
+
+        tas = ECDFM.from_variable("tas")
+        assert tas.distribution == scipy.stats.beta
+
+        tasmin = ECDFM.from_variable("tasmin")
+        assert tasmin.distribution == scipy.stats.beta
+
+        tasmax = ECDFM.from_variable("tasmax")
+        assert tasmax.distribution == scipy.stats.beta
+
     def test__init__(self):
         tas_1 = ECDFM.from_variable("tas")
         tas_2 = ECDFM(distribution=scipy.stats.beta)

@@ -75,6 +75,45 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         assert pr4.censoring_threshold == 0.05 / 86400
         assert pr4.censor_values_to_zero
 
+        # Check default arguments
+        hurs = QuantileDeltaMapping.from_variable("hurs")
+        assert hurs.distribution == scipy.stats.beta
+        assert hurs.trend_preservation == "relative"
+
+        pr = QuantileDeltaMapping.from_variable("pr")
+        assert pr.distribution == gen_PrecipitationGammaLeftCensoredModel(
+            censoring_threshold=0.05 / 86400, censor_in_ppf=False
+        )
+        assert pr.trend_preservation == "relative"
+        assert pr.censor_values_to_zero == True
+
+        psl = QuantileDeltaMapping.from_variable("psl")
+        assert psl.distribution == scipy.stats.beta
+        assert psl.trend_preservation == "absolute"
+
+        rlds = QuantileDeltaMapping.from_variable("rlds")
+        assert rlds.distribution == scipy.stats.beta
+        assert rlds.trend_preservation == "absolute"
+
+        with self.assertRaises(ValueError):
+            QuantileDeltaMapping.from_variable("rsds")
+
+        sfcWind = QuantileDeltaMapping.from_variable("sfcWind")
+        assert sfcWind.distribution == scipy.stats.gamma
+        assert sfcWind.trend_preservation == "relative"
+
+        tas = QuantileDeltaMapping.from_variable("tas")
+        assert tas.distribution == scipy.stats.norm
+        assert tas.trend_preservation == "absolute"
+
+        tasmin = QuantileDeltaMapping.from_variable("tasmin")
+        assert tasmin.distribution == scipy.stats.beta
+        assert tasmin.trend_preservation == "absolute"
+
+        tasmax = QuantileDeltaMapping.from_variable("tasmax")
+        assert tasmax.distribution == scipy.stats.beta
+        assert tasmax.trend_preservation == "absolute"
+
     def test__init__(self):
         tas_1 = QuantileDeltaMapping.from_variable("tas")
         tas_2 = QuantileDeltaMapping(distribution=scipy.stats.norm, trend_preservation="absolute")

@@ -19,9 +19,10 @@ from ..utils import (
     interp_sorted_cdf_vals_on_given_length,
     threshold_cdf_vals,
 )
-from ..variables import Variable, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
+# ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"mapping_type": "absolute", "distribution": scipy.stats.norm},
     pr: {
@@ -31,8 +32,12 @@ default_settings = {
         "distribution_fit_kwargs": {"floc": 0},
     },
 }
+experimental_default_settings = {
+    tasmin: {"mapping_type": "absolute", "distribution": scipy.stats.norm},
+    tasmax: {"mapping_type": "absolute", "distribution": scipy.stats.norm},
+}
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class ScaledDistributionMapping(Debiaser):
     """
@@ -125,7 +130,7 @@ class ScaledDistributionMapping(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     def apply_location_relative_sdm(self, obs, cm_hist, cm_future):
 

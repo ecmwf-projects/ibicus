@@ -182,7 +182,7 @@ def map_variable_str_to_variable_class(variable_str: str):
     variable_str = variable_str.lower()
     if variable_str not in str_to_variable_class.keys():
         raise ValueError(
-            "%s not known as variable. Variable needs to be one of %s"
+            "%s is not known as variable. Variable needs to be one of %s"
             % (variable_str, list(str_to_variable_class.keys()))
         )
     return str_to_variable_class.get(variable_str)

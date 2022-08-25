@@ -20,22 +20,31 @@ from ..utils import (
     month,
     year,
 )
-from ..variables import Variable, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
 default_settings = {
-    tas: {"SSR": False},
-    pr: {"SSR": True},
+    tas: {"delta_shift": "additive"},
+    pr: {"delta_shift": "additive", "SSR": True},
+    tasmin: {"delta_shift": "additive"},
+    tasmax: {"delta_shift": "additive"},
+}
+experimental_default_settings = {
+    hurs: {"delta_shift": "multiplicative"},
+    psl: {"delta_shift": "additive"},
+    rlds: {"delta_shift": "additive"},
+    rsds: {"delta_shift": "multiplicative"},
+    sfcwind: {"delta_shift": "multiplicative"},
 }
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class CDFt(Debiaser):
     """
     |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
-    In this methodology, all cdfs are estimated empirically. Let :math:`F` therefore be an empirical cdf. 
+    In this methodology, all cdfs are estimated empirically. Let :math:`F` therefore be an empirical cdf.
     The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`, with:
 
     .. math:: F_{\\text{obs_fut}} := F_{\\text{obs_hist}}(F^{-1}_{\\text{cm_hist}}(F_{\\text{cm_fut}})).
@@ -56,7 +65,7 @@ class CDFt(Debiaser):
 
     Here :math:`\\bar x` stands for the mean over all x-values.
 
-    After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`. 
+    After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`.
 
     - If ``SSR = True`` then Stochastic Singularity Removal (SSR) based on Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default setting for ``pr``). All zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
     - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take seasonality into account. Otherwise the method is applied to the whole year.
@@ -138,7 +147,7 @@ class CDFt(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     # ----- Helpers: General ----- #
     @staticmethod

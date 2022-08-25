@@ -12,15 +12,25 @@ from typing import Union
 import attrs
 import numpy as np
 
-from ..variables import Variable, pr, tas
+from ..variables import *
 from ._debiaser import Debiaser
 
+# ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"delta_type": "additive"},
     pr: {"delta_type": "multiplicative"},
 }
+experimental_default_settings = {
+    hurs: {"delta_type": "multiplicative"},
+    psl: {"delta_type": "additive"},
+    rlds: {"delta_type": "additive"},
+    rsds: {"delta_type": "multiplicative"},
+    sfcwind: {"delta_type": "multiplicative"},
+    tasmin: {"delta_type": "additive"},
+    tasmax: {"delta_type": "additive"},
+}
 
-
+# ----- Debiaser ----- #
 @attrs.define(slots=False)
 class DeltaChange(Debiaser):
     """
@@ -29,7 +39,7 @@ class DeltaChange(Debiaser):
     This is technically not a bias correction method because the future climate model output is not transformed. Instead, the delta change method applies the climate change trend from the model to historical observations, therefore generating modified observations rather than a modified model output.
     So the output by :py:func:`apply` from this method has the same number of timesteps as the obs data, and not the same number as cm_fut like other debiasers.
 
-    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run). 
+    Let :math:`x_{\\text{obs}}` be the observed timeseries :math:`x_{\\text{cm_hist}}` the simulated historical one and :math:`x_{\\text{cm_fut}}` the simulated future one (climate model historical and future run).
     For an additive change a future timeseries is generated as:
 
     .. math::  x_{\\text{obs}} +  (\\bar x_{\\text{cm_fut}} - \\bar x_{\\text{cm_hist}})
@@ -61,7 +71,7 @@ class DeltaChange(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, **kwargs)
+        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
 
     def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
         if self.delta_type == "additive":
