@@ -110,7 +110,7 @@ class ThresholdMetric:
         Parameters
         ----------
         dataset : np.ndarray
-            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+            Input data, either observations or climate projections to be analysed, numeric entries expected.
         """
 
         mask_threshold_condition = self._get_mask_threshold_condition(dataset)
