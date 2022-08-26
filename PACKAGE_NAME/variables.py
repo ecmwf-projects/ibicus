@@ -89,7 +89,7 @@ prsnratio = Variable("Daily mean snowfall flux / Daily mean precipitation", unit
 Daily mean snowfall flux / Daily mean precipitation, unit: 1
 """
 
-psl = Variable(name="Daily mean sea-level pressure", unit="Pa")
+psl = Variable(name="Daily mean sea-level pressure", unit="Pa", reasonable_physical_range=[0, 1000000])
 """
 Daily mean sea-level pressure, unit: Pa
 """
@@ -104,7 +104,7 @@ rsds = Variable(name="Daily mean surface downwelling shortwave radiation", unit=
 Daily mean surface downwelling shortwave radiation, unit: W m-2
 """
 
-sfcwind = Variable(name="Daily mean near-surface wind speed", unit="m s-1")
+sfcwind = Variable(name="Daily mean near-surface wind speed", unit="m s-1", reasonable_physical_range=[0, 500])
 """
 Daily mean near-surface wind speed, unit: m s-1
 """
@@ -125,14 +125,14 @@ Daily maximum near-surface air temperature, unit: K
 """
 
 tasrange = Variable(
-    name="Daily near-surface air temperature range (tasmax-tasmin)", unit="K", reasonable_physical_range=[0, 400]
+    name="Daily near-surface air temperature range (tasmax-tasmin)", unit="K", reasonable_physical_range=[0, 100]
 )
 """
 Daily near-surface air temperature range (tasmax-tasmin), unit: K
 """
 
 tasskew = Variable(
-    name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 400]
+    name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 100]
 )
 """
 Daily near-surface air temperature skew (tas-tasmin)/tasrange, unit: 1
