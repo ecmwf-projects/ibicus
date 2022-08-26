@@ -704,7 +704,7 @@ class ISIMIP(Debiaser):
     ):
 
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
-        if self.has_threshold and not self.nonparametric_qm:
+        if self.has_threshold and not self.nonparametric_qm and cm_future_sorted_entries_between_thresholds.size > 0:
             cm_future_sorted_entries_not_sent_to_bound = quantile_map_x_on_y_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
                 y=cm_future_sorted_entries_between_thresholds,
@@ -713,7 +713,11 @@ class ISIMIP(Debiaser):
                 iecdf_method=self.iecdf_method,
             )
 
-        if self.nonparametric_qm:
+        if self.nonparametric_qm or cm_future_sorted_entries_between_thresholds.size == 0:
+            if not self.nonparametric_qm and cm_future_sorted_entries_between_thresholds.size == 0:
+                warning(
+                    "Step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold."
+                )
             return quantile_map_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
                 y=obs_future_sorted_entries_between_thresholds,
