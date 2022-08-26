@@ -35,6 +35,8 @@ experimental_default_settings = {
     rlds: {"delta_shift": "additive"},
     rsds: {"delta_shift": "multiplicative"},
     sfcwind: {"delta_shift": "multiplicative"},
+    tasrange: {"delta_shift": "additive"},
+    tasskew: {"delta_shift": "multiplicative"},
 }
 
 # ----- Debiaser ----- #
