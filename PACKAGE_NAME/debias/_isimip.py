@@ -20,6 +20,7 @@ from ..utils import (
     StatisticalModel,
     day_of_year,
     ecdf,
+    get_mask_for_unique_subarray,
     get_years_and_yearly_means,
     iecdf,
     infer_and_create_time_arrays_if_not_given,
@@ -1117,8 +1118,12 @@ class ISIMIP(Debiaser):
                     years_obs_hist=years_obs[indices_window_obs],
                     years_cm_hist=years_cm_hist[indices_window_cm_hist],
                     years_cm_future=years_cm_future[indices_window_cm_future],
-                )[np.in1d(indices_window_cm_future, indices_bias_corrected_values)]
-
+                )[
+                    np.logical_and(
+                        np.in1d(indices_window_cm_future, indices_bias_corrected_values),
+                        get_mask_for_unique_subarray(indices_window_cm_future),
+                    )
+                ]
         else:
             months_obs = month(time_obs)
             months_cm_hist = month(time_cm_hist)
