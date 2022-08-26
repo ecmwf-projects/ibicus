@@ -72,6 +72,12 @@ class TestCDFt(unittest.TestCase):
         tasmax = CDFt.from_variable("tasmax")
         assert tasmax.delta_shift == "additive"
 
+        tasrange = CDFt.from_variable("tasrange")
+        assert tasrange.delta_shift == "additive"
+
+        tasskew = CDFt.from_variable("tasskew")
+        assert tasskew.delta_shift == "multiplicative"
+
     def test__init__(self):
         tas_1 = CDFt.from_variable("tas")
         tas_2 = CDFt()
