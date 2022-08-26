@@ -8,6 +8,8 @@
 
 import logging
 from abc import ABC, abstractmethod
+from functools import partial
+from multiprocessing import Pool
 from typing import Optional, Union
 
 import attrs
@@ -251,17 +253,17 @@ class Debiaser(ABC):
         # in reasonable physical range:
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(obs):
             logging.warning(
-                "obs contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                "obs contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
                 % (self.reasonable_physical_range, self.variable)
             )
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_hist):
             logging.warning(
-                "cm_hist contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                "cm_hist contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
                 % (self.reasonable_physical_range, self.variable)
             )
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_future):
             logging.warning(
-                "cm_future contains values outside the reasonable physical range of %s for the variable: %s. It is recommended to check the input."
+                "cm_future contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
                 % (self.reasonable_physical_range, self.variable)
             )
 
@@ -348,6 +350,26 @@ class Debiaser(ABC):
             output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs)
         return output
 
+    @staticmethod
+    def parallel_map_over_locations(func, output_size, obs, cm_hist, cm_future, nr_processes=4, **kwargs):
+
+        # compute results
+        indices = [(i, j) for i in range(obs.shape[1]) for j in range(obs.shape[2])]
+        with Pool(processes=nr_processes) as pool:
+            result = pool.starmap(
+                partial(func, **kwargs), [(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j]) for (i, j) in indices]
+            )
+
+        # fill output
+        output = np.empty(output_size, dtype=cm_future.dtype)
+        for k, index in enumerate(indices):
+            output[:, index[0], index[1]] = result[k]
+
+        # result = np.array(result)
+        # result = np.moveaxis(result.reshape(obs.shape[1], obs.shape[2], obs.shape[0]), -1, 0)
+
+        return output
+
     # ----- Apply functions ----- #
 
     @abstractmethod
@@ -371,7 +393,7 @@ class Debiaser(ABC):
         """
         pass
 
-    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", **kwargs):
+    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", parallelize=False, nr_processes=4, **kwargs):
         """
         Applies the debiaser onto given data.
 
@@ -385,6 +407,14 @@ class Debiaser(ABC):
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         verbosity : str
             One of ``["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]``. Determines the verbosity of the debiaser. Default: ``"INFO"``.
+        parallelize : bool = False
+            Whether the debiasing shall be executed in parallel. Default: ``False``.
+
+            .. warning:: This feature is still experimental and might be removed or changed in future versions.
+        nr_processes : int = 4
+            Number of processes for parallel code execution. Default: 4.
+
+            .. warning:: This feature is still experimental and might be removed or changed in future versions.
 
         Returns
         -------
@@ -397,9 +427,25 @@ class Debiaser(ABC):
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
-        output = Debiaser.map_over_locations(
-            self.apply_location, output_size=cm_future.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future, **kwargs
-        )
+        if parallelize:
+            output = Debiaser.parallel_map_over_locations(
+                self.apply_location,
+                output_size=cm_future.shape,
+                obs=obs,
+                cm_hist=cm_hist,
+                cm_future=cm_future,
+                nr_processes=nr_processes,
+                **kwargs,
+            )
+        else:
+            output = Debiaser.map_over_locations(
+                self.apply_location,
+                output_size=cm_future.shape,
+                obs=obs,
+                cm_hist=cm_hist,
+                cm_future=cm_future,
+                **kwargs,
+            )
 
         self._check_output(output)
 
