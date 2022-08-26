@@ -239,7 +239,7 @@ class ThresholdMetric:
 
         return plot_data
 
-    def calculate_spatial_clusters(self, **climate_data):
+    def calculate_spatial_extent(self, **climate_data):
         """
         Returns a `py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
@@ -338,7 +338,7 @@ class ThresholdMetric:
         """
 
         temporal_data = self.calculate_spell_length(minimum_length, **climate_data)
-        spatial_data = self.calculate_spatial_clusters(**climate_data)
+        spatial_data = self.calculate_spatial_extent(**climate_data)
         spatiotemporal_data = self.calculate_spatiotemporal_clusters(**climate_data)
 
         fig, ax = plt.subplots(1, 3, figsize=(16, 6))
