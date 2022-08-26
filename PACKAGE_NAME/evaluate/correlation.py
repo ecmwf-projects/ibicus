@@ -30,10 +30,14 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
     ----------
     variable : str
         Variable name, has to be given in standard form specified in documentation.
-    dataset : np.ndarray
-        Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-    distribution_names:
-        Distribution functions to be tested.
+    obs_data : np.ndarray
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.  
+    cm_data :
+        Keyword arguments specifying climate model datasets, for example: QM = tas_debiased_QM
+
+    Example
+    -------
+    >>> tas_rmsd_spatial = rmse_spatial_correlation_distribution(variable = 'tas', obs_data = tas_obs_validate, raw = tas_cm_future, QDM = tas_val_debiased_QDM)
 
     """
 
@@ -76,8 +80,11 @@ def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manua
         Variable name, has to be given in standard form specified in documentation.
     dataset : pd.DataFrame
         Ouput format of function :py:func:`rmse_spatial_correlation_distribution`
+    manual_title : str
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.  
 
     """
+    
     # create figure and plot
     fig = plt.figure(figsize=(8, 6))
     seaborn.boxplot(y="RMSE spatial correlation", x="Correction Method", data=dataset, palette="colorblind")
@@ -94,18 +101,22 @@ def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manua
     return fig
 
 
-def calculate_multivariate_correlation_locationwise(variables, **kwargs):
+def calculate_and_plot_multivariate_correlation_locationwise(variables: list, manual_title: str = " ", **kwargs):
+    
     """
-    Calculates correlation between two variables specified in keyword arguments at each location and outputs spatial plot.
+    Calculates correlation between the two variables specified in keyword arguments (such as tas and pr) at each location and outputs spatial plot.
 
     Parameters
     ----------
-    variable : str
+    variable : list
         Variable name, has to be given in standard form specified in documentation.
+    manual_title : str
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.  
     kwargs :
         Keyword arguments specifying a list of two np.ndarrays containing the two variables of interest.
 
-    Example code:
+    Example
+    -------
     >>> correlation.calculate_multivariate_correlation_locationwise(variables = ['tas', 'pr'], obs = [tas_obs_validate, pr_obs_validate], raw = [tas_cm_validate, pr_cm_validate], ISIMIP = [tas_val_debiased_ISIMIP, pr_val_debiased_ISIMIP])
 
     """
@@ -122,19 +133,16 @@ def calculate_multivariate_correlation_locationwise(variables, **kwargs):
         for i, j in np.ndindex(variable1.shape[1:]):
             correlation_matrix[k][i, j] = np.corrcoef(variable1[:, i, j].T, variable2[:, i, j].T)[0, 1]
 
+    # set axis bounds to maximum value attained
     axis_max = max(
         abs(max(np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values())))))),
         abs(min(np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values())))))),
     )
     axis_min = -axis_max
 
+    # create figure and plot
     fig_width = 6 * len(kwargs.keys())
     fig, ax = plt.subplots(1, len(kwargs.keys()), figsize=(fig_width, 5))
-    fig.suptitle(
-        "Multivariate Correlation: {} and {}".format(
-            variable_dictionary.get(variables[0]).get("name"), variable_dictionary.get(variables[1]).get("name")
-        )
-    )
 
     i = 0
     for k in kwargs.keys():
@@ -143,6 +151,15 @@ def calculate_multivariate_correlation_locationwise(variables, **kwargs):
         ax[i].set_title("{}".format(k))
         fig.colorbar(plot, ax=ax[i])
         i = i + 1
+
+    # set plot title
+    if variable in str_to_variable_class.keys():
+        plot_title = "Multivariate Correlation: {} and {}".format(
+                    map_variable_str_to_variable_class(variable[0]).name, map_variable_str_to_variable_class(variable[1]).name)
+    else:
+        plot_title = manual_title
+        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+    fig.suptitle(plot_title)
 
     return fig
 
