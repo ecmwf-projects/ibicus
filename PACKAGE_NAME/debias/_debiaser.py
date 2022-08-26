@@ -320,12 +320,12 @@ class Debiaser(ABC):
 
         if verbosity == "INFO":
             level = logging.INFO
-        elif verbosity == "WARNING":
+        elif verbosity == "WARNINGS_AND_ERRORS":
             level = logging.WARNING
-        elif verbosity == "ERROR":
+        elif verbosity == "ERRORS_ONLY":
             level = logging.ERROR
         else:
-            raise ValueError('verbosity needs to be one of ["INFO", "WARNING", "ERROR"]')
+            raise ValueError('verbosity needs to be one of ["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]')
 
         logging.basicConfig(encoding="utf-8", level=level)
         logging.getLogger().setLevel(level)
@@ -384,7 +384,7 @@ class Debiaser(ABC):
         cm_future : np.ndarray
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         verbosity : str
-            One of ``["INFO", "WARNING", "ERROR"]``. Determines the verbosity of the debiaser. Default: ``"INFO"``.
+            One of ``["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]``. Determines the verbosity of the debiaser. Default: ``"INFO"``.
 
         Returns
         -------
