@@ -39,7 +39,7 @@ from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 @attrs.define(slots=False)
 class ISIMIP(Debiaser):
     """
-    |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology following Lange 2019 and Lange 2021.
+    |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology based on Lange 2019 and Lange 2021.
 
     ISIMIP is a bias correction methodology covering the following variables::
 
@@ -796,7 +796,7 @@ class ISIMIP(Debiaser):
     def step1(self, obs_hist, cm_hist, cm_future, time_obs_hist, time_cm_hist, time_cm_future):
         """
         Step 1: if ``scale_by_annual_cycle_of_upper_bounds = True`` (``rsds`` only).
-        Scales obs, cm_hist and cm_future values to [0, 1] by computing an annual cycle of upper bounds as "running mean values of running maximum values of multiyear daily maximum values." (Lange 2019). 
+        Scales obs, cm_hist and cm_future values to [0, 1] by computing an annual cycle of upper bounds as "running mean values of running maximum values of multiyear daily maximum values." (Lange 2019).
         Furthermore return a debiased annual cycle of upper bounds to rescale cm_future values in step8.
         """
         debiased_annual_cycle = None

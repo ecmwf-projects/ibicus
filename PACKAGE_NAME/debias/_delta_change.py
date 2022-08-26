@@ -34,7 +34,7 @@ experimental_default_settings = {
 @attrs.define(slots=False)
 class DeltaChange(Debiaser):
     """
-    |br| Implements 'delta change' method following Maraun 2016 as reference.
+    |br| Implements 'delta change' method based on Maraun 2016 as reference.
 
     This is technically not a bias correction method because the future climate model output is not transformed. Instead, the delta change method applies the climate change trend from the model to historical observations, therefore generating modified observations rather than a modified model output.
     So the output by :py:func:`apply` from this method has the same number of timesteps as the obs data, and not the same number as cm_fut like other debiasers.
