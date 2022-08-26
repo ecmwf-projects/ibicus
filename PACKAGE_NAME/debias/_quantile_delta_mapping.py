@@ -20,6 +20,7 @@ from ..utils import (
     day_of_year,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
+    get_mask_for_unique_subarray,
     infer_and_create_time_arrays_if_not_given,
     threshold_cdf_vals,
     year,
@@ -362,7 +363,12 @@ class QuantileDeltaMapping(Debiaser):
                     cm_hist=cm_hist[indices_window_cm_hist],
                     cm_future=cm_future[indices_window_cm_future],
                     years_cm_future=years_cm_future[indices_window_cm_future],
-                )[np.in1d(indices_window_cm_future, indices_bias_corrected_values)]
+                )[
+                    np.logical_and(
+                        np.in1d(indices_window_cm_future, indices_bias_corrected_values),
+                        get_mask_for_unique_subarray(indices_window_cm_future),
+                    )
+                ]
 
             return debiased_cm_future
 

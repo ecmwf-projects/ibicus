@@ -415,7 +415,7 @@ def get_prsn(pr: np.ndarray, prsnratio: np.ndarray) -> np.ndarray:
 
 
 def _unpack_df_of_numpy_arrays(df, numpy_column_name):
-    
+
     new_expanded_rows = []
     for _, row in df.iterrows():
         expanded_row = {}
@@ -428,9 +428,12 @@ def _unpack_df_of_numpy_arrays(df, numpy_column_name):
 
     expanded_df = pd.concat(new_expanded_rows)
     expanded_df[numpy_column_name] = pd.to_numeric(expanded_df[numpy_column_name])
-    
+
     return expanded_df
 
 
-
-
+def get_mask_for_unique_subarray(x):
+    _, indices = np.unique(x, return_index=True)
+    mask = np.zeros_like(x).astype(bool)
+    mask[indices] = True
+    return mask
