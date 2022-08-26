@@ -69,14 +69,22 @@ There are two types of analysis that the evaluation module enables you to conduc
 >>> frost_days = ThresholdMetric(name="Frost days (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower")
 
 The following table provides an overview of the different components that can be analysed in each of these two categories:
-    
-|                  | Statistical Properties    | Threshold Metrics   |
-| ------------     | ----------------------    | -----------------   |
-| **Marginal**     | x - marginal bias         | x - marginal bias   |
-| **Temporal**     |                           | x - spell length    |
-| **Spatial**      | x - RMSE of corr matrices | x - spatial extent  |
-| **Spatioteporal**|                           | x - cluster size    |
-| **Multivariate** | x - correlation           | x - joint exceedance|
+
+
++----------------+------------------------+-----------------------+
+|                | Statistical properties | Threshold metrics     | 
++================+========================+=======================+
+| Marginal       | x                      |  x                    | 
++----------------+------------------------+-----------------------+
+| Temporal       |                        |  x (spell length)     |
++----------------+------------------------+-----------------------+
+| Spatial        | x (RMSE)               | x (spatial extent)    |
++----------------+------------------------+-----------------------+
+| Spatiotemporal |                        |  x (cluster size)     |
++----------------+------------------------+-----------------------+
+| Multivariate   | x (correlation)        |  x (joint exceedance) |
++----------------+------------------------+-----------------------+
+
 
 
 Within the metrics class, the following functions are available:
