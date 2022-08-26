@@ -135,13 +135,13 @@ It is also possible to instantiate debiasers by directly setting the necessary p
 >>> from scipy.stats import norm
 >>> debiaser2 = QuantileMapping(distribution = norm, detrending = "none")
 
+Some debiasers (a.o :py:class:`QuantileMapping`) offer additionally a ``for_precipitation``-method. Precipitation often has additional settings that are necessary: like the selection of a threshold under which it is assumed necessary. The `for_precipication` method helps with that:
+
+>>> pr_debiaser = QuantileMapping.for_precipitation(model_type = "censored")
+
 When applying the debiaser we can control the verbosity with: 
 
->>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, verbosity = "ERROR")
-
-
-
-
+>>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, verbosity = "ERRORS_ONLY")
 
 """
 
