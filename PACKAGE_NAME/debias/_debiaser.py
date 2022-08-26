@@ -393,7 +393,7 @@ class Debiaser(ABC):
         """
         pass
 
-    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", parallelize=False, nr_processes=4, **kwargs):
+    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", parallel=False, nr_processes=4, **kwargs):
         """
         Applies the debiaser onto given data.
 
@@ -407,7 +407,7 @@ class Debiaser(ABC):
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         verbosity : str
             One of ``["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]``. Determines the verbosity of the debiaser. Default: ``"INFO"``.
-        parallelize : bool = False
+        parallel : bool = False
             Whether the debiasing shall be executed in parallel. Default: ``False``.
 
             .. warning:: This feature is still experimental and might be removed or changed in future versions.
@@ -427,7 +427,7 @@ class Debiaser(ABC):
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
 
-        if parallelize:
+        if parallel:
             output = Debiaser.parallel_map_over_locations(
                 self.apply_location,
                 output_size=cm_future.shape,
