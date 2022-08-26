@@ -336,6 +336,6 @@ class ScaledDistributionMapping(Debiaser):
         if self.mapping_type == "absolute":
             return self.apply_location_absolute_sdm(obs, cm_hist, cm_future)
         elif self.mapping_type == "relative":
-            pass
+            return self.apply_location_relative_sdm(obs, cm_hist, cm_future)
         else:
             raise ValueError('self.mapping_type needs too be one of ["absolute", "relative"].')
