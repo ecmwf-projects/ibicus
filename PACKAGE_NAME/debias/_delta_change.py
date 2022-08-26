@@ -19,6 +19,8 @@ from ._debiaser import Debiaser
 default_settings = {
     tas: {"delta_type": "additive"},
     pr: {"delta_type": "multiplicative"},
+    tasmin: {"delta_type": "additive"},
+    tasmax: {"delta_type": "additive"},
 }
 experimental_default_settings = {
     hurs: {"delta_type": "multiplicative"},
@@ -26,8 +28,6 @@ experimental_default_settings = {
     rlds: {"delta_type": "additive"},
     rsds: {"delta_type": "multiplicative"},
     sfcwind: {"delta_type": "multiplicative"},
-    tasmin: {"delta_type": "additive"},
-    tasmax: {"delta_type": "additive"},
 }
 
 # ----- Debiaser ----- #
