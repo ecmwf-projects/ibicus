@@ -18,7 +18,7 @@ The variables below represent all variables currently recognized by the package 
     psl
     rlds
     rsds
-    sfcWind
+    sfcwind
     tas
     tasmin
     tasmax
@@ -36,7 +36,13 @@ import PACKAGE_NAME.utils as utils
 @attrs.define(eq=False)
 class Variable:
     """
-    Variable class: abstract interface for all climatic variables.
+    Provides an abstract interface for climatic variables
+
+    It stores some essential attributes of the variable and is mainly used for internal purposes, however defining new ones is also possible.
+
+    Examples
+    --------
+    >>> hurs = Variable(name="Daily mean near-surface relative humidity", unit="%").
 
     Attributes
     ----------

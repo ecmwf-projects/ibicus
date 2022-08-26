@@ -33,7 +33,7 @@ experimental_default_settings = {
 @attrs.define(slots=False)
 class ECDFM(Debiaser):
     """
-    |br| Implements Equidistant CDF Matching (ECDFM) following Li et al. 2010.
+    |br| Implements Equidistant CDF Matching (ECDFM) based on Li et al. 2010.
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F_{\\text{cm_hist}}` be the cdf fitted as a parametric distribution to climate model output data in the reference period. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped to:
