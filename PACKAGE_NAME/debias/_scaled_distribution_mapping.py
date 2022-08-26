@@ -100,6 +100,9 @@ class ScaledDistributionMapping(Debiaser):
 
     - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
 
+    - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
+
+
     |br|
     **Examples:**
 
@@ -144,6 +147,21 @@ class ScaledDistributionMapping(Debiaser):
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+
+    @classmethod
+    def for_precipitation(cls, pr_lower_threshold=0.1 / 86400, **kwargs):
+        """
+        Instanciates the class to a precipitation-debiaser. This allows an easier setting of the lower precipitation threshold (``pr_lower_threshold``) under which precipitation is assumed zero.
+
+        Parameters
+        ----------
+        pr_lower_threshold : float = 0.1/86400
+            Lower precipitation threshold under which precipitation is assumed zero.
+        **kwargs:
+            All other class attributes that shall be set and where the standard values shall be overwritten.
+
+        """
+        return cls.from_variable("pr", pr_lower_threshold=pr_lower_threshold, **kwargs)
 
     def apply_location_relative_sdm(self, obs, cm_hist, cm_future):
 
