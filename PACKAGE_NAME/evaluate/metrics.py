@@ -22,6 +22,7 @@ from PACKAGE_NAME import utils
 
 @attrs.define(eq=False)
 class ThresholdMetric:
+    
     """
     Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold.
 
@@ -84,7 +85,7 @@ class ThresholdMetric:
         elif self.threshold_type == "lower":
             return x < self.threshold_value
         elif self.threshold_type == "between":
-            return np.logical_and(x >= self.threshold_value[0], x <= self.threshold_value[1])
+            return np.logical_and(x > self.threshold_value[0], x < self.threshold_value[1])
         elif self.threshold_type == "outside":
             return np.logical_and(x < self.threshold_value[0], x > self.threshold_value[1])
         else:
@@ -135,6 +136,44 @@ class ThresholdMetric:
         threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
         threshold_probability = np.einsum("ijk -> jk", threshold_data) / threshold_data.shape[0]
         return threshold_probability
+    
+    
+    def calculate_number_annual_days_beyond_threshold(self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year) -> np.ndarray:
+        
+        """
+        Calculates number of days beyond threshold for each year in the dataset.
+
+        Parameters
+        ----------
+        dataset : np.ndarray
+            Input data, either observations or climate projections to be analysed, numeric entries expected.
+        dates_array : np.ndarray
+            Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
+        time_func : functions
+            Points to utils function to either extract days or months.
+            
+        Returns
+        -------
+        np.ndarray
+            3d array - [years, lat, long]
+        """
+
+        eot_matrix = self.calculate_instances_of_threshold_exceedance(dataset)
+
+        time_array = time_func(dates_array)
+
+        years = np.unique(time_array)
+
+        threshold_exceedances = np.zeros((years.shape[0], dataset.shape[1], dataset.shape[2]))
+
+        for j in range(eot_matrix.shape[1]):
+            for k in range(eot_matrix.shape[2]):
+
+                threshold_exceedances[:, j, k] = [(eot_matrix[time_array == i, j, k].sum()) for i in years]
+
+        return threshold_exceedances
+    
+    
 
     @staticmethod
     def _calculate_spell_lengths_one_location(mask_threshold_condition_one_location):
@@ -337,58 +376,59 @@ class ThresholdMetric:
 
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
+    
     """
     Class for climate metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
 
     An example of such a metric is total precipitation by very wet days (days > 10mm precipitation).
     """
 
-    def calculate_mean_annual_value_beyond_threshold(self, dataset: np.ndarray, percentage: bool = True) -> np.ndarray:
+    def calculate_percent_of_total_amount_beyond_threshold(self, dataset: np.ndarray) -> np.ndarray:
+        
         """
-        Calculates mean annual value of the climatic variable value when the threshold condition is met for each location.
-
-        If percentage = True the result is given as percentage of the total annual value.
+        Calculates percentage of total amount beyond threshold for each location over all timesteps.
 
         Parameters
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-        percentage : bool
-            Function calculates percentage value if True, absolut annual value if False. Default: True
+            
+        Returns
+        -------
+        np.ndarray
+            2d array with percentage of total amount above threshold at each location.
         """
 
         eot_matrix = self.filter_threshold_exceedances(dataset)
-        years_in_dataset = dataset.shape[0] / 365
 
-        if percentage is True:
-            exceedance_amount = 100 * np.einsum("ijk -> jk", eot_matrix) / np.einsum("ijk -> jk", dataset)
-        else:
-            exceedance_amount = np.einsum("ijk -> jk", eot_matrix) / years_in_dataset
-        return exceedance_amount
+        exceedance_percentage = 100 * np.einsum("ijk -> jk", eot_matrix) / np.einsum("ijk -> jk", dataset)
 
-    def calculate_annual_value_beyond_threshold(
-        self, dataset: np.ndarray, time_dictionary, time_specification: str, time_func=utils.year, percentage=False
-    ) -> np.ndarray:
+        return exceedance_percentage
+    
+
+    def calculate_annual_value_beyond_threshold(self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year) -> np.ndarray:
+        
         """
-        Calculates annual total or percentage value beyond threshold for each year in the dataset.
+        Calculates amount beyond threshold for each year in the dataset.
 
         Parameters
         ----------
         dataset : np.ndarray
-            Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-        time_dictionary : dict
-            Dictionary of dates, specified from original netCDF4 input files.
-        time_specification : str
-            Dictionary keyword pointing to the dates needed for this dataset.
+            Input data, either observations or climate projections to be analysed, numeric entries expected.
+        dates_array : np.ndarray
+            Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
         time_func : functions
             Points to utils function to either extract days or months.
-        percentage : bool
-            Function calculates percentage value if True, absolut annual value if False. Default: False
+            
+        Returns
+        -------
+        np.ndarray
+            3d array - [years, lat, long]
         """
 
         eot_matrix = self.filter_threshold_exceedances(dataset)
 
-        time_array = time_func(time_dictionary[time_specification])
+        time_array = time_func(dates_array)
 
         years = np.unique(time_array)
 
@@ -397,17 +437,10 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         for j in range(eot_matrix.shape[1]):
             for k in range(eot_matrix.shape[2]):
 
-                if percentage is True:
-
-                    threshold_exceedances[:, j, k] = np.asarray(
-                        [(eot_matrix[time_array == i, j, k].sum()) for i in years]
-                    ) / np.asarray([(dataset[time_array == i, j, k].sum()) for i in years])
-
-                else:
-
-                    threshold_exceedances[:, j, k] = [(eot_matrix[time_array == i, j, k].sum()) for i in years]
+                threshold_exceedances[:, j, k] = [(eot_matrix[time_array == i, j, k].sum()) for i in years]
 
         return threshold_exceedances
+
 
     def calculate_intensity_index(self, dataset):
         """
@@ -467,7 +500,7 @@ cold_days = ThresholdMetric(name="Mean cold days (K)", variable="tas", threshold
 Cold days (<275) for `tas`.
 """
 
-# tasmin metrics
+# ----- tasmin metrics ----- #
 frost_days = ThresholdMetric(
     name="Frost days \n  (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower"
 )

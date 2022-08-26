@@ -9,6 +9,7 @@
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 
 def get_chunked_mean(x: np.ndarray, n: int) -> np.ndarray:
@@ -411,3 +412,25 @@ def get_prsn(pr: np.ndarray, prsnratio: np.ndarray) -> np.ndarray:
         Numpy array of :py:data:`prsn` values
     """
     return prsnratio * pr
+
+
+def _unpack_df_of_numpy_arrays(df, numpy_column_name):
+    
+    new_expanded_rows = []
+    for _, row in df.iterrows():
+        expanded_row = {}
+        for index, value in row.iteritems():
+            if index == numpy_column_name:
+                expanded_row[index] = value[0].flatten()
+            else:
+                expanded_row[index] = value
+        new_expanded_rows.append(pd.DataFrame(data=expanded_row))
+
+    expanded_df = pd.concat(new_expanded_rows)
+    expanded_df[numpy_column_name] = pd.to_numeric(expanded_df[numpy_column_name])
+    
+    return expanded_df
+
+
+
+

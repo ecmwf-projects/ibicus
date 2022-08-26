@@ -32,6 +32,7 @@ def _calculate_aic(dataset, distribution):
 
 
 def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.DataFrame:
+    
     """
     Calculates the Akaike Information Criterion (AIC) at each location for each of the distributions specified.
 
@@ -58,12 +59,13 @@ def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.Data
             aic.append([i, j, _calculate_aic(dataset[:, i, j], distribution), distribution.name])
 
     aic_dataframe = pd.DataFrame(aic, columns=["x", "y", "AIC value", "Distribution"])
-    aic_dataframe["AIC_value"] = pd.to_numeric(aic_dataframe["AIC value"])
+    aic_dataframe["AIC value"] = pd.to_numeric(aic_dataframe["AIC value"])
 
     return aic_dataframe
 
 
-def plot_aic(variable: str, aic_values: pd.DataFrame):
+def plot_aic(variable: str, aic_values: pd.DataFrame, manual_title: str = " "):
+    
     """
     Creates a boxplot of AIC values across all locations.
 
@@ -75,8 +77,13 @@ def plot_aic(variable: str, aic_values: pd.DataFrame):
         Pandas dataframe of type of output by calculate_aic_goodness_of_fit.
 
     """
-
-    return seaborn.boxplot(data=aic_values, x="Distribution", y="AIC value", palette="colorblind")
+    if variable in str_to_variable_class.keys():
+        plot_title = "Distribution of AIC values across locations \n {}".format(map_variable_str_to_variable_class(variable).name)
+    else:
+        plot_title = manual_title
+    
+    
+    return seaborn.boxplot(data=aic_values, x="Distribution", y="AIC value", palette="colorblind").set(title=plot_title)
 
 
 def plot_fit_worst_aic(
@@ -86,6 +93,7 @@ def plot_fit_worst_aic(
     distribution: scipy.stats.rv_continuous,
     nr_bins: Union[int, str] = "auto",
     aic_values: Optional[pd.DataFrame] = None,
+    manual_title: str = " "
 ):
     """
     Plots a histogram and overlayed fit at the location of worst AIC.
@@ -95,13 +103,13 @@ def plot_fit_worst_aic(
     Parameters
     ----------
     variable : str
-        Variable name, has to be given in standard form specified in documentation.
+        Variable name, has to be given in standard CMIP convention
     dataset : np.ndarray
-        Input data, either observations or climate projections dataset to be analysed, numeric entries expected.
-    data_type : pd.DataFrame
+        3d-input data [time, lat, long], numeric entries expected. Either observations or climate projections dataset to be analysed.
+    data_type : str
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
     distribution : scipy.stats.rv_continuous
-        Distribution providing fit
+        Distribution providing fit to the data
     nr_bins : Union[int, str] = "auto"
         Number of bins used for the histogram. Either :py:class:int` or `"auto"` (default).
     aic_values : Optional[pd.DataFrame] = None
@@ -110,8 +118,8 @@ def plot_fit_worst_aic(
     if aic_values is None:
         aic_values = calculate_aic(variable, dataset, distribution)
 
-    x_location = aic_values.loc[aic_values["AIC_value"].idxmax()]["x"]
-    y_location = aic_values.loc[aic_values["AIC_value"].idxmax()]["y"]
+    x_location = aic_values.loc[aic_values["AIC value"].idxmax()]["x"]
+    y_location = aic_values.loc[aic_values["AIC value"].idxmax()]["y"]
     data_slice = dataset[:, int(x_location), int(y_location)]
 
     fit = distribution.fit(data_slice)
@@ -123,23 +131,28 @@ def plot_fit_worst_aic(
 
     x = np.linspace(xmin, xmax, 100)
     p = distribution.pdf(x, *fit)
+    
+    if variable in str_to_variable_class.keys():
+        plot_title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
+            data_type,
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
+            distribution.name,
+            x_location,
+            y_location,
+        )
+    else:
+        plot_title = manual_title
+        raise Warning("Variable not recognized, using manual_title to generate plot_title")
 
     plt.plot(x, p, "k", linewidth=2)
-    title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
-        data_type,
-        map_variable_str_to_variable_class(variable).name,
-        map_variable_str_to_variable_class(variable).unit,
-        distribution.name,
-        x_location,
-        y_location,
-    )
-    plt.title(title)
+    plt.title(plot_title)
 
     return fig
 
 
 def plot_quantile_residuals(
-    variable: str, dataset: np.ndarray, distribution: scipy.stats.rv_continuous, data_type: str
+    variable: str, dataset: np.ndarray, distribution: scipy.stats.rv_continuous, data_type: str, manual_title: str = " "
 ):
     """
     Plots timeseries and autocorrelation function of quantile residuals, as well as a QQ-plot of normalized quantile residuals at one location.
@@ -166,16 +179,19 @@ def plot_quantile_residuals(
     q = distribution.cdf(dataset, *fit)
     q_normal = scipy.stats.norm.ppf(q)
 
-    fig, ax = plt.subplots(1, 3, figsize=(14, 4))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
 
-    fig.suptitle(
-        "{} ({}) - {}. Distribution = {}".format(
+    
+    if variable in str_to_variable_class.keys():
+        plot_title = "{} ({}) - {}. Distribution = {}".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
             data_type,
-            distribution.name,
-        )
-    )
+            distribution.name)
+    else:
+        plot_title = manual_title
+
+    fig.suptitle(plot_title)
 
     x = range(0, len(q))
     ax[0].plot(x, q)
