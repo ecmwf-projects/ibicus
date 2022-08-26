@@ -27,7 +27,8 @@ The following bias correction methodologies are currently implemented in the pac
 
 **Methodology**
 
-For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the 'Why do we need bias correction?' page. 
+For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`What is debiasing?' <getting_started/whatisdebiasing>` page. 
+
 The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output. 
 This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
 For a detailed description of their methodology, we refer you to the class descriptions and the cited publications.
@@ -60,7 +61,7 @@ Every debiaser can be instatiated using :py:func:`from_variable` and a standard 
 
 >>> debiaser = CDFt.from_variable("tas")
 
-This instantiates a debiaser with default settings for `"tas"` (daily mean 2m air surface temperature (K)). 
+This instantiates a debiaser with default settings for ``"tas"`` (daily mean 2m air surface temperature (K)). 
 
 The following code the applies this debiaser, given the data 'obs', 'cm_hist' and 'cm_future'.
 
@@ -72,52 +73,53 @@ The following code the applies this debiaser, given the data 'obs', 'cm_hist' an
 
 Variables currently supported across debiasers include:: 
 
-["hurs", "pr", "prsnratio", "ps", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]
+["hurs", "pr", "prsnratio", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]
 
 However, whereas some bias correction methods such as ISIMIP have explicitly been published and implemented for all these variables 
 (tasmin and tasmax are not explicitely debiased but can be calculated from tas, tasrange and taskew), other methods have been published only for
-specific variables such as precipitation or temperature. Where possible, we have come up with informed choices for the default settings of other variables 
-as well. The following table provides an overview of which debiasers currently have which default settings for which variables. Setting in italics signify so-called
-'experimental default settings' that have been chosen by the creators of this package and have yet to show their usefulness in practice. 
+specific variables such as precipitation or temperature. Where possible, the authors have introduced informed choices for the default settings of other variables 
+as well. 
 
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| Debiaser   |              | CDFt      | DeltaChange | ECDFM     | ISIMIP    | LinearScaling | QuantileMapping | QuantileDeltaMapping | ScaledDistributionMapping |
-+============+==============+===========+=============+===========+===========+===============+=================+======================+===========================+
-| Parameter                 | column 3  |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| Variable   | Name and Unit|           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| hurs       | Cells may span columns.  |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| pr         |              |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| psl        |              |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| rlds       | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| rsds       | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| sfcWind    | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| tas        | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| tasrange   | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| tasskew    | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| tasmin     | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
-| tasmax     | Name         |           |
-+------------+--------------+-----------+-------------+-----------+-----------+---------------+-----------------+----------------------+---------------------------+
+The following table provides an overview of which debiasers currently have which default settings for which variables. Crosses in brackets signify so-called
+'experimental default settings' that have been chosen by the creators of this package and and may not have been evaluated by the peer reviewed literature. It is advised to evaluate those carefully. 
 
 
-.. note:: A warning message is shown for all variable-debiaser combinations that are still experimental.
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| Variable   | :py:class:`LinearScaling` | :py:class:`DeltaChange` | :py:class:`QuantileMapping` | :py:class:`ScaledDistributionMapping` | :py:class:`CDFt`  | :py:class:`ECDFM` | :py:class:`QuantileDeltaMapping` | :py:class:`ISIMIP` |
++============+===========================+=========================+=============================+=======================================+===================+===================+==================================+====================+
+| hurs       | .. centered:: (x)         |  .. centered:: (x)      |  .. centered:: (x)          |                                       | .. centered:: (x) | .. centered:: (x) | .. centered:: (x)                | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| pr         | .. centered:: x           |  .. centered:: x        |  .. centered:: x            |  .. centered:: x                      | .. centered:: x   | .. centered:: x   | .. centered:: x                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| prsnratio  |                           |                         |                             |                                       |                   |                   |                                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| psl        | .. centered:: (x)         |  .. centered:: (x)      |  .. centered:: (x)          |                                       | .. centered:: (x) | .. centered:: (x) | .. centered:: (x)                | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| rlds       | .. centered:: (x)         |  .. centered:: (x)      |  .. centered:: (x)          |                                       | .. centered:: (x) | .. centered:: (x) | .. centered:: (x)                | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| rsds       | .. centered:: (x)         |  .. centered:: (x)      |                             |                                       | .. centered:: (x) |                   |                                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| sfcWind    | .. centered:: (x)         |  .. centered:: (x)      |  .. centered:: (x)          |                                       | .. centered:: (x) | .. centered:: (x) | .. centered:: (x)                | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| tas        | .. centered:: x           |  .. centered:: x        |  .. centered:: x            |  .. centered:: x                      | .. centered:: x   | .. centered:: x   | .. centered:: x                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| tasmin     | .. centered:: x           |  .. centered:: x        |  .. centered:: (x)          |  .. centered:: (x)                    | .. centered:: x   | .. centered:: (x) | .. centered:: (x)                |                    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| tasmax     | .. centered:: x           |  .. centered:: x        |  .. centered:: (x)          |  .. centered:: (x)                    | .. centered:: x   | .. centered:: (x) | .. centered:: (x)                |                    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| tasrange   |                           |                         |                             |                                       | .. centered:: (x) |                   |                                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+| tasskew    |                           |                         |                             |                                       | .. centered:: (x) |                   |                                  | .. centered:: x    |
++------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
+
+
+.. note:: A warning message is shown for variable-debiaser combinations that are still experimental.
 
 
 **Modifying parameters**
 
 In addition to these default setting settings, the user can also modify the settings and parameters of each debiaser.
-In particular for those default settings that are still experimental, it is highly recommended to try out some modifications.
+In particular for those default settings that are still experimental, it is highly recommended to try out some alternatives.
 This is possible either by setting alternative settings in :py:func:`from_variable` or modifying the object attribute:
 
 >>> debiaser = CDFt.from_variable("tas", delta_shift = "no_shift")
@@ -152,8 +154,3 @@ from ._linear_scaling import LinearScaling
 from ._quantile_delta_mapping import QuantileDeltaMapping
 from ._quantile_mapping import QuantileMapping
 from ._scaled_distribution_mapping import ScaledDistributionMapping
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(verbose=True, optionflags=doctest.ELLIPSIS)
