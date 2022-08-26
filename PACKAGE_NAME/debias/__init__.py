@@ -63,10 +63,9 @@ Every debiaser can be instatiated using :py:func:`from_variable` and a standard 
 
 This instantiates a debiaser with default settings for ``"tas"`` (daily mean 2m air surface temperature (K)). 
 
-The following code the applies this debiaser, given the data 'obs', 'cm_hist' and 'cm_future'.
+The following code the applies this debiaser, given the data ``obs``, ``cm_hist`` and ``cm_future``.
 
 >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
-
 
 
 **Variable support**
@@ -116,7 +115,7 @@ The following table provides an overview of which debiasers currently have which
 .. note:: A warning message is shown for variable-debiaser combinations that are still experimental.
 
 
-**Modifying parameters**
+**Setting and Modifying parameters**
 
 In addition to these default setting settings, the user can also modify the settings and parameters of each debiaser.
 In particular for those default settings that are still experimental, it is highly recommended to try out some alternatives.
@@ -135,9 +134,13 @@ It is also possible to instantiate debiasers by directly setting the necessary p
 >>> from scipy.stats import norm
 >>> debiaser2 = QuantileMapping(distribution = norm, detrending = "none")
 
-Some debiasers (a.o :py:class:`QuantileMapping`) offer additionally a ``for_precipitation``-method. Precipitation often has additional settings that are necessary: like the selection of a threshold under which it is assumed necessary. The `for_precipication` method helps with that:
+Some debiasers additionally provide a :py:func:`for_precipitation` classmethod to help you initialise the debiaser for precipitation. Debiasing precipitation often requires setting additional arguments like a threshold under which precipitation is assumed zero and the :py:func:`for_precipitation` method helps with that:
 
->>> pr_debiaser = QuantileMapping.for_precipitation(model_type = "censored")
+>>> debiaser = QuantileMapping.for_precipitation(model_type = "hurdle")
+>>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
+
+The documentation of the individual debiasers provides some information on this.
+
 
 When applying the debiaser we can control the verbosity with: 
 

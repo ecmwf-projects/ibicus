@@ -94,6 +94,19 @@ class ScaledDistributionMapping(Debiaser):
     - Switanek, M. B., Troch, P. A., Castro, C. L., Leuprecht, A., Chang, H.-I., Mukherjee, R., & Demaria, E. M. C. (2017). Scaled distribution mapping: a bias correction method that preserves raw climate model projected changes. In Hydrology and Earth System Sciences (Vol. 21, Issue 6, pp. 2649–2666). Copernicus GmbH. https://doi.org/10.5194/hess-21-2649-2017.
 
     |br|
+    **Usage information:**
+
+    - Default settings exist for: ``["pr", "tas", "tasmin", "tasmax"]``.
+
+    - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
+
+    |br|
+    **Examples:**
+
+    >>> debiaser = ScaledDistributionMapping.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
+
+    |br|
 
     Attributes
     ----------

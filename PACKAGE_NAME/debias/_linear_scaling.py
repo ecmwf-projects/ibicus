@@ -49,9 +49,22 @@ class LinearScaling(Debiaser):
 
     Multiplicative scaling is classically used for precipitation (`pr`) and additive scaling for temperature (`tas`). Additive scaling amounts to a simple mean bias correction, whilst multiplicative one adjusts both mean and variance, but keeps their ration constant (Maraun 2016).
 
-    **References**:
+    **References:**
 
     - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
+
+    |br|
+    **Usage information:**
+
+    - Default settings exist for: ``["hurs", "pr", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax"]``.
+
+    - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
+
+    |br|
+    **Examples:**
+
+    >>> debiaser = DeltaChange.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
 
     |br|
 

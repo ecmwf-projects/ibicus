@@ -61,6 +61,28 @@ class QuantileMapping(Debiaser):
     - Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211–220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
 
     |br|
+    **Usage information:**
+
+    - Default settings exist for: ``["hurs", "pr", "psl", "rlds", "sfcWind", "tas", "tasmin", "tasmax"]``.
+
+    - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
+
+    - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
+
+    |br|
+    **Examples:**
+
+    Initialising using :py:class:`from_variable`:
+
+    >>> debiaser = QuantileMapping.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
+
+    Initialising using :py:class:`for_precipitation`:
+
+    >>> debiaser = QuantileMapping.for_precipitation(model_type = "hurdle")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
+
+    |br|
 
     Attributes
     ----------

@@ -100,7 +100,27 @@ class ISIMIP(Debiaser):
     - Lange, S. (2022). ISIMIP3BASD (3.0.1) [Computer software]. Zenodo. https://doi.org/10.5281/ZENODO.6758997
     - Switanek, M. B., Troch, P. A., Castro, C. L., Leuprecht, A., Chang, H.-I., Mukherjee, R., & Demaria, E. M. C. (2017). Scaled distribution mapping: a bias correction method that preserves raw climate model projected changes. In Hydrology and Earth System Sciences (Vol. 21, Issue 6, pp. 2649–2666). Copernicus GmbH. https://doi.org/10.5194/hess-21-2649-2017.
 
+    |br|
+    **Usage information:**
 
+    - Default settings exist for: ``["hurs", "pr", "prsnratio", "psl", "rlds", "rsds", "sfcWind", "tas", "tasrange", "tasskew"]``.
+
+    - :py:func:`apply` requires: time arguments ``time_obs``, ``time_cm_hist``, and ``time_cm_future`` next to ``obs``, ``cm_hist`` and ``cm_future``. These are just 1d numpy-arrays of dates (multiple formats are possible as long as they as convertible to numpy or datetime dates) specifying the date for each value/timestep in ``obs``, ``cm_hist`` and ``cm_future``. If they are not specified they are inferred, assuming the first observation in all three observation/climate value arrays is on a 1st of January.
+
+    |br|
+    **Examples:**
+
+    Running without dates (they are inferred assuming the first value in ``obs``, ``cm_hist`` and ``cm_future`` always corresponds to a January 1st):
+
+    >>> debiaser = ISIMIP.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
+
+    Running with dates:
+
+    >>> debiaser = ISIMIP.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future, time_obs = time_obs, time_cm_hist = time_cm_hist, time_cm_future = time_cm_future)
+
+    |br|
     **Core Parameters:**
 
     :Parameters:

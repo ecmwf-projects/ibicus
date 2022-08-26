@@ -84,6 +84,28 @@ class QuantileDeltaMapping(Debiaser):
     - Cannon, A. J., Sobie, S. R., & Murdock, T. Q. (2015). Bias Correction of GCM Precipitation by Quantile Mapping: How Well Do Methods Preserve Changes in Quantiles and Extremes? In Journal of Climate (Vol. 28, Issue 17, pp. 6938–6959). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00754.1
 
     |br|
+    **Usage information:**
+
+    - Default settings exist for: ``["hurs", "pr", "psl", "rlds", "sfcWind", "tas", "tasmin", "tasmax"]``.
+
+    - :py:func:`apply` requires: time arguments ``time_obs``, ``time_cm_hist``, and ``time_cm_future`` next to ``obs``, ``cm_hist`` and ``cm_future``. These are just 1d numpy-arrays of dates (multiple formats are possible as long as they as convertible to numpy or datetime dates) specifying the date for each value/timestep in ``obs``, ``cm_hist`` and ``cm_future``. If they are not specified they are inferred, assuming the first observation in all three observation/climate value arrays is on a 1st of January.
+
+    - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
+
+    |br|
+    **Examples:**
+
+    Running without dates (they are inferred assuming the first value in ``obs``, ``cm_hist`` and ``cm_future`` always corresponds to a January 1st):
+
+    >>> debiaser = QuantileDeltaMapping.from_variable("tas")
+    >>> debiaser.apply(obs, cm_hist, cm_future)
+
+    Running with dates and initialising using :py:func:`for_precipitation`:
+
+    >>> debiaser = QuantileDeltaMapping.for_precipitation(censoring_threshold = 0.1/86400)
+    >>> debiaser.apply(obs, cm_hist, cm_future, time_obs = time_obs, time_cm_hist = time_cm_hist, time_cm_future = time_cm_future)
+
+    |br|
 
     Attributes
     ----------
