@@ -4,5 +4,5 @@ Overview
 ========
 
 
-This package is a template
+This package is a template.
 

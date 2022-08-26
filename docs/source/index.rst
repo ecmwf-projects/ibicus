@@ -13,6 +13,7 @@ _____________
 
 * :doc:`getting_started/overview`
 * :doc:`getting_started/installing`
+* :doc:`getting_started/whatisdebiasing`
 
 .. toctree::
    :maxdepth: 1
@@ -21,6 +22,7 @@ _____________
    
    getting_started/overview
    getting_started/installing
+   getting_started/whatisdebiasing
 
 **Reference**
 
