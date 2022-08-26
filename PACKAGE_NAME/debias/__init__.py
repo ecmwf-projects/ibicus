@@ -27,7 +27,7 @@ The following bias correction methodologies are currently implemented in the pac
 
 **Methodology**
 
-For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`What is debiasing?' <getting_started/whatisdebiasing>` page. 
+For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`'What is debiasing?' <getting_started/whatisdebiasing>` page. 
 
 The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output. 
 This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
