@@ -68,6 +68,17 @@ There are two types of analysis that the evaluation module enables you to conduc
        
 >>> frost_days = ThresholdMetric(name="Frost days (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower")
 
+The following table provides an overview of the different components that can be analysed in each of these two categories:
+    
+|                  | Statistical Properties    | Threshold Metrics   |
+| ------------     | ----------------------    | -----------------   |
+| **Marginal**     | x - marginal bias         | x - marginal bias   |
+| **Temporal**     |                           | x - spell length    |
+| **Spatial**      | x - RMSE of corr matrices | x - spatial extent  |
+| **Spatioteporal**|                           | x - cluster size    |
+| **Multivariate** | x - correlation           | x - joint exceedance|
+
+
 Within the metrics class, the following functions are available:
     
 .. autosummary::
@@ -96,13 +107,20 @@ For the evaluation of marginal properties, the following functions are currently
     marginal.plot_bias_spatial
     marginal.plot_histogram
 
-The following functions are available to analyse the bias in spatial and multivariate correlation structure:
+The following functions are available to analyse the bias in spatial correlation structure:
 
 .. autosummary::
     correlation.rmse_spatial_correlation_distribution
     correlation.rmse_spatial_correlation_boxplot
-    correlation.calculate_and_plot_multivariate_correlation_locationwise
-    correlation.plot_direct_comparison_of_correlation_at_gridpoint
+
+To analyse the multivariate correlation structure, as well as joint threshold exceedances:
+    
+.. autosummary::
+    multivariate.calculate_conditional_joint_threshold_exceedance
+    multivariate.plot_conditional_joint_threshold_exceedance
+    multivariate.calculate_and_spatialplot_multivariate_correlation
+    multivariate.plot_correlation_single_location
+    multivariate.plot_bootstrap_correlation_replicates
     
  
 **3. Investigating whether the climate change trend is preserved** 

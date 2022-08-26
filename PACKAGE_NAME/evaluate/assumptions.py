@@ -168,8 +168,8 @@ def plot_quantile_residuals(
     data_type: str
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> tas_obs_plot_gof = assumptions.plot_quantile_residuals(variable = 'tas', dataset = tas_obs[:,0,0], distribution = scipy.stats.norm, data_type = 'observation data')
 

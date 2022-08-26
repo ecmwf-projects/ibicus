@@ -80,8 +80,8 @@ def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], **cm_data)
     pd.DataFrame
         DataFrame with marginal bias at all locations, for all metrics specified.
         
-    Example
-    -------
+    Examples
+    --------
     >>> tas_marginal_bias_df = marginal.calculate_marginal_bias(obs_data = tas_obs_validate, metrics = tas_metrics, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
     
     """
@@ -163,8 +163,8 @@ def plot_marginal_bias(variable: str, bias_df: pd.DataFrame, manual_title: str =
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
         
-    Example
-    -------
+    Examples
+    --------
     >>> tas_marginal_bias_plot = marginal.plot_marginal_bias(variable = 'tas', bias_df = tas_marginal_bias)
 
     """
@@ -220,8 +220,8 @@ def plot_bias_spatial(variable: str, metric: str, bias_df: pd.DataFrame, manual_
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.  
     
-    Example
-    -------
+    Examples
+    --------
     >>> tas_marginal_bias_plot_mean = marginal.plot_bias_spatial(variable = 'tas', metric = 'Mean', bias_df = tas_marginal_bias)
 
     """
@@ -282,8 +282,8 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number:int = 100, ma
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.  
         
-    Example
-    -------
+    Examples
+    --------
     >>> histogram = plot_histogram(variable='tas', data_obs=tas_obs_validate[:, 0,0], raw = tas_cm_validate[:, 0,0],  ISIMIP = tas_val_debiased_ISIMIP[:, 0,0], CDFt = tas_val_debiased_CDFT[:, 0,0])
 
     """

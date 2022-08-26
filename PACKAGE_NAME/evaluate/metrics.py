@@ -41,8 +41,8 @@ class ThresholdMetric:
     variable : str = "unknown"
         Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: `"unknown"`.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_type = 'higher')
 
@@ -208,8 +208,8 @@ class ThresholdMetric:
         pd.DataFrame
             Dataframe of spell lengths of metrics occurrences.
 
-        Example
-        -------
+        Examples
+        --------
         >>> dry_days.calculate_spell_length(minimum_length = 4, obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
@@ -256,8 +256,8 @@ class ThresholdMetric:
         pd.DataFrame
             Dataframe of spatial extends of metrics occurrences.
 
-        Example
-        -------
+        Examples
+        --------
         >>> dry_days.calculate_spatial_extent(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 
@@ -300,8 +300,8 @@ class ThresholdMetric:
         pd.DataFrame
             Dataframe of sizes of individual spatiotemporal clusters of metrics occurrences.
 
-        Example
-        -------
+        Examples
+        --------
         >>> dry_days.calculate_spatiotemporal_clusters(obs = tas_obs_validate, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
         """
 

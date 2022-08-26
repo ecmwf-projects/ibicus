@@ -128,8 +128,8 @@ def calculate_future_trend_bias(variable: str, raw_validate: np.ndarray, raw_fut
         Keyword arguments given in format `debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`
         Example: `QM = [tas_val_debiased_QM, tas_future_debiased_QM]`.
         
-    Example
-    -------
+    Examples
+    --------
     >>> tas_trend_bias_data = trend.calculate_future_trend_bias(variable = 'tas', raw_validate = tas_cm_validate, raw_future = tas_cm_future, metrics = ['warm_days', 'cold_days'], trend_type = additive, QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
 
     """
@@ -212,7 +212,7 @@ def plot_future_trend_bias_boxplot(variable: str, bias_df: pd.DataFrame, manual_
     ----------
     variable: str
         Variable name, has to be given in standard form specified in documentation.
-    bias_array: np.ndarray
+    bias_df: pd.DataFrame
         Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.  
