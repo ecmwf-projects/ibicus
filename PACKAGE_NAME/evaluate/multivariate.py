@@ -177,7 +177,7 @@ def calculate_and_spatialplot_multivariate_correlation(variables: list, manual_t
         i = i + 1
 
     # set plot title
-    if variable in str_to_variable_class.keys():
+    if (variables[0] in str_to_variable_class.keys()) and (variables[1] in str_to_variable_class.keys()):
         plot_title = "Multivariate Correlation: {} and {}".format(
                     map_variable_str_to_variable_class(variable[0]).name, map_variable_str_to_variable_class(variable[1]).name)
     else:
