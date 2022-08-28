@@ -333,6 +333,10 @@ class Debiaser(ABC):
         logging.getLogger().setLevel(level)
 
     @staticmethod
+    def _clean_up_logging():
+        logging.getLogger().setLevel(logging.INFO)
+
+    @staticmethod
     def _unpack_iterable_args_and_get_locationwise_info(i, j, iterable_args):
         return {
             key: value[
@@ -448,5 +452,7 @@ class Debiaser(ABC):
             )
 
         self._check_output(output)
+
+        Debiaser._clean_up_logging()
 
         return output
