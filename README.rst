@@ -11,12 +11,13 @@ The package enables the user to modify and refine their behavior with settings a
 Given future climate model data to debias (``cm_future``), climate model data during a reference period (``cm_hist``) and observational or reanalysis data during the same reference period (``obs``) running a debiaser is as easy as:
 
 >>> from ibicus import CDFt
->>> debiaser = CDFt.from_variable("tas")
+>>> debiaser = CDFt.from_variable("pr")
 >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
 
 Evaluating dry spell length can be as easy as:
 
->>> 
+>>> from ibicus.evaluate.metrics import dry_days
+>>> dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
 
 For more information have a look at our docs (TODO: insert LINK)
 
@@ -37,9 +38,7 @@ Contact
 -------
 
 If you have feedback on the package, suggestions for additions, questions you'd like to ask or would like to contribute, please contact us under `ibicus.py@gmail.com <mailto:ibicus.py@gmail.com>`_.
-Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/esowc/ibicus/issues>`_. or write to us under aboves email adress.
-
-
+Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/esowc/ibicus/issues>`_. or write to us using the email adress above.
 
 
 .. |pypi_release| image:: https://img.shields.io/pypi/v/thermofeel?color=green
@@ -88,4 +87,4 @@ Similarly should you encounter bugs or issues using the package please `open an 
    :target: http://ansicolortags.readthedocs.io/?badge=latest
 
 .. |GitHub contributors| image:: https://img.shields.io/github/contributors/Naereen/StrapDown.js.svg
-   :target: https://GitHub.com/Naereen/StrapDown.js/graphs/contributors/
+   :target: https://github.com/esowc/ibicus
