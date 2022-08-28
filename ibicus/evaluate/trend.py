@@ -6,12 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+from logging import warning
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
-
-from logging import warning
 
 from ..utils._utils import _unpack_df_of_numpy_arrays
 from ..variables import *
@@ -161,11 +161,19 @@ def calculate_future_trend_bias(
         # calculate trend bias in descriptive statistics
 
         mean_bias = _calculate_mean_trend_bias(variable, trend_type, raw_validate, raw_future, *debiased_cms_value)
-        
+
         if np.any(mean_bias == np.inf):
-            warning("{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(debiased_cms_key))
-        elif (remove_outliers ==True) and np.any(abs(mean_bias) > 1000):
-            warning("{}: Trend bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(debiased_cms_key))
+            warning(
+                "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
+        elif (remove_outliers == True) and np.any(abs(mean_bias) > 1000):
+            warning(
+                "{}: Trend bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
         else:
             trend_bias_dfs.append(
                 pd.DataFrame(
@@ -180,11 +188,19 @@ def calculate_future_trend_bias(
         lowqn_bias = _calculate_quantile_trend_bias(
             variable, trend_type, 0.05, raw_validate, raw_future, *debiased_cms_value
         )
-        
+
         if np.any(lowqn_bias == np.inf):
-            warning("{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(debiased_cms_key))
-        elif (remove_outliers ==True) and np.any(abs(mean_bias) > 1000):
-            warning("{}: Trend bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(debiased_cms_key))
+            warning(
+                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
+        elif (remove_outliers == True) and np.any(abs(mean_bias) > 1000):
+            warning(
+                "{}: Trend bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
         else:
             trend_bias_dfs.append(
                 pd.DataFrame(
@@ -199,11 +215,19 @@ def calculate_future_trend_bias(
         highqn_bias = _calculate_quantile_trend_bias(
             variable, trend_type, 0.95, raw_validate, raw_future, *debiased_cms_value
         )
-        
+
         if np.any(highqn_bias == np.inf):
-            warning("{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(debiased_cms_key))
-        elif (remove_outliers ==True) and np.any(abs(highqn_bias) > 1000):
-            warning("{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(debiased_cms_key))
+            warning(
+                "{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
+        elif (remove_outliers == True) and np.any(abs(highqn_bias) > 1000):
+            warning(
+                "{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
+                    debiased_cms_key
+                )
+            )
         else:
             trend_bias_dfs.append(
                 pd.DataFrame(
@@ -222,11 +246,19 @@ def calculate_future_trend_bias(
             metric_bias = _calculate_metrics_trend_bias(
                 variable, trend_type, m, raw_validate, raw_future, *debiased_cms_value
             )
-            
+
             if np.any(metric_bias == np.inf):
-                warning("{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(debiased_cms_key, m))
-            elif (remove_outliers ==True) and np.any(abs(metric_bias) > 1000):
-                warning("{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(debiased_cms_key, m, m))
+                warning(
+                    "{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(
+                        debiased_cms_key, m
+                    )
+                )
+            elif (remove_outliers == True) and np.any(abs(metric_bias) > 1000):
+                warning(
+                    "{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
+                        debiased_cms_key, m, m
+                    )
+                )
             else:
                 trend_bias_dfs.append(
                     pd.DataFrame(
