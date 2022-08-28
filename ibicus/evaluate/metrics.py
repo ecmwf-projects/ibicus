@@ -17,12 +17,12 @@ import pandas as pd
 import seaborn
 from scipy.ndimage import measurements
 
-from PACKAGE_NAME import utils
+from ibicus import utils
 
 
 @attrs.define(eq=False)
 class ThresholdMetric:
-    
+
     """
     Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold.
 
@@ -136,10 +136,11 @@ class ThresholdMetric:
         threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
         threshold_probability = np.einsum("ijk -> jk", threshold_data) / threshold_data.shape[0]
         return threshold_probability
-    
-    
-    def calculate_number_annual_days_beyond_threshold(self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year) -> np.ndarray:
-        
+
+    def calculate_number_annual_days_beyond_threshold(
+        self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year
+    ) -> np.ndarray:
+
         """
         Calculates number of days beyond threshold for each year in the dataset.
 
@@ -151,7 +152,7 @@ class ThresholdMetric:
             Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
         time_func : functions
             Points to utils function to either extract days or months.
-            
+
         Returns
         -------
         np.ndarray
@@ -172,8 +173,6 @@ class ThresholdMetric:
                 threshold_exceedances[:, j, k] = [(eot_matrix[time_array == i, j, k].sum()) for i in years]
 
         return threshold_exceedances
-    
-    
 
     @staticmethod
     def _calculate_spell_lengths_one_location(mask_threshold_condition_one_location):
@@ -376,7 +375,7 @@ class ThresholdMetric:
 
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
-    
+
     """
     Class for climate metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
 
@@ -384,7 +383,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
     """
 
     def calculate_percent_of_total_amount_beyond_threshold(self, dataset: np.ndarray) -> np.ndarray:
-        
+
         """
         Calculates percentage of total amount beyond threshold for each location over all timesteps.
 
@@ -392,7 +391,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
-            
+
         Returns
         -------
         np.ndarray
@@ -404,10 +403,11 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         exceedance_percentage = 100 * np.einsum("ijk -> jk", eot_matrix) / np.einsum("ijk -> jk", dataset)
 
         return exceedance_percentage
-    
 
-    def calculate_annual_value_beyond_threshold(self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year) -> np.ndarray:
-        
+    def calculate_annual_value_beyond_threshold(
+        self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year
+    ) -> np.ndarray:
+
         """
         Calculates amount beyond threshold for each year in the dataset.
 
@@ -419,7 +419,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
             Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
         time_func : functions
             Points to utils function to either extract days or months.
-            
+
         Returns
         -------
         np.ndarray
@@ -440,7 +440,6 @@ class AccumulativeThresholdMetric(ThresholdMetric):
                 threshold_exceedances[:, j, k] = [(eot_matrix[time_array == i, j, k].sum()) for i in years]
 
         return threshold_exceedances
-
 
     def calculate_intensity_index(self, dataset):
         """

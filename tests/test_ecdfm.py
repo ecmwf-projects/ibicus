@@ -15,8 +15,8 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import ECDFM
-from PACKAGE_NAME.utils import (
+from ibicus.debias import ECDFM
+from ibicus.utils import (
     PrecipitationHurdleModelGamma,
     gen_PrecipitationGammaLeftCensoredModel,
 )

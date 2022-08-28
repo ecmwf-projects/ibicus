@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "PACKAGE_NAME"
+project = "ibicus"
 copyright = "2022, ECMWF"
 author = "ECMWF"
 

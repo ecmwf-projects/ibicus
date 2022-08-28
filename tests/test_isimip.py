@@ -15,7 +15,7 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import ISIMIP
+from ibicus.debias import ISIMIP
 
 
 class TestISIMIPsteps(unittest.TestCase):

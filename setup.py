@@ -22,7 +22,7 @@ install_requires = ["numpy>=1.22", "attrs>=21.3.0", "pandas", "matplotlib", "sea
 tests_require = ["pytest"]
 
 meta = {}
-exec(read("PACKAGE_NAME/__meta__.py"), meta)
+exec(read("ibicus/__meta__.py"), meta)
 
 
 setuptools.setup(

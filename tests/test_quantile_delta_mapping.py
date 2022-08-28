@@ -15,8 +15,8 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import QuantileDeltaMapping
-from PACKAGE_NAME.utils import gen_PrecipitationGammaLeftCensoredModel
+from ibicus.debias import QuantileDeltaMapping
+from ibicus.utils import gen_PrecipitationGammaLeftCensoredModel
 
 
 def check_different_maximally_up_to_1(x, y):

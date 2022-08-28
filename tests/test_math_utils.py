@@ -15,7 +15,7 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.utils import (
+from ibicus.utils import (
     PrecipitationGammaLeftCensoredModel_5mm_threshold,
     PrecipitationGammaModelIgnoreZeroValues,
     PrecipitationHurdleModelGamma,

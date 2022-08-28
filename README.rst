@@ -32,18 +32,18 @@ Follow these steps to create a new repository from this template.
 
 #. Remove sample code::
 
-     rm PACKAGE_NAME/sample.py
+     rm ibicus/sample.py
      rm tests/test_sample.py
 
-#. Replace ``PACKAGE_NAME`` with your chosen package name::
+#. Replace ``ibicus`` with your chosen package name::
 
-     NEW_PACKAGE_NAME=<your-package-name>
-     mv PACKAGE_NAME $NEW_PACKAGE_NAME
-     sed -i "" "s/PACKAGE_NAME/$NEW_PACKAGE_NAME/g" setup.py \
+     NEW_ibicus=<your-package-name>
+     mv ibicus $NEW_ibicus
+     sed -i "" "s/ibicus/$NEW_ibicus/g" setup.py \
         docs/source/conf.py \
         docs/source/getting_started/installing.rst \
         docs/source/index.rst \
-        $NEW_PACKAGE_NAME/__meta__.py
+        $NEW_ibicus/__meta__.py
 
 #. Modify the contents of ``__meta__.py`` to reflect your repository. Note that there
    is no need to update this same information in ``setup.py``, as it will be imported

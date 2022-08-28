@@ -12,7 +12,7 @@
 PACKAGE\_NAME.variables module
 ==============================
 
-.. automodule:: PACKAGE_NAME.variables
+.. automodule:: ibicus.variables
    :show-inheritance:
 
 PACKAGE\_NAME.debias Variable-class

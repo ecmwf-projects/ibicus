@@ -15,7 +15,7 @@ from datetime import date
 
 import numpy as np
 
-from PACKAGE_NAME.debias import CDFt
+from ibicus.debias import CDFt
 
 
 def check_different_maximally_up_to_1(x, y):

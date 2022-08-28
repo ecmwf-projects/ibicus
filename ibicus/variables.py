@@ -30,7 +30,7 @@ import attrs
 import numpy as np
 import scipy.stats
 
-import PACKAGE_NAME.utils as utils
+import ibicus.utils as utils
 
 
 @attrs.define(eq=False)

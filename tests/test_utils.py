@@ -14,7 +14,7 @@ import unittest
 
 import numpy as np
 
-from PACKAGE_NAME.utils import sort_array_like_another_one
+from ibicus.utils import sort_array_like_another_one
 
 
 class TestUtils(unittest.TestCase):

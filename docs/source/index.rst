@@ -1,9 +1,9 @@
-.. PACKAGE_NAME documentation master file, created by
+.. ibicus documentation master file, created by
    sphinx-quickstart on Wed Mar 30 16:04:07 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PACKAGE_NAME's documentation!
+Welcome to ibicus's documentation!
 ========================================
 
 Documentation
@@ -38,7 +38,7 @@ _____________
 License
 -------
 
-*PACKAGE_NAME* is available under the open source `Apache License`__.
+*ibicus* is available under the open source `Apache License`__.
 
 __ http://www.apache.org/licenses/LICENSE-2.0.html
 

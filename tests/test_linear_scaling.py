@@ -15,7 +15,7 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import LinearScaling
+from ibicus.debias import LinearScaling
 
 
 def check_different_maximally_up_to_1(x, y):

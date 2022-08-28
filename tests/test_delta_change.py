@@ -14,7 +14,7 @@ import unittest
 
 import numpy as np
 
-from PACKAGE_NAME.debias import DeltaChange
+from ibicus.debias import DeltaChange
 
 
 def check_different_maximally_up_to_1(x, y):

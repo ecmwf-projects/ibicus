@@ -8,7 +8,7 @@
 
 """Container for project metadata."""
 
-__name__ = "PACKAGE_NAME"
+__name__ = "ibicus"
 __version__ = "0.1.dev0"
 __author__ = "European Centre for Medium-Range Weather Forecasts (ECMWF)"
 __author_email__ = "software.support@ecmwf.int"

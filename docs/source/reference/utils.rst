@@ -12,7 +12,7 @@
 PACKAGE\_NAME.utils module
 ==========================
 
-.. automodule:: PACKAGE_NAME.utils
+.. automodule:: ibicus.utils
    :members:
    :undoc-members:
    :show-inheritance:

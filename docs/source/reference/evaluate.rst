@@ -12,7 +12,7 @@
 PACKAGE\_NAME.evaluate module
 =============================
 
-.. automodule:: PACKAGE_NAME.evaluate
+.. automodule:: ibicus.evaluate
    :members:
    :undoc-members:
    :show-inheritance:
@@ -21,7 +21,7 @@ PACKAGE\_NAME.evaluate module
 PACKAGE\_NAME.evaluate.metrics 
 ------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.metrics
+.. automodule:: ibicus.evaluate.metrics
    :members:
    :undoc-members:
    :show-inheritance:
@@ -29,7 +29,7 @@ PACKAGE\_NAME.evaluate.metrics
 PACKAGE\_NAME.evaluate.marginal
 -------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.marginal
+.. automodule:: ibicus.evaluate.marginal
    :members:
    :undoc-members:
    :show-inheritance:
@@ -37,7 +37,7 @@ PACKAGE\_NAME.evaluate.marginal
 PACKAGE\_NAME.evaluate.spatial 
 ------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.spatial
+.. automodule:: ibicus.evaluate.spatial
    :members:
    :undoc-members:
    :show-inheritance:
@@ -46,7 +46,7 @@ PACKAGE\_NAME.evaluate.spatial
 PACKAGE\_NAME.evaluate.correlation 
 ----------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.correlation
+.. automodule:: ibicus.evaluate.correlation
    :members:
    :undoc-members:
    :show-inheritance:
@@ -55,7 +55,7 @@ PACKAGE\_NAME.evaluate.correlation
 PACKAGE\_NAME.evaluate.trend
 ----------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.trend
+.. automodule:: ibicus.evaluate.trend
    :members:
    :undoc-members:
    :show-inheritance:
@@ -64,7 +64,7 @@ PACKAGE\_NAME.evaluate.trend
 PACKAGE\_NAME.evaluate.assumptions 
 ----------------------------------
 
-.. automodule:: PACKAGE_NAME.evaluate.assumptions
+.. automodule:: ibicus.evaluate.assumptions
    :members:
    :undoc-members:
    :show-inheritance:

@@ -17,7 +17,7 @@ Follow these steps to prepare your documentation for readthedocs.
 existing rst files to ensure a clean build:
 
      rm source/reference/*rst
-     sphinx-apidoc -o source/reference -H "API reference" --tocfile api -f ../PACKAGE_NAME/
+     sphinx-apidoc -o source/reference -H "API reference" --tocfile api -f ../ibicus/
 
 #. Update the source/index.rst to reference the rst files create above. Depending on the contents of your package and the 
 rst files produced you will need to add something like the following to the Reference section:

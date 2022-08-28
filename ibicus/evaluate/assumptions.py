@@ -18,7 +18,7 @@ import seaborn
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
 
-from PACKAGE_NAME.variables import *
+from ..variables import *
 
 
 def _calculate_aic(dataset, distribution):
@@ -32,7 +32,7 @@ def _calculate_aic(dataset, distribution):
 
 
 def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.DataFrame:
-    
+
     """
     Calculates the Akaike Information Criterion (AIC) at each location for each of the distributions specified.
 
@@ -65,7 +65,7 @@ def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.Data
 
 
 def plot_aic(variable: str, aic_values: pd.DataFrame, manual_title: str = " "):
-    
+
     """
     Creates a boxplot of AIC values across all locations.
 
@@ -78,11 +78,12 @@ def plot_aic(variable: str, aic_values: pd.DataFrame, manual_title: str = " "):
 
     """
     if variable in str_to_variable_class.keys():
-        plot_title = "Distribution of AIC values across locations \n {}".format(map_variable_str_to_variable_class(variable).name)
+        plot_title = "Distribution of AIC values across locations \n {}".format(
+            map_variable_str_to_variable_class(variable).name
+        )
     else:
         plot_title = manual_title
-    
-    
+
     return seaborn.boxplot(data=aic_values, x="Distribution", y="AIC value", palette="colorblind").set(title=plot_title)
 
 
@@ -93,7 +94,7 @@ def plot_fit_worst_aic(
     distribution: scipy.stats.rv_continuous,
     nr_bins: Union[int, str] = "auto",
     aic_values: Optional[pd.DataFrame] = None,
-    manual_title: str = " "
+    manual_title: str = " ",
 ):
     """
     Plots a histogram and overlayed fit at the location of worst AIC.
@@ -131,7 +132,7 @@ def plot_fit_worst_aic(
 
     x = np.linspace(xmin, xmax, 100)
     p = distribution.pdf(x, *fit)
-    
+
     if variable in str_to_variable_class.keys():
         plot_title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
             data_type,
@@ -181,13 +182,13 @@ def plot_quantile_residuals(
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 5))
 
-    
     if variable in str_to_variable_class.keys():
         plot_title = "{} ({}) - {}. Distribution = {}".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
             data_type,
-            distribution.name)
+            distribution.name,
+        )
     else:
         plot_title = manual_title
 

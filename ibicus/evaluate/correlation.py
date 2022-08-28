@@ -16,7 +16,7 @@ import seaborn
 import sklearn.metrics
 from sklearn.metrics import mutual_info_score
 
-from PACKAGE_NAME.variables import *
+from ..variables import *
 
 
 def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, **cm_data) -> pd.DataFrame:
@@ -31,7 +31,7 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
     variable : str
         Variable name, has to be given in standard form specified in documentation.
     obs_data : np.ndarray
-        Optional argument present in all plot functions: manual_title will be used as title of the plot.  
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.
     cm_data :
         Keyword arguments specifying climate model datasets, for example: QM = tas_debiased_QM
 
@@ -42,17 +42,17 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
     """
 
     rmsd_arrays = []
-    
+
     for k in cm_data.keys():
 
         for a, b in np.ndindex(obs_data.shape[1:]):
-            
+
             # initialize two arrays to be filled with correlation values
             corr_matrix_obs = np.zeros((obs_data.shape[1], obs_data.shape[2]))
             corr_matrix_cm = np.zeros((obs_data.shape[1], obs_data.shape[2]))
 
             for i, j in np.ndindex(obs_data.shape[1:]):
-                
+
                 corr_matrix_obs[i, j] = np.corrcoef(obs_data[:, a, b], obs_data[:, i, j])[0, 1]
                 corr_matrix_cm[i, j] = np.corrcoef(cm_data[k][:, a, b], cm_data[k][:, i, j])[0, 1]
 
@@ -61,7 +61,7 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
 
             rmsd_arrays.append(
                 pd.DataFrame(data={"x": a, "y": b, "Correction Method": k, "RMSE spatial correlation": rmsd})
-        )
+            )
 
     rmsd_data = pd.concat(rmsd_arrays)
     rmsd_data["RMSE spatial correlation"] = pd.to_numeric(rmsd_data["RMSE spatial correlation"])
@@ -70,7 +70,7 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
 
 
 def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manual_title: str = " "):
-    
+
     """
     Boxplot of RMSE of spatial correlation across locations.
 
@@ -81,10 +81,10 @@ def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manua
     dataset : pd.DataFrame
         Ouput format of function :py:func:`rmse_spatial_correlation_distribution`
     manual_title : str
-        Optional argument present in all plot functions: manual_title will be used as title of the plot.  
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.
 
     """
-    
+
     # create figure and plot
     fig = plt.figure(figsize=(8, 6))
     seaborn.boxplot(y="RMSE spatial correlation", x="Correction Method", data=dataset, palette="colorblind")
@@ -92,7 +92,8 @@ def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manua
     # set plot title
     if variable in str_to_variable_class.keys():
         plot_title = "{} ({}) \n RMSE of spatial correlation matrices".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit)
+            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+        )
     else:
         plot_title = manual_title
         raise Warning("Variable not recognized, using manual_title to generate plot_title")

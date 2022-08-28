@@ -40,7 +40,7 @@ TO-DO: explain additive vs multiplicative change and why some variables have one
 
 .. testsetup::
 
-        from PACKAGE_NAME.debias import ISIMIP, CDFt, QuantileMapping
+        from ibicus.debias import ISIMIP, CDFt, QuantileMapping
 
 
 Three types of data are required in order to conduct bias correction for a given climatic variable:

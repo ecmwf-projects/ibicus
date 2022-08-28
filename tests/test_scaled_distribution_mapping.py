@@ -15,8 +15,8 @@ import unittest
 import numpy as np
 import scipy.stats
 
-from PACKAGE_NAME.debias import ScaledDistributionMapping
-from PACKAGE_NAME.utils import (
+from ibicus.debias import ScaledDistributionMapping
+from ibicus.utils import (
     PrecipitationHurdleModelGamma,
     gen_PrecipitationGammaLeftCensoredModel,
 )

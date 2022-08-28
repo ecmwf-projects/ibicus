@@ -12,7 +12,7 @@
 PACKAGE\_NAME.debias module
 ===========================
 
-.. automodule:: PACKAGE_NAME.debias
+.. automodule:: ibicus.debias
    :members:
    :undoc-members:
    :show-inheritance:

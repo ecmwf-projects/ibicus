@@ -198,7 +198,7 @@ class RunningWindowOverDaysOfYear:
     Implements a running window mode iterating over the days of a year.
 
     Usual usage:
-    >>> from PACKAGE_NAME.utils import create_array_of_consecutive_dates, day_of_year, year
+    >>> from ibicus.utils import create_array_of_consecutive_dates, day_of_year, year
     >>> dates = create_array_of_consecutive_dates(1000)
     >>> days_of_year, years = day_of_year(dates), year(dates)
     >>> rolling_window = RunningWindowOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
@@ -378,7 +378,7 @@ class RunningWindowOverDaysOfYear:
 
 
         Usual usage:
-        >>> from PACKAGE_NAME.utils import create_array_of_consecutive_dates, day_of_year, year
+        >>> from ibicus.utils import create_array_of_consecutive_dates, day_of_year, year
         >>> dates = create_array_of_consecutive_dates(1000)
         >>> days_of_year, years = day_of_year(dates), year(dates)
         >>> rolling_window = RunningWindowOverDaysOfYear(window_length_in_days = 31, window_step_length_in_days = 3)
