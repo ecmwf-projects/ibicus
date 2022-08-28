@@ -60,7 +60,7 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
             rmsd = math.sqrt(sklearn.metrics.mean_squared_error(corr_matrix_obs, corr_matrix_cm))
 
             rmsd_arrays.append(
-                pd.DataFrame(data={"x": a, "y": b, "Correction Method": k, "RMSE spatial correlation": rmsd})
+                pd.DataFrame(data={"x": [a], "y": [b], "Correction Method": k, "RMSE spatial correlation": rmsd})
             )
 
     rmsd_data = pd.concat(rmsd_arrays)
