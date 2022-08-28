@@ -17,7 +17,17 @@ def read(fname):
     return io.open(file_path, encoding="utf-8").read()
 
 
-install_requires = ["numpy>=1.22", "attrs>=21.3.0", "pandas", "matplotlib", "seaborn", "scipy", "statsmodels", "tqdm"]
+install_requires = [
+    "numpy>=1.22",
+    "attrs>=21.3.0",
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "scipy",
+    "statsmodels",
+    "scikit-learn",
+    "tqdm",
+]
 
 tests_require = ["pytest"]
 

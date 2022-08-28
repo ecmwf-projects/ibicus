@@ -5,105 +5,42 @@ ibicus
 
 **Ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
 
-Ibicus currently implements eight methods for bias correction published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). 
+Ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). 
 The package enables the user to modify and refine their behavior with settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
 
-|pypi_release| |pypi_status| |PyPI license| |pypi_downloads| |docs| 
+Given future climate model data to debias (``cm_future``), climate model data during a reference period (``cm_hist``) and observational or reanalysis data during the same reference period (``obs``) running a debiaser is as easy as:
 
-|PyPI pyversions| |made-with-python| |made-with-sphinx-doc|
+>>> from ibicus import CDFt
+>>> debiaser = CDFt.from_variable("tas")
+>>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
 
-|Maintenance yes| |Ask Me Anything !| |GitHub contributors|
+Evaluating dry spell length can be as easy as:
 
+>>> 
 
+For more information have a look at our docs (TODO: insert LINK)
 
-
-
-
-
-
-
-
+|pypi_release| |pypi_status| |PyPI license| |pypi_downloads| |docs| |PyPI pyversions| |made-with-python| |made-with-sphinx-doc| |Maintenance yes| |Ask Me Anything !| |GitHub contributors|
 
 
+Install
+-------
+
+Ibicus releases are available via PyPI. Just write::
+
+   pip install ibicus
+
+For more information about installation and requirements see the `install documentation <TODO: add LINK>`_ in the docs.
+
+
+Contact
+-------
+
+If you have feedback on the package, suggestions for additions, questions you'd like to ask or would like to contribute, please contact us under `ibicus.py@gmail.com <mailto:ibicus.py@gmail.com>`_.
+Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/esowc/ibicus/issues>`_. or write to us under aboves email adress.
 
 
 
-[![GitHub license](https://badgen.net/github/license/Naereen/Strapdown.js)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE)
-[![Documentation Status](https://readthedocs.org/projects/ansicolortags/badge/?version=latest)](http://ansicolortags.readthedocs.io/?badge=latest)
-
-[![PyPI download week](https://img.shields.io/pypi/dw/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-[![PyPi version](https://badgen.net/pypi/v/pip/)](https://pypi.com/project/pip)
-[![PyPI status](https://img.shields.io/pypi/status/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-[![PyPi license](https://badgen.net/pypi/license/pip/)](https://pypi.com/project/pip/)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-
-[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
-[![made-with-sphinx-doc](https://img.shields.io/badge/Made%20with-Sphinx-1f425f.svg)](https://www.sphinx-doc.org/)
-
-[![GitHub commits](https://badgen.net/github/commits/Naereen/Strapdown.js)](https://GitHub.com/Naereen/StrapDown.js/commit/)
-[![GitHub contributors](https://img.shields.io/github/contributors/Naereen/badges.svg)](https://GitHub.com/Naereen/badges/graphs/contributors/)
-
-Debiasers implemented:
-
-- Linear Scaling
-- Delta Change
-- Quantile Mapping (with delta change)
-- Quantile Delta Mapping following Cannon et al. 2015
-- Equidistant CDF Matching following Li et al. 2010
-- Scaled Distribution Mapping following Switanek 2017
-- CDFt following Michelangeli et al. 2009
-- ISIMIP following Lange 2019
-
-A template repository for developing Python packages
-
-**Quick start**
-
-Follow these steps to create a new repository from this template.
-
-#. Click the `Use this template <https://github.com/esowc/python-package-template/generate>`_
-   button and create a new repository with your desired name, location and visibility.
-
-#. Clone the repository::
-
-     git clone git@github.com:esowc/<your-repository-name>.git
-     cd <your-repository-name>
-
-#. Remove sample code::
-
-     rm ibicus/sample.py
-     rm tests/test_sample.py
-
-#. Replace ``ibicus`` with your chosen package name::
-
-     NEW_ibicus=<your-package-name>
-     mv ibicus $NEW_ibicus
-     sed -i "" "s/ibicus/$NEW_ibicus/g" setup.py \
-        docs/source/conf.py \
-        docs/source/getting_started/installing.rst \
-        docs/source/index.rst \
-        $NEW_ibicus/__meta__.py
-
-#. Modify the contents of ``__meta__.py`` to reflect your repository. Note that there
-   is no need to update this same information in ``setup.py``, as it will be imported
-   directly from ``__meta__.py``.
-
-#. Modify the project url in ``setup.py`` to reflect your project's home in GitHub.
-
-#. Modify ``README.rst`` to reflect your repository. A number of `shield <https://shields.io/>`_
-   templates are included, and will need to be updated to match your repository if you want
-   to use them.
-
-**Usage tips**
-
-* Create an executable called ``qa`` containing the following::
-
-    black .
-    isort .
-
-  Add this to your path, and run it from the top-level of your repository before
-  committing changes::
-
-    qa .
 
 .. |pypi_release| image:: https://img.shields.io/pypi/v/thermofeel?color=green
     :target: https://pypi.org/project/thermofeel
