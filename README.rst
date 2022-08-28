@@ -3,6 +3,9 @@
 ibicus
 ******
 
+|pypi_release| |pypi_status| |PyPI license| |pypi_downloads| |docs| |PyPI pyversions| |made-with-python| |made-with-sphinx-doc| |Maintenance yes| |Ask Me Anything !| |GitHub contributors|
+
+
 **Ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
 
 Ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). 
@@ -17,11 +20,10 @@ Given future climate model data to debias (``cm_future``), climate model data du
 Evaluating dry spell length can be as easy as:
 
 >>> from ibicus.evaluate.metrics import dry_days
->>> dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
+>>> spell_length = dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
 
 For more information have a look at our docs (TODO: insert LINK)
 
-|pypi_release| |pypi_status| |PyPI license| |pypi_downloads| |docs| |PyPI pyversions| |made-with-python| |made-with-sphinx-doc| |Maintenance yes| |Ask Me Anything !| |GitHub contributors|
 
 
 Install
