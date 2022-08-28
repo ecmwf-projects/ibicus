@@ -230,12 +230,12 @@ class ThresholdMetric:
                     data={
                         "Correction Method": [climate_data_key] * spell_length.size,
                         "Metric": [self.name] * spell_length.size,
-                        "Spell length": spell_length,
+                        "Spell length (days)": spell_length,
                     }
                 )
             )
         plot_data = pd.concat(spell_length_dfs)
-        plot_data["Spell length"] = pd.to_numeric(plot_data["Spell length"])
+        plot_data["Spell length (days)"] = pd.to_numeric(plot_data["Spell length (days)"])
 
         return plot_data
 
