@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
+from logging import warning
 
 from ..utils._utils import _unpack_df_of_numpy_arrays
 from ..variables import *
@@ -92,9 +93,9 @@ def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], remove_out
         mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data)
         
         if np.any(mean_bias == np.inf):
-            raise Warning("{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(cm_data_key))
+            warning("{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(cm_data_key))
         elif (remove_outliers ==True) and np.any(abs(mean_bias) > 1000):
-            raise Warning ("{}: Bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
+            warning("{}: Bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
         else:
             marginal_bias_dfs.append(
                 pd.DataFrame(
@@ -109,9 +110,9 @@ def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], remove_out
         lowqn_bias = _marginal_quantile_bias(quantile=0.05, obs_data=obs_data, cm_data=cm_data)
         
         if np.any(lowqn_bias == np.inf):
-            raise Warning("{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(cm_data_key))
+            warning("{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(cm_data_key))
         elif (remove_outliers ==True) and np.any(abs(lowqn_bias) > 1000):
-            raise Warning ("{}: Bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
+            warning("{}: Bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
         else:
             marginal_bias_dfs.append(
                 pd.DataFrame(
@@ -126,9 +127,9 @@ def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], remove_out
         highqn_bias = _marginal_quantile_bias(quantile=0.95, obs_data=obs_data, cm_data=cm_data)
         
         if np.any(highqn_bias == np.inf):
-            raise Warning("{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(cm_data_key))
+            warning("{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(cm_data_key))
         elif (remove_outliers ==True) and np.any(abs(highqn_bias) > 1000):
-            raise Warning ("{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
+            warning("{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key))
         else:
             marginal_bias_dfs.append(
                 pd.DataFrame(
@@ -147,9 +148,9 @@ def calculate_marginal_bias(obs_data: np.ndarray, metrics: list = [], remove_out
             metric_bias = _marginal_metrics_bias(m, obs_data, cm_data)
             
             if np.any(metric_bias == np.inf):
-                raise Warning("{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(cm_data_key, m))
+                warning("{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(cm_data_key, m))
             elif (remove_outliers ==True) and np.any(abs(metric_bias) > 1000):
-                raise Warning ("{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key, m, m))
+                warning("{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(cm_data_key, m, m))
             else:
                 marginal_bias_dfs.append(
                     pd.DataFrame(

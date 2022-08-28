@@ -35,7 +35,6 @@ def _calculate_chi(metric1, metric2, dataset1, dataset2):
 
     chi = np.einsum("ijk -> jk", cooccurrence) / np.einsum("ijk -> jk", metric2_instances)
 
-    print(chi)
     return chi
 
 
@@ -182,7 +181,7 @@ def calculate_and_spatialplot_multivariate_correlation(variables: list, manual_t
     # set plot title
     if (variables[0] in str_to_variable_class.keys()) and (variables[1] in str_to_variable_class.keys()):
         plot_title = "Multivariate Correlation: {} and {}".format(
-            map_variable_str_to_variable_class(variable[0]).name, map_variable_str_to_variable_class(variable[1]).name
+            map_variable_str_to_variable_class(variables[0]).name, map_variable_str_to_variable_class(variables[1]).name
         )
     else:
         plot_title = manual_title
