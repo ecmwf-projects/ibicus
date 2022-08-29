@@ -44,7 +44,7 @@ setuptools.setup(
     author=meta.get("__author__", "European Centre for Medium-Range Weather Forecasts (ECMWF)"),
     author_email=meta.get("__author_email__", "software.support@ecmwf.int"),
     license="Apache License Version 2.0",
-    url="https://github.com/esowc/python-package-template",
+    url="https://github.com/esowc/ibicus",
     packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=install_requires,
