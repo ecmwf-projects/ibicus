@@ -329,7 +329,7 @@ class Debiaser(ABC):
         else:
             raise ValueError('verbosity needs to be one of ["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]')
 
-        logging.basicConfig(encoding="utf-8", level=level)
+        logging.basicConfig(level=level)
         logging.getLogger().setLevel(level)
 
     @staticmethod

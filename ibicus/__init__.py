@@ -7,4 +7,3 @@
 # nor does it submit to any jurisdiction.
 
 from .__meta__ import *  # noqa
-from .variables import *
