@@ -45,13 +45,13 @@ Similarly should you encounter bugs or issues using the package please `open an 
 
 
 .. |pypi_release| image:: https://img.shields.io/pypi/v/thermofeel?color=green
-    :target: https://pypi.org/project/thermofeel
+    :target: https://pypi.org/project/ibicus
 
 .. |pypi_status| image:: https://img.shields.io/pypi/status/thermofeel
-    :target: https://pypi.org/project/thermofeel
+    :target: https://pypi.org/project/ibicus
 
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/thermofeel
-  :target: https://pypi.org/project/thermofeel
+  :target: https://pypi.org/project/ibicus
   
 .. |docs| image:: https://readthedocs.org/projects/thermofeel/badge/?version=latest
   :target: https://thermofeel.readthedocs.io/en/latest/?badge=latest
@@ -72,19 +72,19 @@ Similarly should you encounter bugs or issues using the package please `open an 
    :target: https://www.sphinx-doc.org/
 
 .. |PyPI download month| image:: https://img.shields.io/pypi/dm/ansicolortags.svg
-   :target: https://pypi.python.org/pypi/ansicolortags/
+   :target: https://pypi.org/project/ibicus/
 
 .. |PyPI version shields.io| image:: https://img.shields.io/pypi/v/ansicolortags.svg
-   :target: https://pypi.python.org/pypi/ansicolortags/
+   :target: https://pypi.org/project/ibicus/
 
 .. |PyPI license| image:: https://img.shields.io/pypi/l/ansicolortags.svg
-   :target: https://pypi.python.org/pypi/ansicolortags/
+   :target: https://pypi.org/project/ibicus/
 
 .. |PyPI pyversions| image:: https://img.shields.io/pypi/pyversions/ansicolortags.svg
-   :target: https://pypi.python.org/pypi/ansicolortags/
+   :target: https://pypi.org/project/ibicus/
 
 .. |PyPI status| image:: https://img.shields.io/pypi/status/ansicolortags.svg
-   :target: https://pypi.python.org/pypi/ansicolortags/
+   :target: https://pypi.org/project/ibicus/
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/ansicolortags/badge/?version=latest
    :target: http://ansicolortags.readthedocs.io/?badge=latest
