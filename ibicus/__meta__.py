@@ -9,7 +9,7 @@
 """Container for ibicus metadata."""
 
 __name__ = "ibicus"
-__version__ = "0.1.dev0"
+__version__ = "0.1.dev1"
 __author__ = "Fiona Spuler, Jakob Wessel & European Centre for Medium-Range Weather Forecasts (ECMWF)"
 __author_email__ = "ibicus.py@gmail.com"
 __license__ = "Apache License Version 2.0"
