@@ -50,7 +50,6 @@ PACKAGE\_NAME.debias ScaledDistributionMapping class
 
 .. autoclass:: ScaledDistributionMapping
 	:members: from_variable, apply, apply_location
-ScaledDistributionMapping
 
 
 PACKAGE\_NAME.debias CDFt class
