@@ -131,3 +131,8 @@ dmypy.json
 # Vscode
 .vscode
 .DS_Store
+
+# Notebooks
+# Output of ISIMIP consistency notebook
+notebooks/isimip3basd-master.tar.gz
+notebooks/isimip3basd-master/*
