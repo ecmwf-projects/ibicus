@@ -6,9 +6,9 @@
 Welcome to ibicus's documentation!
 ========================================
 
-**Ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
+**ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
 
-Ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009) and provides a unified interface for their usage. The package enables the user to modify and refine their behavior with settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
+ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009) and provides a unified interface for their usage. The package enables the user to modify and refine their behavior with settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
 
 On the following pages you can find information on the usage of ibicus. Have a look at the `Overview <getting_started/overview.html>`_ the `What is debiasing? <getting_started/whatisdebiasing.html>`_ and the `API reference <reference/api.html>`_ for both the `debias <reference/debias.html>`_ and `evaluate <reference/evaluate.html>`_ module.
 
@@ -44,7 +44,7 @@ _____________
 License
 -------
 
-*ibicus* is available under the open source `Apache License`__.
+ibicus is available under the open source `Apache License`__.
 
 __ http://www.apache.org/licenses/LICENSE-2.0.html
 
