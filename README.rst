@@ -44,20 +44,20 @@ If you have feedback on the package, suggestions for additions, questions you'd 
 Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/esowc/ibicus/issues>`_. or write to us using the email adress above.
 
 
-.. |pypi_release| image:: https://img.shields.io/pypi/v/thermofeel?color=green
+.. |pypi_release| image:: https://img.shields.io/pypi/v/ibicus?color=green
     :target: https://pypi.org/project/ibicus
 
-.. |pypi_status| image:: https://img.shields.io/pypi/status/thermofeel
+.. |pypi_status| image:: https://img.shields.io/pypi/status/ibicus
     :target: https://pypi.org/project/ibicus
 
-.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/thermofeel
+.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/ibicus
   :target: https://pypi.org/project/ibicus
   
 .. |docs| image:: https://readthedocs.org/projects/ibicus/badge/?version=latest
   :target: https://ibicus.readthedocs.io/en/latest/?badge=latest      
 
 .. |Maintenance yes| image:: https://img.shields.io/badge/Maintained%3F-yes-green.svg
-   :target: https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity
+   :target: https://github.com/esowc/ibicus/graphs/commit-activity
 
 .. |Website ibicus| image:: https://img.shields.io/website-up-down-green-red/http/monip.org.svg
    :target: https://readthedocs.org/
@@ -71,23 +71,20 @@ Similarly should you encounter bugs or issues using the package please `open an 
 .. |made-with-sphinx-doc| image:: https://img.shields.io/badge/Made%20with-Sphinx-1f425f.svg
    :target: https://www.sphinx-doc.org/
 
-.. |PyPI download month| image:: https://img.shields.io/pypi/dm/ansicolortags.svg
+.. |PyPI download month| image:: https://img.shields.io/pypi/dm/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |PyPI version shields.io| image:: https://img.shields.io/pypi/v/ansicolortags.svg
+.. |PyPI version shields.io| image:: https://img.shields.io/pypi/v/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |PyPI license| image:: https://img.shields.io/pypi/l/ansicolortags.svg
+.. |PyPI license| image:: https://img.shields.io/pypi/l/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |PyPI pyversions| image:: https://img.shields.io/pypi/pyversions/ansicolortags.svg
+.. |PyPI pyversions| image:: https://img.shields.io/pypi/pyversions/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |PyPI status| image:: https://img.shields.io/pypi/status/ansicolortags.svg
+.. |PyPI status| image:: https://img.shields.io/pypi/status/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |Documentation Status| image:: https://readthedocs.org/projects/ansicolortags/badge/?version=latest
-   :target: http://ansicolortags.readthedocs.io/?badge=latest
-
-.. |GitHub contributors| image:: https://img.shields.io/github/contributors/Naereen/StrapDown.js.svg
+.. |GitHub contributors| image:: https://img.shields.io/github/contributors/esowc/ibicus
    :target: https://github.com/esowc/ibicus
