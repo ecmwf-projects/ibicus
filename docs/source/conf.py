@@ -76,3 +76,5 @@ autodoc_preserve_defaults = False
 """numpydoc_attributes_as_param_list = True
 numpydoc_show_class_members = True
 """
+
+master_doc = "index"
