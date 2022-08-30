@@ -61,6 +61,7 @@ setuptools.setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Operating System :: OS Independent",
+        "Development Status :: 4 - Beta",
     ],
     tests_require=tests_require,
     test_suite="tests",
