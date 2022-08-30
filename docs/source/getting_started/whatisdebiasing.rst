@@ -90,7 +90,7 @@ See also
 
 - Documentation of the  debias and evaluate module providing info on how to use ibicus
 - This `guidance from the UK MET Office <https://www.metoffice.gov.uk/binaries/content/assets/metofficegovuk/pdf/research/ukcp/ukcp18-guidance---how-to-bias-correct.pdf>`_ provides an excellent intro into bias correction: Fung, F (2018). How to Bias Correct, UKCP18 Guidance, Met Office.
-- This `publication by Maraun 2016 <https://link.springer.com/article/10.1007/s40641-016-0050-x`_ provides an excellent review of some of the issues with bias correction: Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211-220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
+- This `publication by Maraun 2016 <https://link.springer.com/article/10.1007/s40641-016-0050-x>`_ provides an excellent review of some of the issues with bias correction: Maraun, D. (2016). Bias Correcting Climate Change Simulations - a Critical Review. In Current Climate Change Reports (Vol. 2, Issue 4, pp. 211-220). Springer Science and Business Media LLC. https://doi.org/10.1007/s40641-016-0050-x
 
 **References:**
 
