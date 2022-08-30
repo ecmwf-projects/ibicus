@@ -33,7 +33,7 @@ author = "ECMWF"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
-    "matplotlib.sphinxext.plot_directive",
+    # "matplotlib.sphinxext.plot_directive",
     "numpydoc",  # "sphinx.ext.napoleon"
 ]
 
