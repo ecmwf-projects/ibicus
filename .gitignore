@@ -134,5 +134,6 @@ dmypy.json
 
 # Notebooks
 # Output of ISIMIP consistency notebook
+notebooks/isimip_output.txt
 notebooks/isimip3basd-master.tar.gz
 notebooks/isimip3basd-master/*
