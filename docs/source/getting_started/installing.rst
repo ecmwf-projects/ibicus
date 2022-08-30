@@ -14,7 +14,7 @@ To install ibicus, just run the following command:
   pip install ibicus
 
 The ibicus ``pip`` package has been tested successfully with the latest versions of
-its dependencies (`build logs <https://github.com/PROJECT/ibicus/PATH/TO/test-and-release.yml>`_).
+its dependencies (`setup.py <https://github.com/esowc/ibicus/blob/main/setup.py>`_).
 
 Conda install
 -------------
