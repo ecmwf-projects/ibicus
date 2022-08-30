@@ -36,6 +36,9 @@ experimental_default_settings = {
 class QuantileMapping(Debiaser):
     """
     |br| Implements (detrended) Quantile Mapping based on Cannon et al. 2015 and Maraun 2016.
+    
+    (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving. Most methods build on quantile mapping.
+
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     Let :math:`F` be a CDF. The future climate projections :math:`x_{\\text{cm_fut}}` are then mapped using a QQ-mapping between :math:`F_{\\text{cm_hist}}` and :math:`F_{\\text{obs}}`, so:

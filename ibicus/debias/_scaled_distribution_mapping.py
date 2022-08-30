@@ -42,6 +42,9 @@ experimental_default_settings = {
 class ScaledDistributionMapping(Debiaser):
     """
     |br| Implements Scaled Distribution Matching (SDM) based on Switanek et al. 2017.
+    
+    SDM is conceptually similar to QDM, and in the same ‘family’ as CDFt and ECDFM. It is a parametric quantile mapping approach that also attempts to be trend preserving in all quantiles. In addition to the quantile mapping the method also contains an event likelihood adjustment.
+
 
     SDM scales the observed distribution by changes in magnitude and additionally likelihood of events -- either multiplicatively (for precipitation) or additively (for temperature).
 

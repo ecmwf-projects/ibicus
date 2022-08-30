@@ -44,6 +44,9 @@ experimental_default_settings = {
 class CDFt(Debiaser):
     """
     |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
+    
+    CDFt is a non-parametric quantile mapping method that attempts to be trend-preserving in all quantiles. CDFt applies a concatenation between a quantile mapping of future and historical climate model data and a quantile mapping of the future climate model with historical observations. It also includes a running window over the future period to account for changes in the simulated trend.
+
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
     In this methodology, all cdfs are estimated empirically. Let :math:`F` therefore be an empirical cdf.

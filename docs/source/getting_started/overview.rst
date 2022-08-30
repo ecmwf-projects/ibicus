@@ -52,32 +52,32 @@ The methods currently implemented in ibicus include:
    * - :py:class:`ISIMIP`
      - * Lange 2019 |brr| 
        * Lange 2021
-     - Row 2, column 3
+     - ISIMIP is a semi-parametric quantile mapping method that also attempts to be trend-preserving by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for each of the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
    * - :py:class:`LinearScaling`
      - * Maraun 2016
-     - Row 1, column 3
+     - Linear scaling corrects a climate model by the difference in the mean of observations and the mean of the climate model on the reference period, either additively or multiplicatively.
    * - :py:class:`QuantileMapping`
      - * Cannon et al. 2015 |brr| 
        * Maraun 2016
-     - Row 1, column 3
+     - (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving. Most methods build on quantile mapping.
    * - :py:class:`ScaledDistributionMapping`
      - * Switanek et al. 2017
-     - Row 2, column 3
+     - SDM is conceptually similar to QDM, and in the same ‘family’ as CDFt and ECDFM. It is a parametric quantile mapping approach that also attempts to be trend preserving in all quantiles. In addition to the quantile mapping the method also contains an event likelihood adjustment.
    * - :py:class:`CDFt`
      - * Michelangeli et al. 2009 |brr| 
        * Vrac et al. 2012 |brr| 
        * Famien et al. 2018 |brr| 
        * Vrac et al. 2016
-     - Row 2, column 3
+     - CDFt is a non-parametric quantile mapping method that attempts to be trend-preserving in all quantiles. CDFt applies a concatenation between a quantile mapping of future and historical climate model data and a quantile mapping of the future climate model with historical observations. It also includes a running window over the future period to account for changes in the simulated trend.
    * - :py:class:`ECDFM`
      - * Li et al. 2010
-     - Row 2, column 3
+     - ECDFM is a parametric quantile mapping method that attempts to be trend-preserving in all quantiles. ECDFM applies quantilewise correction by adding the difference between a quantile mapping of observations and future values and a quantile mapping of historical climate model values to the future climate model ones.
    * - :py:class:`QuantileDeltaMapping`
      - * Cannon et al. 2015
-     - Row 2, column 3
+     - QDM is a parametric quantile mapping method that also attempts to be trend-preserving. It extends ECDFM such that the two quantile mappings defined there are not only added but also divided by each other to create multiplicative correction. Furthermore it includes both a running window over the year: to account for seasonality, as well as one over the future period to account for changes in trends.
    * - :py:class:`DeltaChange`
      - * Maraun 2016
-     - Row 2, column 3
+     - Delta Change applies the trend from historical to future climate model to the observations. Although technically not a bias correction method, as no transformation is applied to the climate model, it is included here as it provides an adjusted future climatology.
 
 However, users can also adapt the settings of different debiasers to adapt them to their use-case, for example:
 

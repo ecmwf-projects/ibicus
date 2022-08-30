@@ -52,6 +52,9 @@ experimental_default_settings = {
 class QuantileDeltaMapping(Debiaser):
     """
     |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
+    
+    QDM is a parametric quantile mapping method that also attempts to be trend-preserving. It extends ECDFM such that the two quantile mappings defined there are not only added but also divided by each other to create multiplicative correction. Furthermore it includes both a running window over the year: to account for seasonality, as well as one over the future period to account for changes in trends.
+
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
 

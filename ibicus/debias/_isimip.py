@@ -41,8 +41,10 @@ from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 class ISIMIP(Debiaser):
     """
     |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology based on Lange 2019 and Lange 2021.
+    
+    ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
 
-    ISIMIP is a bias correction methodology covering the following variables::
+    ISIMIP covers the following variables::
 
         ["hurs", "pr", "prsnratio", "psl", "rsds", "rlds", "sfcwind", "tas", "tasrange", "taskew"]
 

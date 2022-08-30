@@ -34,6 +34,9 @@ experimental_default_settings = {
 class LinearScaling(Debiaser):
     """
     |br| Implements debiasing via linear scaling based on Maraun 2016.
+    
+    Linear scaling corrects a climate model by the difference in the mean of observations and the mean of the climate model on the reference period, either additively or multiplicatively.
+
 
     The present day model bias is calculated and then either subtracted or divided from the future climate model data.
 
