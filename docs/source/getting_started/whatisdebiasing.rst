@@ -38,7 +38,7 @@ One issue with quantile mapping is that it is in general not trend preserving.
 More complex methods include for example Quantile Delta Mapping, CDFt, Equidistant CDF Matching or the ISIMIP3BASD approach. Those 
 are oftentimes trend preserving in the mean and other quantiles. The methods are most of the time based on some form of quantile 
 mapping as core, but with different additional adjustments. They also have different assumptions. For an overview of the inner workings 
-of those and some other methods, please have a look at the debias-module (LINK).
+of those and some other methods, please have a look at the :py:mod:`debias-module.
 
 The methods named so far all provide univariate bias adjustment: meaning they work location-wise and do not provide an adjustment of 
 either spatial or inter-variable structure. Also, multivariate and spatial quantile mapping methods exist [4] – allowing for the 
@@ -47,7 +47,7 @@ Whether or not to correct for example the inter-variable structure, which could 
 is a contentious and debated topic of research. If such correction is necessary, the excellent 
 MBC (https://cran.r-project.org/web/packages/MBC/index.html) or SBCK (https://github.com/yrobink/SBCK) package are suitable solutions.
 
-Ibicus currently implements eight methods for bias correction published in peer-reviewed literature. The package enables the user to 
+ibicus currently implements eight methods for bias correction published in peer-reviewed literature. The package enables the user to 
 modify and refine their settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and 
 multivariate properties of the bias corrected climate model.
 

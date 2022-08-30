@@ -31,8 +31,6 @@ Different debiasers rely on different assumptions -
 some are parametrics, others non-parametric, some bias correct each day or month of the year separately, 
 others are applied to all days of the year in the same way. 
 
-TO-DO: The following table provides an overview of assumptions made in different bias correction methodologies
-
 This components is meant to check some of these assumptions and for example help the user choose an appropriate function
 to fit the data to, an appropriate application window (entire year vs each days or month individually) and rule out the use 
 of some debiasers that are not fit for purpose in a specific application.

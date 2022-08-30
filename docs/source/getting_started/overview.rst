@@ -14,9 +14,9 @@ Overview
 ========
 
 
-**Ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
+**ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
 
-Ibicus currently implements eight methods for bias correction published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). The package enables the user to modify and refine their settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
+ibicus currently implements eight methods for bias correction published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). The package enables the user to modify and refine their settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
 
 What is bias correction?
 ------------------------
@@ -32,7 +32,7 @@ What is ibicus?
 
 *A user-friendly toolkit to bias correct climate models…*
 
-A variety of methods exist for bias correcting climate models. Some are better suited for certain variables; others will introduce modifications to the climate change trend while others are explicitly trend-preserving. Ibicus provides a unified interface for applying a variety of different methods (8 currently) for bias correction published in peer reviewed literature to date.
+A variety of methods exist for bias correcting climate models. Some are better suited for certain variables; others will introduce modifications to the climate change trend while others are explicitly trend-preserving. ibicus provides a unified interface for applying a variety of different methods (8 currently) for bias correction published in peer reviewed literature to date.
 
 Given climate model data: during a reference period (``cm_hist``) and future / application period (``cm_future``) as well as observations or reanalysis data during the reference period (``obs``), ibicus provides a straightforward user-interface for initializing and applying a bias correction method:
 
@@ -88,7 +88,7 @@ However, users can also adapt the settings of different debiasers to adapt them 
 
 Bias correction is prone to misuse and can generate seemingly meaningful results even if applied to variables that have no physical link whatsoever. Any bias correction approach should therefore include a thorough evaluation of the obtained results, not only of marginal aspects of the corrected statistics, but also comparing the multivariate, temporal and spatial structure of observations, the raw climate model and the bias corrected climate model.
 
-Ibicus includes a framework that enables the user to conduct this evaluation as part of the bias correction process. The evaluation framework consists of three parts:
+ibicus includes a framework that enables the user to conduct this evaluation as part of the bias correction process. The evaluation framework consists of three parts:
 
 - Assumptions testing: this component helps the user check some assumptions underlying the use of different bias correction methods to choose the most appropriate method and refine its parameters.
 
@@ -115,11 +115,14 @@ What is ibicus not?
 
 After trying to convince you of the advantages of using ibicus, we also want to alert you to what ibicus currently does not do:
 
-1. Ibicus does not currently support multivariate bias correction, meaning the correction of spatial or inter-variable structure. Whether or not to correct for example the inter-variable structure, which could be seen as an integral feature of the climate model [link to Maraun], is a contentious and debated topic of research. If such correction is necessary, the excellent `MBC <https://cran.r-project.org/web/packages/MBC/index.html>`_ or `SBCK <https://github.com/yrobink/SBCK>`_ package are suitable solutions. |brr|
+1. ibicus does not currently support multivariate bias correction, meaning the correction of spatial or inter-variable structure. Whether or not to correct for example the inter-variable structure, which could be seen as an integral feature of the climate model [link to Maraun], is a contentious and debated topic of research. If such correction is necessary, the excellent `MBC <https://cran.r-project.org/web/packages/MBC/index.html>`_ or `SBCK <https://github.com/yrobink/SBCK>`_ package are suitable solutions. |brr|
 
-2. Ibicus is not suitable for 'downscaling' the climate model which is a term for methods used to increase the spatial resolution of climate models. Although bias corrections methods have been used for downscaling, in general they are not appropriate, since they do not reproduce the local scale variability that is crucial on those scales. Maraun 2016 argues that for downscaling, stochastic methods have great advantages. An example of a package addressing the problem of downscaling is: `Rglimclim <https://www.ucl.ac.uk/~ucakarc/work/glimclim.html>`_. |brr|
+2. ibicus is not suitable for 'downscaling' the climate model which is a term for methods used to increase the spatial resolution of climate models. Although bias corrections methods have been used for downscaling, in general they are not appropriate, since they do not reproduce the local scale variability that is crucial on those scales. Maraun 2016 argues that for downscaling, stochastic methods have great advantages. An example of a package addressing the problem of downscaling is: `Rglimclim <https://www.ucl.ac.uk/~ucakarc/work/glimclim.html>`_. |brr|
 
 3. 'Garbage in, garbage out'. Ibicus cannot guarantee that the climate model is suitable for the problem at hand. As mentioned above, although bias correction can help with misspecifications, it cannot solve fundamental problems within climate models. The evaluation framework can help you identify whether such fundamental issues exist in the chosen climate model. However, this cannot replace careful climate model selection before starting a climate impact study. |brr|
+
+Get in touch
+------------
 
 This project was conducted as part of the ESoWC challenge 2022. If you have suggestions on additional methods we could add, questions you'd like to ask, issues that you are finding in the application of the methods that are already implemented, or bugs in the code, please contact us under ibicus.py@gmail.com or `raise an issue on github <https://github.com/esowc/ibicus/issues>`_.
 

@@ -34,8 +34,8 @@ PACKAGE\_NAME.evaluate.marginal
    :undoc-members:
    :show-inheritance:
    
-PACKAGE\_NAME.evaluate.spatial 
-------------------------------
+PACKAGE\_NAME.evaluate.multivariate 
+-----------------------------------
 
 .. automodule:: ibicus.evaluate.spatial
    :members:
