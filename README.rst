@@ -23,7 +23,7 @@ Evaluating dry spell length can be as easy as:
 >>> spell_length = dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
 
 
-For more information on the usage have a look at our docs (TODO: insert LINK)
+For more information on the usage have a look at `our docs <https://ibicus.readthedocs.io/en/latest/>`_.
 
 
 
@@ -34,7 +34,7 @@ Ibicus releases are available via PyPI. Just write::
 
    pip install ibicus
 
-For more information about installation and requirements see the `install documentation <TODO: add LINK>`_ in the docs.
+For more information about installation and requirements see the `install documentation <https://ibicus.readthedocs.io/en/latest/getting_started/installing.html>`_ in the docs.
 
 
 Contact
