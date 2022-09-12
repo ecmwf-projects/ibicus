@@ -36,7 +36,7 @@ experimental_default_settings = {
 class QuantileMapping(Debiaser):
     """
     |br| Implements (detrended) Quantile Mapping based on Cannon et al. 2015 and Maraun 2016.
-    
+
     (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving. Most methods build on quantile mapping.
 
 
@@ -56,7 +56,7 @@ class QuantileMapping(Debiaser):
     Here :math:`\\bar x_{\\text{cm_fut}}` designs the mean of :math:`x_{\\text{cm_fut}}` and similar for :math:`x_{\\text{cm_hist}}`.
     Detrended Quantile Mapping accounts for changes in the projected values and is thus trend-preserving in the mean.
 
-    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However, other models are also possible, :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
+    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (see :py:class:`ibicus.utils.gen_PrecipitationHurdleModel`). However, other models are also possible, :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 
     **References**:
 
@@ -71,6 +71,8 @@ class QuantileMapping(Debiaser):
     - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
 
     - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
+
+    - The debiaser works with data in any time specification (daily, monthly, etc.), although some of the default distributions have the best fit to daily data.
 
     |br|
     **Examples:**
@@ -91,7 +93,7 @@ class QuantileMapping(Debiaser):
     ----------
     distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Distribution or statistical model used to compute the CDFs F.
-        Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the StatisticalModel class (see utils).
+        Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     detrending: str
         One of ``["additive", "multiplicative", "no_detrending"]``. What kind of scaling is applied to the future climate model data before quantile mapping. Default: ``"no_detrending"``.
     variable: str
@@ -130,13 +132,13 @@ class QuantileMapping(Debiaser):
         Parameters
         ----------
         model_type : str
-            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details (TODO: reference).
+            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See :py:class:`ibicus.utils.gen_PrecipitationGammaLeftCensoredModel`, :py:class:`ibicus.utils.gen_PrecipitationHurdleModel` and :py:class:`ibicus.utils.gen_PrecipitationIgnoreZeroValuesModel` for more details.
         amounts_distribution : scipy.stats.rv_continuous
             Distribution used for precipitation amounts. For the censored model only ``scipy.stats.gamma`` is possible.
         censoring_threshold : float
             The censoring-value if a censored precipitation model is used.
         hurdle_model_randomization : bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See ``utils.gen_PrecipitationHurdleModel`` for more details. TODO: reference
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See :py:class:`ibicus.utils.gen_PrecipitationHurdleModel` for more details.
         hurdle_model_kwds_for_distribution_fit : dict
             Dict of parameters used for the distribution fit inside a hurdle model. Default: location of distribution is fixed at zero (``floc = 0``) to stabilise Gamma distribution fits in scipy.
         **kwargs:

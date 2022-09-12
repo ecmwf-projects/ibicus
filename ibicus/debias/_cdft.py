@@ -44,7 +44,7 @@ experimental_default_settings = {
 class CDFt(Debiaser):
     """
     |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
-    
+
     CDFt is a non-parametric quantile mapping method that attempts to be trend-preserving in all quantiles. CDFt applies a concatenation between a quantile mapping of future and historical climate model data and a quantile mapping of the future climate model with historical observations. It also includes a running window over the future period to account for changes in the simulated trend.
 
 
@@ -91,6 +91,8 @@ class CDFt(Debiaser):
     - Default settings exist for: ``["hurs", "pr", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]``.
 
     - :py:func:`apply` requires: time arguments ``time_obs``, ``time_cm_hist``, and ``time_cm_future`` next to ``obs``, ``cm_hist`` and ``cm_future``. These are just 1d numpy-arrays of dates (multiple formats are possible as long as they as convertible to numpy or datetime dates) specifying the date for each value/timestep in ``obs``, ``cm_hist`` and ``cm_future``. If they are not specified they are inferred, assuming the first observation in all three observation/climate value arrays is on a 1st of January.
+
+    - The debiaser has been developed for and assumes daily data, however application on data using other time specifications (monthly etc.) is possible by setting ``apply_by_month = False``, modifying the running window arguments and specifying the time arguments in :py:func:`apply`.
 
     |br|
     **Examples:**

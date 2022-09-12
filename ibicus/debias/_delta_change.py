@@ -63,6 +63,8 @@ class DeltaChange(Debiaser):
 
     - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
 
+    - The debiaser works with data in any time specification (daily, monthly, etc.).
+
     |br|
     **Examples:**
 

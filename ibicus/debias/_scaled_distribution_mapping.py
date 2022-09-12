@@ -42,7 +42,7 @@ experimental_default_settings = {
 class ScaledDistributionMapping(Debiaser):
     """
     |br| Implements Scaled Distribution Matching (SDM) based on Switanek et al. 2017.
-    
+
     SDM is conceptually similar to QDM, and in the same ‘family’ as CDFt and ECDFM. It is a parametric quantile mapping approach that also attempts to be trend preserving in all quantiles. In addition to the quantile mapping the method also contains an event likelihood adjustment.
 
 
@@ -105,6 +105,7 @@ class ScaledDistributionMapping(Debiaser):
 
     - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
 
+    - The method has been developed for daily data, however application on data in other time specifications (monthly etc.) is possible.
 
     |br|
     **Examples:**
@@ -118,7 +119,7 @@ class ScaledDistributionMapping(Debiaser):
     ----------
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Method used for the fit to the historical and future climate model outputs as well as the observations.
-        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel``(TODO: reference) class.
+        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     mapping_type : str
         One of ``["absolute", "relative"]``. Type of SDM used. Default are "absolute" for ``tas`` and ``"relative"`` for ``pr``.
     pr_lower_threshold : float

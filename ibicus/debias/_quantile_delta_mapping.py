@@ -52,7 +52,7 @@ experimental_default_settings = {
 class QuantileDeltaMapping(Debiaser):
     """
     |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
-    
+
     QDM is a parametric quantile mapping method that also attempts to be trend-preserving. It extends ECDFM such that the two quantile mappings defined there are not only added but also divided by each other to create multiplicative correction. Furthermore it includes both a running window over the year: to account for seasonality, as well as one over the future period to account for changes in trends.
 
 
@@ -96,6 +96,8 @@ class QuantileDeltaMapping(Debiaser):
 
     - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
 
+    - The debiaser has been developed for and assumes daily data, although application on data using other time specifications (monthly etc.) is possible by setting ``running_window_mode_within_year = False``, modifying the running window arguments for the running window over the years of cm_future, and specifying the time arguments in :py:func:`apply`.
+
     |br|
     **Examples:**
 
@@ -115,7 +117,7 @@ class QuantileDeltaMapping(Debiaser):
     ----------
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Distribution or statistical model used to compute the CDF :math:`F` of observations and historical climate model values. |br|
-        Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the StatisticalModel class (see utils).
+        Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     trend_preservation : str
         One of ``["absolute", "relative"]``. If ``"absolute"`` then absolute trend preservation is used, if ``"relative"`` then relative trend preservation is used. |brr|
 

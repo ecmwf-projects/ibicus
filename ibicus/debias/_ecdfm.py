@@ -34,7 +34,7 @@ experimental_default_settings = {
 class ECDFM(Debiaser):
     """
     |br| Implements Equidistant CDF Matching (ECDFM) based on Li et al. 2010.
-    
+
     ECDFM is a parametric quantile mapping method that attempts to be trend-preserving in all quantiles. ECDFM applies quantilewise correction by adding the difference between a quantile mapping of observations and future values and a quantile mapping of historical climate model values to the future climate model ones.
 
 
@@ -51,7 +51,7 @@ class ECDFM(Debiaser):
 
     .. note:: As opposed to most other publications, Li et al. use a  4-parameter beta distribution (:py:data:`scipy.stats.beta`) for ``tas`` instead of a normal distribution. This can be slow for the fit at times. Consider modifying the ``distribution`` parameter for ``tas``.
 
-    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (TODO: reference). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
+    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (see :py:class:`ibicus.utils.gen_PrecipitationHurdleModel`). However also different ones are possible. :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 
 
     **Reference:**
@@ -66,6 +66,8 @@ class ECDFM(Debiaser):
     - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
 
     - Next to :py:func:`from_variable` a :py:func:`for_precipitation`-method exists to help you initialise the debiaser for :py:data:`pr`.
+
+    - The debiaser has been developed for monthly data, however it works with data in any time specification (daily, monthly, etc.).
 
     |br|
     **Examples:**
@@ -86,7 +88,7 @@ class ECDFM(Debiaser):
     ----------
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Method used for the fit to the historical and future climate model outputs as well as the observations.
-        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel``(TODO: reference) class.
+        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
@@ -119,13 +121,13 @@ class ECDFM(Debiaser):
         Parameters
         ----------
         model_type : str
-            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See utils.gen_PrecipitationGammaLeftCensoredModel, utils.gen_PrecipitationHurdleModel and utils.gen_PrecipitationIgnoreZeroValuesModel for more details. TODO: reference
+            One of ``["censored", "hurdle", "ignore_zeros"]``. Model type to be used. See :py:class:`ibicus.utils.gen_PrecipitationGammaLeftCensoredModel`, :py:class:`ibicus.utils.gen_PrecipitationHurdleModel` and :py:class:`ibicus.utils.gen_PrecipitationIgnoreZeroValuesModel` for more details.
         amounts_distribution : scipy.stats.rv_continuous
             Distribution used for precipitation amounts. For the censored model only :py:data:`scipy.stats.gamma` is possible.
         censoring_threshold : float
             The censoring-value if a censored precipitation model is used.
         hurdle_model_randomization : bool
-            Whether when computing the cdf-values for a hurdle model randomization shall be used. See utils.gen_PrecipitationHurdleModel for more details. TODO: reference
+            Whether when computing the cdf-values for a hurdle model randomization shall be used. See :py:class:`ibicus.utils.gen_PrecipitationHurdleModel` for more details.
         hurdle_model_kwds_for_distribution_fit : dict
             Dict of parameters used for the distribution fit inside a hurdle model. Default: ``{"floc": 0, "fscale": None} location of distribution is fixed at zero (``floc = 0``) to stabilise Gamma distribution fits in scipy.
         **kwargs:

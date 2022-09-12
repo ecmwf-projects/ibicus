@@ -41,7 +41,7 @@ from ._isimip_options import isimip3_general_settings, isimip3_variable_settings
 class ISIMIP(Debiaser):
     """
     |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology based on Lange 2019 and Lange 2021.
-    
+
     ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
 
     `This notebook <https://nbviewer.org/github/esowc/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
@@ -95,9 +95,9 @@ class ISIMIP(Debiaser):
     >>> debiaser = ISIMIP.from_variable("tas")
     >>> debiaser.detrending = False
 
-    If run with the default options, the results generated in this package are exactly identical to v3.0.1 (2022-06-27) of the `ISIMIP3BASD reference implementation <https://zenodo.org/record/6758997/>`_ , as shown in the notebook (TO-DO LINK). By setting parameters appropriately reproducing lower versions is possible and also consistency with future versions is considered.
+    If run with the default options, the results generated in this package are exactly identical to v3.0.1 (2022-06-27) of the `ISIMIP3BASD reference implementation <https://zenodo.org/record/6758997/>`_, as shown in the notebook `04 ISIMIP Consistency <https://nbviewer.org/github/esowc/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_. By setting parameters appropriately reproducing lower versions is possible and also consistency with future versions is considered.
 
-    In contrast to the reference implementation implementation of ISIMIP this code includes further options for customization of the ISIMIP behavior, allows more flexible usage given that it operates on a numerical basis and handles a variety of cases that might lead to bugs in the reference implementation (TODO).
+    In contrast to the reference implementation implementation of ISIMIP this code includes further options for customization of the ISIMIP behavior, allows more flexible usage given that it operates on a numerical basis and handles a variety of cases that might lead to bugs in the reference implementation.
 
     **References**:
 
@@ -111,6 +111,8 @@ class ISIMIP(Debiaser):
     - Default settings exist for: ``["hurs", "pr", "prsnratio", "psl", "rlds", "rsds", "sfcWind", "tas", "tasrange", "tasskew"]``.
 
     - :py:func:`apply` requires: time arguments ``time_obs``, ``time_cm_hist``, and ``time_cm_future`` next to ``obs``, ``cm_hist`` and ``cm_future``. These are just 1d numpy-arrays of dates (multiple formats are possible as long as they as convertible to numpy or datetime dates) specifying the date for each value/timestep in ``obs``, ``cm_hist`` and ``cm_future``. If they are not specified they are inferred, assuming the first observation in all three observation/climate value arrays is on a 1st of January.
+
+    - The debiaser assumes daily data.
 
     |br|
     **Examples:**
@@ -133,7 +135,7 @@ class ISIMIP(Debiaser):
             One of ``["additive", "multiplicative", "mixed", "bounded"]``. Method of how the climate change trend is transferred to observations to generate the pseudo future observations. Depends on the kind of climate change trend expected in the variable.
         **distribution** : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
             Distribution or statistical model used for the quantile mapping in step 6 if ``nonparametric_qm = False``. |br|
-            Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel``(TODO: reference) class.
+            Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
         **nonparametric_qm** : bool
             Whether nonparametric quantile mapping is used for debiasing in step 6. If ``nonparametric_qm = False`` then quantile mapping is done using the distribution in self.distribution.
         **detrending** : bool
@@ -174,7 +176,7 @@ class ISIMIP(Debiaser):
 
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Step 6: Distribution or statistical model used for the quantile mapping in step 6 if ``nonparametric_qm = False``. |br|
-        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the ``StatisticalModel`` class (TODO: Link).
+        Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     nonparametric_qm : bool
         Step 6: Whether nonparametric quantile mapping is used for debiasing in step 6. If ``nonparametric_qm = False`` then quantile mapping is done using the distribution in ``distribution``.
     bias_correct_frequencies_of_values_beyond_thresholds : bool
@@ -555,7 +557,7 @@ class ISIMIP(Debiaser):
         p = ecdf(obs_hist, obs_hist, method=self.ecdf_method)
 
         # Compute q-vals: q = IECDF(p)
-        q_obs_hist = obs_hist  # TODO: = iecdf(obs_hist, p, method=self.iecdf_method), appears in eq. 7
+        q_obs_hist = obs_hist  # = iecdf(obs_hist, p, method=self.iecdf_method), appears in eq. 7
         q_cm_future = iecdf(cm_future, p, method=self.iecdf_method)
         q_cm_hist = iecdf(cm_hist, p, method=self.iecdf_method)
 

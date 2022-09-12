@@ -34,7 +34,7 @@ experimental_default_settings = {
 class LinearScaling(Debiaser):
     """
     |br| Implements debiasing via linear scaling based on Maraun 2016.
-    
+
     Linear scaling corrects a climate model by the difference in the mean of observations and the mean of the climate model on the reference period, either additively or multiplicatively.
 
 
@@ -62,6 +62,8 @@ class LinearScaling(Debiaser):
     - Default settings exist for: ``["hurs", "pr", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax"]``.
 
     - :py:func:`apply` requires: no additional arguments except ``obs``, ``cm_hist``, ``cm_future``.
+
+    - The debiaser works with data in any time specification (daily, monthly, etc.).
 
     |br|
     **Examples:**

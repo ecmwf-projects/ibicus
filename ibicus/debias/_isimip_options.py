@@ -115,7 +115,7 @@ isimip3_variable_settings = {
         "lower_threshold": 0.01,
         "upper_bound": np.inf,
         "upper_threshold": np.inf,
-        "distribution": scipy.stats.weibull_min,  # TODO: needs to be real weibull (log of exponweib)
+        "distribution": scipy.stats.weibull_min,
         "trend_preservation_method": "mixed",
     },
     tas: {
