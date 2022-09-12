@@ -17,6 +17,12 @@ def read(fname):
     return io.open(file_path, encoding="utf-8").read()
 
 
+project_urls = {
+    "Documentation": "https://ibicus.readthedocs.io/en/latest/",
+    "Source": "https://github.com/esowc/ibicus",
+    "Tracker": "https://github.com/esowc/ibicus/issues",
+}
+
 install_requires = [
     "numpy>=1.22",
     "attrs>=21.3.0",
@@ -45,6 +51,7 @@ setuptools.setup(
     author_email=meta.get("__author_email__", "software.support@ecmwf.int"),
     license="Apache License Version 2.0",
     url="https://github.com/esowc/ibicus",
+    project_urls=project_urls,
     packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=install_requires,
