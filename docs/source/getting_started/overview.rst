@@ -110,7 +110,7 @@ ibicus includes a framework that enables the user to conduct this evaluation as 
 
 - Analysis of trend preservation: Bias correction can significantly modify the trend projected in the climate model simulation. This component helps the user assess whether a certain method preserves the climate model trend or not, in order to provide the basis for an informed choice on whether trend modification is desirable for the application at hand.
 
-What is ibicus not?
+What ibicus is not?
 -------------------
 
 After trying to convince you of the advantages of using ibicus, we also want to alert you to what ibicus currently does not do:
