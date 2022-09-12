@@ -9,7 +9,7 @@
    <br /> <br />
 
 
-PACKAGE\_NAME.utils module
+ibicus.utils module
 ==========================
 
 .. automodule:: ibicus.utils
@@ -18,7 +18,7 @@ PACKAGE\_NAME.utils module
    :show-inheritance:
 
 
-PACKAGE\_NAME.utils Convert variables
+ibicus.utils Convert variables
 -------------------------------------
 
 .. autofunction:: get_tasrange
@@ -41,35 +41,35 @@ PACKAGE\_NAME.utils Convert variables
 
 
 
-PACKAGE\_NAME.utils StatisticalModel abstract-class
+ibicus.utils StatisticalModel abstract-class
 ----------------------------------------------------
 
 .. autoclass:: StatisticalModel
 	:members: fit, cdf, ppf
 
 
-PACKAGE\_NAME.utils gen\_PrecipitationIgnoreZeroValuesModel-class
+ibicus.utils gen\_PrecipitationIgnoreZeroValuesModel-class
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: gen_PrecipitationIgnoreZeroValuesModel
 	:members: fit, cdf, ppf
    
 
-PACKAGE\_NAME.debias gen\_PrecipitationHurdleModel-class
+ibicus.debias gen\_PrecipitationHurdleModel-class
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: gen_PrecipitationHurdleModel
 	:members: fit, cdf, ppf
 
 
-PACKAGE\_NAME.utils gen\_PrecipitationGammaLeftCensoredModel-class
+ibicus.utils gen\_PrecipitationGammaLeftCensoredModel-class
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. autoclass:: gen_PrecipitationGammaLeftCensoredModel
 	:members: fit, cdf, ppf
    
 
-PACKAGE\_NAME.utils Mathematical helpers
+ibicus.utils Mathematical helpers
 -----------------------------------------
 
 .. autofunction:: ecdf

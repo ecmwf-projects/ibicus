@@ -9,7 +9,7 @@
    <br /> <br />
 
 
-PACKAGE\_NAME.evaluate module
+ibicus.evaluate module
 =============================
 
 .. automodule:: ibicus.evaluate
@@ -18,7 +18,7 @@ PACKAGE\_NAME.evaluate module
    :show-inheritance:
   
 
-PACKAGE\_NAME.evaluate.metrics 
+ibicus.evaluate.metrics 
 ------------------------------
 
 .. automodule:: ibicus.evaluate.metrics
@@ -26,7 +26,7 @@ PACKAGE\_NAME.evaluate.metrics
    :undoc-members:
    :show-inheritance:
 
-PACKAGE\_NAME.evaluate.marginal
+ibicus.evaluate.marginal
 -------------------------------
 
 .. automodule:: ibicus.evaluate.marginal
@@ -34,7 +34,7 @@ PACKAGE\_NAME.evaluate.marginal
    :undoc-members:
    :show-inheritance:
    
-PACKAGE\_NAME.evaluate.multivariate 
+ibicus.evaluate.multivariate 
 -----------------------------------
 
 .. automodule:: ibicus.evaluate.multivariate
@@ -43,7 +43,7 @@ PACKAGE\_NAME.evaluate.multivariate
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.correlation 
+ibicus.evaluate.correlation 
 ----------------------------------
 
 .. automodule:: ibicus.evaluate.correlation
@@ -52,7 +52,7 @@ PACKAGE\_NAME.evaluate.correlation
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.trend
+ibicus.evaluate.trend
 ----------------------------
 
 .. automodule:: ibicus.evaluate.trend
@@ -61,7 +61,7 @@ PACKAGE\_NAME.evaluate.trend
    :show-inheritance:
 
 
-PACKAGE\_NAME.evaluate.assumptions 
+ibicus.evaluate.assumptions 
 ----------------------------------
 
 .. automodule:: ibicus.evaluate.assumptions

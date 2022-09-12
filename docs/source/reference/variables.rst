@@ -9,13 +9,13 @@
    <br /> <br />
 
 
-PACKAGE\_NAME.variables module
+ibicus.variables module
 ==============================
 
 .. automodule:: ibicus.variables
    :show-inheritance:
 
-PACKAGE\_NAME.debias Variable-class
+ibicus.debias Variable-class
 --------------------------------------------
 
 .. autoclass:: Variable

@@ -9,7 +9,7 @@
    <br /> <br />
 
 
-PACKAGE\_NAME.debias module
+ibicus.debias module
 ===========================
 
 .. automodule:: ibicus.debias
@@ -18,61 +18,61 @@ PACKAGE\_NAME.debias module
    :show-inheritance:
    
 
-PACKAGE\_NAME.debias Debiaser abstract-class
+ibicus.debias Debiaser abstract-class
 --------------------------------------------
 
 .. autoclass:: Debiaser
 	:members: from_variable, apply, apply_location, _from_variable
 
    
-PACKAGE\_NAME.debias LinearScaling class
+ibicus.debias LinearScaling class
 ----------------------------------------
 
 .. autoclass:: LinearScaling
 	:members: from_variable, apply, apply_location
 
-PACKAGE\_NAME.debias DeltaChange class
+ibicus.debias DeltaChange class
 --------------------------------------
 
 .. autoclass:: DeltaChange
 	:members: from_variable, apply, apply_location
 
 
-PACKAGE\_NAME.debias QuantileMapping class
+ibicus.debias QuantileMapping class
 ------------------------------------------
 
 .. autoclass:: QuantileMapping
 	:members: from_variable, for_precipitation, apply, apply_location
 
 
-PACKAGE\_NAME.debias ScaledDistributionMapping class
+ibicus.debias ScaledDistributionMapping class
 ----------------------------------------------------
 
 .. autoclass:: ScaledDistributionMapping
 	:members: from_variable, apply, apply_location
 
 
-PACKAGE\_NAME.debias CDFt class
+ibicus.debias CDFt class
 -------------------------------
 
 .. autoclass:: CDFt
 	:members: from_variable, apply, apply_location
 
 
-PACKAGE\_NAME.debias ECDFM class
+ibicus.debias ECDFM class
 --------------------------------
 
 .. autoclass:: ECDFM
 	:members: from_variable, for_precipitation, apply, apply_location
 	
 	
-PACKAGE\_NAME.debias QuantileDeltaMapping class
+ibicus.debias QuantileDeltaMapping class
 -----------------------------------------------
 
 .. autoclass:: QuantileDeltaMapping
 	:members: from_variable, for_precipitation, apply, apply_location
 
-PACKAGE\_NAME.debias ISIMIP class
+ibicus.debias ISIMIP class
 ---------------------------------
 
 .. autoclass:: ISIMIP
