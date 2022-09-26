@@ -33,9 +33,6 @@ The general idea behind bias correction is to calibrate an empirical transfer fu
 This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
 For a detailed description of their methodology, we refer you to the class descriptions and the cited publications.
 
-TO-DO: insert table
-TO-DO: explain additive vs multiplicative change and why some variables have one or the other
-
 **Usage**
 
 .. testsetup::
