@@ -121,6 +121,14 @@ After trying to convince you of the advantages of using ibicus, we also want to 
 
 3. 'Garbage in, garbage out'. Ibicus cannot guarantee that the climate model is suitable for the problem at hand. As mentioned above, although bias correction can help with misspecifications, it cannot solve fundamental problems within climate models. The evaluation framework can help you identify whether such fundamental issues exist in the chosen climate model. However, this cannot replace careful climate model selection before starting a climate impact study. |brr|
 
+About the authors
+-----------------
+
+Fiona Spuler is a PhD student at the University of Reading where she is working under supervision of Prof Ted Shepherd and Dr Marlene Kretschmer and in cooperation with Dr Magdalena Balmaseda at ECMWF on "Combining dynamical and machine learning models to boost S2S forecasts of extreme weather events". Fiona holds an MSc in Mathematical Physics from the University of Edinburgh (best in class) and a second, interdisciplinary MSc at the University of Oxford in 'Environmental Change and Management'. She worked for two years as a Research Analyst at the 2° Investing Initiative, an international think-tank working on the alignment of financial markets with climate goals, as well as with the Oasis Loss Modelling Framework and the Coalition for Climate Resilient Investment as part of a scholarship funded by the German Mercator foundation.
+
+Jakob Wessel is a PhD student at the University of Exeter where he is working on "Statistical post-processing of ensemble forecasts of compound weather risk" under supervision of Dr Frank Kwasniok and Dr Chris Ferro, in cooperation with the UK MET-Office. Jakob holds an MSc in Data Science (Statistics) from University College London where he worked on an MSc dissertation about improving methods for climate model downscaling, under supervision of Prof Richard Chandler, winning the price for the best MSc dissertation. He worked as Research Analyst at the 2° Investing Initiative and gained experience as a project manager and data analyst at Serlo Education. He holds a BSc in Mathematics from Technical University Berlin and a BA in Philosophy and Political Science from Free University Berlin.
+
+
 Get in touch
 ------------
 
