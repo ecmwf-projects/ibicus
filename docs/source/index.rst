@@ -72,6 +72,6 @@ Acknowledgements
 The development of this package was supported by the European Centre for Mid-term Weather Forecasts (ECMWF) as part of the `ECMWF Summer of Weather Code <https://esowc.ecmwf.int/>`_ 
 
 .. image:: images/logos.png
-   :width: 600
+   :width: 800
    :alt: ECMWF logos
    
