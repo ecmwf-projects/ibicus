@@ -36,8 +36,12 @@ class TestRunningWindowOverYears(unittest.TestCase):
 
     def test__init__(self):
         window1 = RunningWindowOverYears(9, 17)
-        window2 = RunningWindowOverYears(window_step_length_in_years=17, window_length_in_years=9)
-        window3 = RunningWindowOverYears(window_length_in_years=4, window_step_length_in_years=2)
+        window2 = RunningWindowOverYears(
+            window_step_length_in_years=17, window_length_in_years=9
+        )
+        window3 = RunningWindowOverYears(
+            window_length_in_years=4, window_step_length_in_years=2
+        )
 
         # Test equality
         assert window1 == window2
@@ -61,14 +65,19 @@ class TestRunningWindowOverYears(unittest.TestCase):
         years = np.arange(2010, 2050)
         chosen_years = np.arange(2040 - 10 // 2, 2040 + 10 // 2)
 
-        assert RunningWindowOverYears.get_if_in_chosen_years(years, chosen_years).sum() == 10
+        assert (
+            RunningWindowOverYears.get_if_in_chosen_years(years, chosen_years).sum()
+            == 10
+        )
 
     def test__get_years_forming_window_centers(self):
         window = RunningWindowOverYears(9, 17)
 
         # Only 1 year
         unique_years = np.array([2020])
-        assert np.array_equal(window._get_years_forming_window_centers(unique_years), np.array([2020]))
+        assert np.array_equal(
+            window._get_years_forming_window_centers(unique_years), np.array([2020])
+        )
 
         # Only 5 years
         unique_years = np.arange(2015, 2021)
@@ -84,23 +93,28 @@ class TestRunningWindowOverYears(unittest.TestCase):
 
         # Enough window centers
         unique_years = np.arange(2020, 2100)
-        nr_of_window_centers = window._get_years_forming_window_centers(unique_years).size
+        nr_of_window_centers = window._get_years_forming_window_centers(
+            unique_years
+        ).size
         assert check_different_maximally_up_to_1(
-            nr_of_window_centers, unique_years.size // window.window_step_length_in_years
+            nr_of_window_centers,
+            unique_years.size // window.window_step_length_in_years,
         )
 
         # First and last one not drastically different
         unique_years = np.arange(2020, 2100)
         window_centers = window._get_years_forming_window_centers(unique_years)
         assert check_different_maximally_up_to_1(
-            window_centers[0] - unique_years.min(), unique_years.max() - window_centers[-1]
+            window_centers[0] - unique_years.min(),
+            unique_years.max() - window_centers[-1],
         )
 
         # Equally spaced
         unique_years = np.arange(2020, 2100)
         window_centers = window._get_years_forming_window_centers(unique_years)
         assert all(
-            window_centers[1 : (window_centers.size - 1)] - window_centers[0 : (window_centers.size - 2)]
+            window_centers[1 : (window_centers.size - 1)]
+            - window_centers[0 : (window_centers.size - 2)]
             == window.window_step_length_in_years,
         )
 
@@ -113,19 +127,25 @@ class TestRunningWindowOverYears(unittest.TestCase):
 
     def test__get_years_in_window_that_are_adjusted(self):
         window = RunningWindowOverYears(17, 9)
-        years_in_window_bias_corrected = window._get_years_in_window_that_are_adjusted(2020)
+        years_in_window_bias_corrected = window._get_years_in_window_that_are_adjusted(
+            2020
+        )
 
         assert years_in_window_bias_corrected.size == window.window_step_length_in_years
         assert np.array_equal(years_in_window_bias_corrected, np.arange(2016, 2024 + 1))
 
-    def _test_all_bias_corrected_and_length_each_window(self, window, start_year, end_year):
+    def _test_all_bias_corrected_and_length_each_window(
+        self, window, start_year, end_year
+    ):
         years = np.arange(start_year, end_year)
 
         debiased_years = []
         for years_to_adjust, years_in_window in window.use(years):
 
             assert years_in_window.size == window.window_length_in_years
-            assert check_different_maximally_up_to_1(years_to_adjust.size, window.window_step_length_in_years)
+            assert check_different_maximally_up_to_1(
+                years_to_adjust.size, window.window_step_length_in_years
+            )
 
             debiased_years.append(years_to_adjust)
 
@@ -145,7 +165,9 @@ class TestRunningWindowOverYears(unittest.TestCase):
                 window = RunningWindowOverYears(length, step_length)
                 for i in range(2000, 2050):
                     for j in range(i + 1, 2050):
-                        self._test_all_bias_corrected_and_length_each_window(window, i, j)
+                        self._test_all_bias_corrected_and_length_each_window(
+                            window, i, j
+                        )
 
 
 class TestRunningWindowOverDaysOfYear(unittest.TestCase):
@@ -155,8 +177,12 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
 
     def test__init__(self):
         window1 = RunningWindowOverDaysOfYear(9, 17)
-        window2 = RunningWindowOverDaysOfYear(window_step_length_in_days=17, window_length_in_days=9)
-        window3 = RunningWindowOverDaysOfYear(window_length_in_days=4, window_step_length_in_days=2)
+        window2 = RunningWindowOverDaysOfYear(
+            window_step_length_in_days=17, window_length_in_days=9
+        )
+        window3 = RunningWindowOverDaysOfYear(
+            window_length_in_days=4, window_step_length_in_days=2
+        )
 
         # Test equality
         assert window1 == window2
@@ -176,13 +202,17 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
         window4 = RunningWindowOverDaysOfYear(8.6, 17.0)
         assert window1 == window4
 
-    def _test_all_bias_corrected_and_length_each_window(self, window, start_date, length):
+    def _test_all_bias_corrected_and_length_each_window(
+        self, window, start_date, length
+    ):
         dates = create_array_of_consecutive_dates(length, start_date)
         days_of_year_dates = day_of_year(dates)
         years_dates = year(dates)
 
         debiased_indices = []
-        for window_center, indices_vals_to_debias in window.use(days_of_year_dates, years_dates):
+        for window_center, indices_vals_to_debias in window.use(
+            days_of_year_dates, years_dates
+        ):
 
             # indices_vals_in_window = window.get_indices_vals_in_window(days_of_year_dates, window_center)
 
@@ -215,4 +245,6 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
                     datetime.date(2000, 7, 7),
                 ]:
                     for length in [100, 1000, 5000, 10000]:
-                        self._test_all_bias_corrected_and_length_each_window(window, start_date, length)
+                        self._test_all_bias_corrected_and_length_each_window(
+                            window, start_date, length
+                        )

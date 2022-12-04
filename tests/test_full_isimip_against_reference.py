@@ -32,7 +32,9 @@ def get_dates(x):
 get_dates = np.vectorize(get_dates)
 
 # This reads in the testing-data from ISIMIP stored in isimip3basd-master/data
-def read_in_and_preprocess_testing_data(variable, data_path="tests/isimip_reference_data/"):
+def read_in_and_preprocess_testing_data(
+    variable, data_path="tests/isimip_reference_data/"
+):
 
     # Load in data
     obs = iris.load_cube(data_path + variable + "_obs-hist_coarse_1979-2014.nc")
@@ -40,7 +42,11 @@ def read_in_and_preprocess_testing_data(variable, data_path="tests/isimip_refere
     cm_future = iris.load_cube(data_path + variable + "_sim-fut_coarse_2065-2100.nc")
 
     # Extract dates
-    dates = {"time_obs": get_dates(obs), "time_cm_hist": get_dates(cm_hist), "time_cm_future": get_dates(cm_future)}
+    dates = {
+        "time_obs": get_dates(obs),
+        "time_cm_hist": get_dates(cm_hist),
+        "time_cm_future": get_dates(cm_future),
+    }
 
     # Convert to np.array (from masked-array)
     obs = np.array(obs.data)
@@ -58,7 +64,9 @@ def read_in_and_preprocess_testing_data(variable, data_path="tests/isimip_refere
 def read_in_reference_data(variable, data_path="tests/isimip_reference_data/"):
 
     # Load in data
-    debiased_data_reference = iris.load_cube(data_path + variable + "_sim-fut-basd_coarse_2065-2100.nc")
+    debiased_data_reference = iris.load_cube(
+        data_path + variable + "_sim-fut-basd_coarse_2065-2100.nc"
+    )
 
     # Move time to first axis (our convention)
     debiased_data_reference = np.array(debiased_data_reference.data)
@@ -79,13 +87,22 @@ class TestFullISIMIPAgainstReference(unittest.TestCase):
         return debiased_values
 
     def _test_pct_agreement(self, debiased_values, debiased_values_reference):
-        pct = np.sum(np.isclose(debiased_values, debiased_values_reference)) / debiased_values.size
+        pct = (
+            np.sum(np.isclose(debiased_values, debiased_values_reference))
+            / debiased_values.size
+        )
         assert np.isclose(pct, 1)
 
     def _test_linear_regression(
-        self, debiased_values, debiased_values_reference, max_deviation_slope=1e-4, max_deviation_intercept=1e-3
+        self,
+        debiased_values,
+        debiased_values_reference,
+        max_deviation_slope=1e-4,
+        max_deviation_intercept=1e-3,
     ):
-        regression = scipy.stats.linregress(debiased_values_reference.flatten(), debiased_values.flatten())
+        regression = scipy.stats.linregress(
+            debiased_values_reference.flatten(), debiased_values.flatten()
+        )
         assert np.abs(regression.slope - 1) < max_deviation_slope
         assert np.abs(regression.intercept) < max_deviation_intercept
 

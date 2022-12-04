@@ -47,12 +47,16 @@ class RunningWindowOverYears:
     """
 
     window_length_in_years: int = attrs.field(
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)], converter=round
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+        converter=round,
     )
     window_step_length_in_years: int = attrs.field(
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)], converter=round
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+        converter=round,
     )
-    returns: str = attrs.field(default="years", validator=attrs.validators.in_(["years", "indices", "mask"]))
+    returns: str = attrs.field(
+        default="years", validator=attrs.validators.in_(["years", "indices", "mask"])
+    )
 
     def __attrs_post_init__(self):
         if self.window_length_in_years % 2 == 0:
@@ -81,8 +85,13 @@ class RunningWindowOverYears:
         if number_of_years <= self.window_step_length_in_years:
             return np.array([np.round(np.median(unique_years))])
 
-        if (years_left_after_last_step := number_of_years % self.window_step_length_in_years) == 0:
-            first_window_center = unique_years.min() + self.window_step_length_in_years // 2
+        if (
+            years_left_after_last_step := number_of_years
+            % self.window_step_length_in_years
+        ) == 0:
+            first_window_center = (
+                unique_years.min() + self.window_step_length_in_years // 2
+            )
         else:
             first_window_center = (
                 unique_years.min()
@@ -185,11 +194,21 @@ class RunningWindowOverYears:
                     years_to_adjust, years
                 ), RunningWindowOverYears.get_if_in_chosen_years(years_in_window, years)
             elif self.returns == "indices":
-                yield np.where(RunningWindowOverYears.get_if_in_chosen_years(years_to_adjust, years))[0], np.where(
-                    RunningWindowOverYears.get_if_in_chosen_years(years_in_window, years)
-                )[0]
+                yield np.where(
+                    RunningWindowOverYears.get_if_in_chosen_years(
+                        years_to_adjust, years
+                    )
+                )[0], np.where(
+                    RunningWindowOverYears.get_if_in_chosen_years(
+                        years_in_window, years
+                    )
+                )[
+                    0
+                ]
             else:
-                raise ValueError('self.returns needs to be one of ["years", "indices", "mask"]')
+                raise ValueError(
+                    'self.returns needs to be one of ["years", "indices", "mask"]'
+                )
 
 
 @attrs.define
@@ -221,10 +240,12 @@ class RunningWindowOverDaysOfYear:
     """
 
     window_length_in_days: int = attrs.field(
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)], converter=round
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+        converter=round,
     )
     window_step_length_in_days: int = attrs.field(
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)], converter=round
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+        converter=round,
     )
 
     def __attrs_post_init__(self):
@@ -253,7 +274,9 @@ class RunningWindowOverDaysOfYear:
         min_day_of_year = np.min(days_of_year)
         max_day_of_year = np.max(days_of_year)
 
-        days_left_after_last_step = (max_day_of_year - min_day_of_year + 1) % self.window_step_length_in_days
+        days_left_after_last_step = (
+            max_day_of_year - min_day_of_year + 1
+        ) % self.window_step_length_in_days
 
         # Running window with step length fits perfectly into year
         if days_left_after_last_step == 0:
@@ -275,7 +298,9 @@ class RunningWindowOverDaysOfYear:
         return window_centers
 
     # ----- Main methods ----- #
-    def get_indices_vals_in_window(self, days_of_year: np.ndarray, window_center: int) -> np.ndarray:
+    def get_indices_vals_in_window(
+        self, days_of_year: np.ndarray, window_center: int
+    ) -> np.ndarray:
         """
         Gets the indices inside of days_of_year of vals in a window of length window_length around a window center. Given a window center those are [window_center - self.window_length_in_years//2, window_center + self.window_length_in_years//2].
 
@@ -299,7 +324,10 @@ class RunningWindowOverDaysOfYear:
             np.mod(
                 np.concatenate(
                     [
-                        np.arange(i - self.window_length_in_days // 2, i + self.window_length_in_days // 2 + 1)
+                        np.arange(
+                            i - self.window_length_in_days // 2,
+                            i + self.window_length_in_days // 2 + 1,
+                        )
                         for i in indices_center
                     ]
                 ),
@@ -308,7 +336,9 @@ class RunningWindowOverDaysOfYear:
         )
         return indices
 
-    def get_indices_vals_to_adjust(self, days_of_year: np.ndarray, years: np.ndarray, window_center: int) -> np.ndarray:
+    def get_indices_vals_to_adjust(
+        self, days_of_year: np.ndarray, years: np.ndarray, window_center: int
+    ) -> np.ndarray:
         """
         Gets the indices of which values inside a running window are to be adjusted and makes sure that the indices of the values to adjust values do not extend into a neighbouring year.
         For example if the window_center is 364 and the step size 5 then the day of year values to store the bc values would be [362, 363, 364,  and 365, 1 or 1, 2]. However since this would extend into the following year -- values already covered by another running window center/index -- days 1 and 2 are filtered out using years.
@@ -337,7 +367,10 @@ class RunningWindowOverDaysOfYear:
             # If timeseries spans only one year then we only circle through this year anyway and do not need to match running windows together
             indices = np.concatenate(
                 [
-                    np.arange(i - self.window_step_length_in_days // 2, i + self.window_step_length_in_days // 2 + 1)
+                    np.arange(
+                        i - self.window_step_length_in_days // 2,
+                        i + self.window_step_length_in_days // 2 + 1,
+                    )
                     for i in indices_center
                 ]
             )
@@ -353,7 +386,9 @@ class RunningWindowOverDaysOfYear:
                     for index in np.mod(
                         np.arange(
                             index_window_center - self.window_step_length_in_days // 2,
-                            index_window_center + self.window_step_length_in_days // 2 + 1,
+                            index_window_center
+                            + self.window_step_length_in_days // 2
+                            + 1,
                         ),
                         days_of_year.size,
                     )
@@ -399,4 +434,6 @@ class RunningWindowOverDaysOfYear:
         window_centers = self._get_window_centers(days_of_year)
 
         for window_center in window_centers:
-            yield window_center, self.get_indices_vals_to_adjust(days_of_year, years, window_center)
+            yield window_center, self.get_indices_vals_to_adjust(
+                days_of_year, years, window_center
+            )

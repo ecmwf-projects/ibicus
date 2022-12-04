@@ -33,7 +33,9 @@ def _calculate_chi(metric1, metric2, dataset1, dataset2):
             "There is at least one location where threshold exceedance for metric2 does not occur. Calculation cannot be performed"
         )
 
-    chi = np.einsum("ijk -> jk", cooccurrence) / np.einsum("ijk -> jk", metric2_instances)
+    chi = np.einsum("ijk -> jk", cooccurrence) / np.einsum(
+        "ijk -> jk", metric2_instances
+    )
 
     return chi
 
@@ -77,7 +79,12 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
 
     for climate_data_key, climate_data_value in climate_data.items():
 
-        chi = _calculate_chi(metric1, metric2, climate_data_value[0], climate_data_value[1]) * 100
+        chi = (
+            _calculate_chi(
+                metric1, metric2, climate_data_value[0], climate_data_value[1]
+            )
+            * 100
+        )
 
         conditional_exceedance_dfs.append(
             pd.DataFrame(
@@ -94,7 +101,9 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
     return conditional_exceedance
 
 
-def plot_conditional_joint_threshold_exceedance(conditional_exceedance_df: pd.DataFrame):
+def plot_conditional_joint_threshold_exceedance(
+    conditional_exceedance_df: pd.DataFrame,
+):
 
     """
     Accepts ouput given by :py:func:`calculate_conditional_joint_threshold_exceedance` and creates an overview boxplot of the conditional exceedance probability across locations in the chosen datasets.
@@ -107,7 +116,8 @@ def plot_conditional_joint_threshold_exceedance(conditional_exceedance_df: pd.Da
 
     # unpack dataframe
     conditional_exceedance_df_unpacked = _unpack_df_of_numpy_arrays(
-        df=conditional_exceedance_df, numpy_column_name="Conditional exceedance probability"
+        df=conditional_exceedance_df,
+        numpy_column_name="Conditional exceedance probability",
     )
 
     # create figure and plot
@@ -121,13 +131,17 @@ def plot_conditional_joint_threshold_exceedance(conditional_exceedance_df: pd.Da
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
 
     # generate and set plot title
-    plot_title = "Probability of {}".format(conditional_exceedance_df_unpacked.iat[0, 1])
+    plot_title = "Probability of {}".format(
+        conditional_exceedance_df_unpacked.iat[0, 1]
+    )
     fig.suptitle(plot_title)
 
     return fig
 
 
-def calculate_and_spatialplot_multivariate_correlation(variables: list, manual_title: str = " ", **kwargs):
+def calculate_and_spatialplot_multivariate_correlation(
+    variables: list, manual_title: str = " ", **kwargs
+):
 
     """
     Calculates correlation between the two variables specified in keyword arguments (such as tas and pr) at each location and outputs spatial plot.
@@ -157,12 +171,22 @@ def calculate_and_spatialplot_multivariate_correlation(variables: list, manual_t
         correlation_matrix[k] = np.zeros((variable1.shape[1], variable1.shape[2]))
 
         for i, j in np.ndindex(variable1.shape[1:]):
-            correlation_matrix[k][i, j] = np.corrcoef(variable1[:, i, j].T, variable2[:, i, j].T)[0, 1]
+            correlation_matrix[k][i, j] = np.corrcoef(
+                variable1[:, i, j].T, variable2[:, i, j].T
+            )[0, 1]
 
     # set axis bounds to maximum value attained
     axis_max = max(
-        abs(max(np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values())))))),
-        abs(min(np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values())))))),
+        abs(
+            max(
+                np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values()))))
+            )
+        ),
+        abs(
+            min(
+                np.ndarray.flatten(np.vstack(list(chain(*correlation_matrix.values()))))
+            )
+        ),
     )
     axis_min = -axis_max
 
@@ -173,19 +197,29 @@ def calculate_and_spatialplot_multivariate_correlation(variables: list, manual_t
     i = 0
     for k in kwargs.keys():
 
-        plot = ax[i].imshow(correlation_matrix[k], cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max)
+        plot = ax[i].imshow(
+            correlation_matrix[k],
+            cmap=plt.get_cmap("coolwarm"),
+            vmin=axis_min,
+            vmax=axis_max,
+        )
         ax[i].set_title("{}".format(k))
         fig.colorbar(plot, ax=ax[i])
         i = i + 1
 
     # set plot title
-    if (variables[0] in str_to_variable_class.keys()) and (variables[1] in str_to_variable_class.keys()):
+    if (variables[0] in str_to_variable_class.keys()) and (
+        variables[1] in str_to_variable_class.keys()
+    ):
         plot_title = "Multivariate Correlation: {} and {}".format(
-            map_variable_str_to_variable_class(variables[0]).name, map_variable_str_to_variable_class(variables[1]).name
+            map_variable_str_to_variable_class(variables[0]).name,
+            map_variable_str_to_variable_class(variables[1]).name,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
     fig.suptitle(plot_title)
 
     return fig
@@ -227,7 +261,9 @@ def create_multivariate_dataframes(
     return (obs_df, bc_df)
 
 
-def plot_correlation_single_location(variables: list, obs_df: pd.DataFrame, bc_df: pd.DataFrame):
+def plot_correlation_single_location(
+    variables: list, obs_df: pd.DataFrame, bc_df: pd.DataFrame
+):
     """
     Uses seaborn.regplot and output of :py:func:`create_multivariate_dataframes` to plot scatterplot and Pearson correlation estimate of the two specified variables. Offers visual comparison of correlation at single location.
 
@@ -247,8 +283,20 @@ def plot_correlation_single_location(variables: list, obs_df: pd.DataFrame, bc_d
     """
 
     seaborn.set_style("white")
-    seaborn.regplot(x=variables[0], y=variables[1], data=obs_df, ci=95, scatter_kws={"s": 0.8, "color": "g"})
-    seaborn.regplot(x=variables[0], y=variables[1], data=bc_df, ci=95, scatter_kws={"s": 0.8, "color": "r"})
+    seaborn.regplot(
+        x=variables[0],
+        y=variables[1],
+        data=obs_df,
+        ci=95,
+        scatter_kws={"s": 0.8, "color": "g"},
+    )
+    seaborn.regplot(
+        x=variables[0],
+        y=variables[1],
+        data=bc_df,
+        ci=95,
+        scatter_kws={"s": 0.8, "color": "r"},
+    )
 
 
 def _calculate_bootstrap_correlation_replicates(data: pd.DataFrame, size: int):
@@ -264,7 +312,9 @@ def _calculate_bootstrap_correlation_replicates(data: pd.DataFrame, size: int):
     return correlation_replicates
 
 
-def plot_bootstrap_correlation_replicates(obs_df: pd.DataFrame, bc_df: pd.DataFrame, bc_name: str, size: int):
+def plot_bootstrap_correlation_replicates(
+    obs_df: pd.DataFrame, bc_df: pd.DataFrame, bc_name: str, size: int
+):
 
     """
     Plots histograms of correlation between variables in input dataframes estimated via bootstrap using :py:func:`_calculate_bootstrap_correlation_replicates`.

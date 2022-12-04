@@ -81,16 +81,24 @@ class LinearScaling(Debiaser):
         One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
     """
 
-    delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
+    delta_type: str = attrs.field(
+        validator=attrs.validators.in_(["additive", "multiplicative"])
+    )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
-    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
+    def apply_location(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
+    ) -> np.ndarray:
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":
             return cm_future * (np.mean(obs) / np.mean(cm_hist))
         else:
-            raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
+            raise ValueError(
+                'self.delta_type needs to be one of ["additive", "multiplicative"].'
+            )

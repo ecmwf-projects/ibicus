@@ -106,14 +106,19 @@ class TestLinearScaling(unittest.TestCase):
         cm_hist = np.random.normal(size=1000) + 5
         cm_future = cm_hist
 
-        assert np.isclose(np.mean(tas.apply_location(obs, cm_hist, cm_future)), np.mean(obs))
+        assert np.isclose(
+            np.mean(tas.apply_location(obs, cm_hist, cm_future)), np.mean(obs)
+        )
 
         # Test: corrects mean difference
         obs = np.random.normal(size=1000)
         cm_hist = np.random.normal(size=1000) + 5
         cm_future = np.random.normal(size=1000) + 5
 
-        assert np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs)) < 0.3
+        assert (
+            np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 0.3
+        )
 
     def test_apply_location_multiplicative(self):
         pr = LinearScaling.from_variable("pr")
@@ -130,11 +135,16 @@ class TestLinearScaling(unittest.TestCase):
         cm_hist = scipy.stats.gamma.rvs(a=2, scale=3, size=1000) + 5
         cm_future = cm_hist
 
-        assert np.isclose(np.mean(pr.apply_location(obs, cm_hist, cm_future)), np.mean(obs))
+        assert np.isclose(
+            np.mean(pr.apply_location(obs, cm_hist, cm_future)), np.mean(obs)
+        )
 
         # Test: corrects mean and variance difference
         obs = scipy.stats.gamma.rvs(a=2, scale=3, size=1000)
         cm_hist = scipy.stats.gamma.rvs(a=2, scale=3, size=1000) * 5
         cm_future = scipy.stats.gamma.rvs(a=2, scale=3, size=1000) * 5
 
-        assert np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs)) < 0.3
+        assert (
+            np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 0.3
+        )

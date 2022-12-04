@@ -134,19 +134,30 @@ class CDFt(Debiaser):
     # CDFt parameters
     SSR: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
     delta_shift: str = attrs.field(
-        default="additive", validator=attrs.validators.in_(["additive", "multiplicative", "no_shift"])
+        default="additive",
+        validator=attrs.validators.in_(["additive", "multiplicative", "no_shift"]),
     )
 
     # Iteration parameters
-    apply_by_month: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
-    running_window_mode: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
-    running_window_length_in_years: int = attrs.field(default=17, validator=attrs.validators.instance_of(int))
-    running_window_step_length_in_years: int = attrs.field(default=9, validator=attrs.validators.instance_of(int))
+    apply_by_month: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_mode: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length_in_years: int = attrs.field(
+        default=17, validator=attrs.validators.instance_of(int)
+    )
+    running_window_step_length_in_years: int = attrs.field(
+        default=9, validator=attrs.validators.instance_of(int)
+    )
 
     # Calculation parameters
     ecdf_method: str = attrs.field(
         default="linear_interpolation",
-        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
+        validator=attrs.validators.in_(
+            ["kernel_density", "linear_interpolation", "step_function"]
+        ),
     )
     iecdf_method: str = attrs.field(
         default="linear",
@@ -174,12 +185,20 @@ class CDFt(Debiaser):
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
     # ----- Helpers: General ----- #
     @staticmethod
-    def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
-        if obs.size != time_obs.size or cm_hist.size != time_cm_hist.size or cm_future.size != time_cm_future.size:
+    def _check_time_information_and_raise_error(
+        obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+    ):
+        if (
+            obs.size != time_obs.size
+            or cm_hist.size != time_cm_hist.size
+            or cm_future.size != time_cm_future.size
+        ):
             raise ValueError(
                 """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
                 Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
@@ -200,13 +219,19 @@ class CDFt(Debiaser):
         elif self.delta_shift == "no_shift":
             pass
         else:
-            raise ValueError('self.delta_shift needs to be one of ["additive", "multiplicative", "no_shift"]')
+            raise ValueError(
+                'self.delta_shift needs to be one of ["additive", "multiplicative", "no_shift"]'
+            )
 
         return iecdf(
             x=cm_future,
             p=ecdf(
                 x=cm_hist,
-                y=iecdf(x=obs, p=ecdf(x=cm_future, y=cm_future, method=self.ecdf_method), method=self.iecdf_method),
+                y=iecdf(
+                    x=obs,
+                    p=ecdf(x=cm_future, y=cm_future, method=self.ecdf_method),
+                    method=self.iecdf_method,
+                ),
                 method=self.ecdf_method,
             ),
             method=self.iecdf_method,
@@ -214,11 +239,17 @@ class CDFt(Debiaser):
 
     @staticmethod
     def _get_threshold(obs, cm_hist, cm_future):
-        return min(obs[obs > 0].min(), cm_hist[cm_hist > 0].min(), cm_future[cm_future > 0].min())
+        return min(
+            obs[obs > 0].min(),
+            cm_hist[cm_hist > 0].min(),
+            cm_future[cm_future > 0].min(),
+        )
 
     @staticmethod
     def _randomize_zero_values_between_zero_and_threshold(x, threshold):
-        return np.where(x == 0, np.random.uniform(low=0, high=threshold, size=x.size), x)
+        return np.where(
+            x == 0, np.random.uniform(low=0, high=threshold, size=x.size), x
+        )
 
     @staticmethod
     def _set_values_below_threshold_to_zero(x, threshold):
@@ -229,8 +260,12 @@ class CDFt(Debiaser):
         threshold = CDFt._get_threshold(obs, cm_hist, cm_future)
 
         obs = CDFt._randomize_zero_values_between_zero_and_threshold(obs, threshold)
-        cm_hist = CDFt._randomize_zero_values_between_zero_and_threshold(cm_hist, threshold)
-        cm_future = CDFt._randomize_zero_values_between_zero_and_threshold(cm_future, threshold)
+        cm_hist = CDFt._randomize_zero_values_between_zero_and_threshold(
+            cm_hist, threshold
+        )
+        cm_future = CDFt._randomize_zero_values_between_zero_and_threshold(
+            cm_future, threshold
+        )
         return obs, cm_hist, cm_future, threshold
 
     @staticmethod
@@ -238,11 +273,18 @@ class CDFt(Debiaser):
         cm_future = CDFt._set_values_below_threshold_to_zero(cm_future, threshold)
         return cm_future
 
-    def _apply_on_month_and_window(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray):
+    def _apply_on_month_and_window(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
+    ):
 
         # Precipitation
         if self.SSR:
-            obs, cm_hist, cm_future, threshold = CDFt._apply_SSR_steps_before_adjustment(obs, cm_hist, cm_future)
+            (
+                obs,
+                cm_hist,
+                cm_future,
+                threshold,
+            ) = CDFt._apply_SSR_steps_before_adjustment(obs, cm_hist, cm_future)
 
         cm_future = self._apply_CDFt_mapping(obs, cm_hist, cm_future)
 
@@ -269,14 +311,18 @@ class CDFt(Debiaser):
                 mask_i_month_in_cm_hist = month(time_cm_hist) == i_month
                 mask_i_month_in_cm_future = month(time_cm_future) == i_month
 
-                debiased_cm_future[mask_i_month_in_cm_future] = self._apply_on_month_and_window(
+                debiased_cm_future[
+                    mask_i_month_in_cm_future
+                ] = self._apply_on_month_and_window(
                     obs=obs[mask_i_month_in_obs_hist],
                     cm_hist=cm_hist[mask_i_month_in_cm_hist],
                     cm_future=cm_future[mask_i_month_in_cm_future],
                 )
             return debiased_cm_future
         else:
-            return self._apply_on_month_and_window(obs=obs, cm_hist=cm_hist, cm_future=cm_future)
+            return self._apply_on_month_and_window(
+                obs=obs, cm_hist=cm_hist, cm_future=cm_future
+            )
 
     def apply_location(
         self,
@@ -296,22 +342,36 @@ class CDFt(Debiaser):
                     This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
                     """
             )
-            time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
+            (
+                time_obs,
+                time_cm_hist,
+                time_cm_future,
+            ) = infer_and_create_time_arrays_if_not_given(
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
-        CDFt._check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+        CDFt._check_time_information_and_raise_error(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         if self.running_window_mode:
             years_cm_future = year(time_cm_future)
 
             debiased_cm_future = np.empty_like(cm_future)
-            for years_to_debias, years_in_window in self.running_window.use(years_cm_future):
+            for years_to_debias, years_in_window in self.running_window.use(
+                years_cm_future
+            ):
 
-                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_in_window)
-                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_to_debias)
-                mask_years_in_window_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future[mask_years_in_window], years_to_debias
+                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_in_window
+                )
+                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_to_debias
+                )
+                mask_years_in_window_to_debias = (
+                    RunningWindowOverYears.get_if_in_chosen_years(
+                        years_cm_future[mask_years_in_window], years_to_debias
+                    )
                 )
 
                 debiased_cm_future[mask_years_to_debias] = self._apply_on_window(
@@ -326,4 +386,6 @@ class CDFt(Debiaser):
             return debiased_cm_future
 
         else:
-            return self._apply_on_window(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+            return self._apply_on_window(
+                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+            )

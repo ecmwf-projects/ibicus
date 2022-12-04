@@ -133,24 +133,42 @@ class ScaledDistributionMapping(Debiaser):
 
     # Core algorithm
     distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+        scipy.stats.rv_continuous,
+        scipy.stats.rv_discrete,
+        scipy.stats.rv_histogram,
+        StatisticalModel,
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
+                StatisticalModel,
+            )
         )
     )
-    mapping_type: str = attrs.field(validator=attrs.validators.in_(["absolute", "relative"]))
+    mapping_type: str = attrs.field(
+        validator=attrs.validators.in_(["absolute", "relative"])
+    )
 
     # pr and relative sdm
-    pr_lower_threshold: float = attrs.field(default=0.1 / 86400, validator=attrs.validators.instance_of(float))
+    pr_lower_threshold: float = attrs.field(
+        default=0.1 / 86400, validator=attrs.validators.instance_of(float)
+    )
 
     # Computation
-    distribution_fit_kwargs: dict = attrs.field(default={}, validator=attrs.validators.instance_of(dict))
-    cdf_threshold: float = attrs.field(default=1e-5, validator=attrs.validators.instance_of(float))
+    distribution_fit_kwargs: dict = attrs.field(
+        default={}, validator=attrs.validators.instance_of(dict)
+    )
+    cdf_threshold: float = attrs.field(
+        default=1e-5, validator=attrs.validators.instance_of(float)
+    )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
     @classmethod
     def for_precipitation(cls, pr_lower_threshold=0.1 / 86400, **kwargs):
@@ -188,7 +206,11 @@ class ScaledDistributionMapping(Debiaser):
         rainy_days_cm_hist = cm_hist[mask_rainy_days_cm_hist]
         rainy_days_cm_future = cm_future[mask_rainy_days_cm_future]
 
-        if rainy_days_obs.size == 0 or rainy_days_cm_hist.size == 0 or rainy_days_cm_future.size == 0:
+        if (
+            rainy_days_obs.size == 0
+            or rainy_days_cm_hist.size == 0
+            or rainy_days_cm_future.size == 0
+        ):
             raise ValueError(
                 "No values bigger than pr_lower_threshold in either obs, cm_hist or cm_future. Bias adjustment not possible."
             )
@@ -216,46 +238,69 @@ class ScaledDistributionMapping(Debiaser):
         # Step 2
 
         # Fit distribution
-        fit_rainy_days_obs = self.distribution.fit(rainy_days_obs, **self.distribution_fit_kwargs)
-        fit_rainy_days_cm_hist = self.distribution.fit(rainy_days_cm_hist, **self.distribution_fit_kwargs)
-        fit_rainy_days_cm_future = self.distribution.fit(rainy_days_cm_future, **self.distribution_fit_kwargs)
+        fit_rainy_days_obs = self.distribution.fit(
+            rainy_days_obs, **self.distribution_fit_kwargs
+        )
+        fit_rainy_days_cm_hist = self.distribution.fit(
+            rainy_days_cm_hist, **self.distribution_fit_kwargs
+        )
+        fit_rainy_days_cm_future = self.distribution.fit(
+            rainy_days_cm_future, **self.distribution_fit_kwargs
+        )
 
         # Calculate CDF vals
         cdf_vals_rainy_days_obs_thresholded = threshold_cdf_vals(
-            self.distribution.cdf(rainy_days_obs, *fit_rainy_days_obs), self.cdf_threshold
+            self.distribution.cdf(rainy_days_obs, *fit_rainy_days_obs),
+            self.cdf_threshold,
         )
         cdf_vals_rainy_days_cm_hist_thresholded = threshold_cdf_vals(
-            self.distribution.cdf(rainy_days_cm_hist, *fit_rainy_days_cm_hist), self.cdf_threshold
+            self.distribution.cdf(rainy_days_cm_hist, *fit_rainy_days_cm_hist),
+            self.cdf_threshold,
         )
         cdf_vals_rainy_days_cm_future_thresholded = threshold_cdf_vals(
-            self.distribution.cdf(rainy_days_cm_future, *fit_rainy_days_cm_future), self.cdf_threshold
+            self.distribution.cdf(rainy_days_cm_future, *fit_rainy_days_cm_future),
+            self.cdf_threshold,
         )
 
         # Interpolate CDF vals of obs and cm_hist onto length of cm_future
-        cdf_vals_rainy_days_obs_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
-            cdf_vals_rainy_days_obs_thresholded, cdf_vals_rainy_days_cm_future_thresholded.size
+        cdf_vals_rainy_days_obs_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_rainy_days_obs_thresholded,
+                cdf_vals_rainy_days_cm_future_thresholded.size,
+            )
         )
-        cdf_vals_rainy_days_cm_hist_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
-            cdf_vals_rainy_days_cm_hist_thresholded, cdf_vals_rainy_days_cm_future_thresholded.size
+        cdf_vals_rainy_days_cm_hist_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_rainy_days_cm_hist_thresholded,
+                cdf_vals_rainy_days_cm_future_thresholded.size,
+            )
         )
 
         # Step 3
 
         scaling = self.distribution.ppf(
             cdf_vals_rainy_days_cm_future_thresholded, *fit_rainy_days_cm_future
-        ) / self.distribution.ppf(cdf_vals_rainy_days_cm_future_thresholded, *fit_rainy_days_cm_hist)
+        ) / self.distribution.ppf(
+            cdf_vals_rainy_days_cm_future_thresholded, *fit_rainy_days_cm_hist
+        )
 
         # Step 4
 
         recurrence_interval_obs = 1 / (1 - cdf_vals_rainy_days_obs_thresholded_intpol)
-        recurrence_interval_cm_hist = 1 / (1 - cdf_vals_rainy_days_cm_hist_thresholded_intpol)
-        recurrence_interval_cm_future = 1 / (1 - cdf_vals_rainy_days_cm_future_thresholded)
+        recurrence_interval_cm_hist = 1 / (
+            1 - cdf_vals_rainy_days_cm_hist_thresholded_intpol
+        )
+        recurrence_interval_cm_future = 1 / (
+            1 - cdf_vals_rainy_days_cm_future_thresholded
+        )
 
         # Step 5
 
         recurrence_interval_scaled = np.maximum(
             1,
-            recurrence_interval_obs * recurrence_interval_cm_future / recurrence_interval_cm_hist,
+            recurrence_interval_obs
+            * recurrence_interval_cm_future
+            / recurrence_interval_cm_hist,
         )
         cdf_scaled = threshold_cdf_vals(1 - 1 / recurrence_interval_scaled)
 
@@ -292,40 +337,59 @@ class ScaledDistributionMapping(Debiaser):
             np.sort(self.distribution.cdf(cm_hist_detrended, *fit_cm_hist_detrended))
         )
         cdf_vals_cm_future_detrended_thresholded = threshold_cdf_vals(
-            self.distribution.cdf(cm_future_detrended, *fit_cm_future_detrended)[argsort_cm_future]
+            self.distribution.cdf(cm_future_detrended, *fit_cm_future_detrended)[
+                argsort_cm_future
+            ]
         )
 
         # interpolate cdf-values for obs and mod to the length of the scenario
-        cdf_vals_obs_detrended_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
-            cdf_vals_obs_detrended_thresholded, cm_future.size
+        cdf_vals_obs_detrended_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_obs_detrended_thresholded, cm_future.size
+            )
         )
-        cdf_vals_cm_hist_detrended_thresholded_intpol = interp_sorted_cdf_vals_on_given_length(
-            cdf_vals_cm_hist_detrended_thresholded, cm_future.size
+        cdf_vals_cm_hist_detrended_thresholded_intpol = (
+            interp_sorted_cdf_vals_on_given_length(
+                cdf_vals_cm_hist_detrended_thresholded, cm_future.size
+            )
         )
 
         # Step 3
         scaling = (
             (
-                self.distribution.ppf(cdf_vals_cm_future_detrended_thresholded, *fit_cm_future_detrended)
-                - self.distribution.ppf(cdf_vals_cm_future_detrended_thresholded, *fit_cm_hist_detrended)
+                self.distribution.ppf(
+                    cdf_vals_cm_future_detrended_thresholded, *fit_cm_future_detrended
+                )
+                - self.distribution.ppf(
+                    cdf_vals_cm_future_detrended_thresholded, *fit_cm_hist_detrended
+                )
             )
             * fit_obs_detrended[1]
             / fit_cm_hist_detrended[1]
         )
 
         # Step 4
-        recurrence_interval_obs = 1 / (0.5 - np.abs(cdf_vals_obs_detrended_thresholded_intpol - 0.5))
-        recurrence_interval_cm_hist = 1 / (0.5 - np.abs(cdf_vals_cm_hist_detrended_thresholded_intpol - 0.5))
-        recurrence_interval_cm_future = 1 / (0.5 - np.abs(cdf_vals_cm_future_detrended_thresholded - 0.5))
+        recurrence_interval_obs = 1 / (
+            0.5 - np.abs(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
+        )
+        recurrence_interval_cm_hist = 1 / (
+            0.5 - np.abs(cdf_vals_cm_hist_detrended_thresholded_intpol - 0.5)
+        )
+        recurrence_interval_cm_future = 1 / (
+            0.5 - np.abs(cdf_vals_cm_future_detrended_thresholded - 0.5)
+        )
 
         # Step 5
         recurrence_interval_scaled = np.maximum(
             1,
-            recurrence_interval_obs * recurrence_interval_cm_future / recurrence_interval_cm_hist,
+            recurrence_interval_obs
+            * recurrence_interval_cm_future
+            / recurrence_interval_cm_hist,
         )
         cdf_scaled = threshold_cdf_vals(
             0.5
-            + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5) * np.abs(0.5 - 1 / recurrence_interval_scaled)
+            + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
+            * np.abs(0.5 - 1 / recurrence_interval_scaled)
         )
 
         # Step 6
@@ -342,4 +406,6 @@ class ScaledDistributionMapping(Debiaser):
         elif self.mapping_type == "relative":
             return self.apply_location_relative_sdm(obs, cm_hist, cm_future)
         else:
-            raise ValueError('self.mapping_type needs too be one of ["absolute", "relative"].')
+            raise ValueError(
+                'self.mapping_type needs too be one of ["absolute", "relative"].'
+            )

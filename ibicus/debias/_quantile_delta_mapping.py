@@ -32,7 +32,9 @@ from ._debiaser import Debiaser
 default_settings = {
     tas: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
     pr: {
-        "distribution": gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=0.05 / 86400, censor_in_ppf=False),
+        "distribution": gen_PrecipitationGammaLeftCensoredModel(
+            censoring_threshold=0.05 / 86400, censor_in_ppf=False
+        ),
         "trend_preservation": "relative",
         "censor_values_to_zero": True,
         "censoring_threshold": 0.05 / 86400,
@@ -153,18 +155,32 @@ class QuantileDeltaMapping(Debiaser):
     """
 
     distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+        scipy.stats.rv_continuous,
+        scipy.stats.rv_discrete,
+        scipy.stats.rv_histogram,
+        StatisticalModel,
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
+                StatisticalModel,
+            )
         )
     )
-    trend_preservation: str = attrs.field(validator=attrs.validators.in_(["absolute", "relative"]))
+    trend_preservation: str = attrs.field(
+        validator=attrs.validators.in_(["absolute", "relative"])
+    )
 
     # Relevant for precipitation
-    censor_values_to_zero: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    censor_values_to_zero: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
     censoring_threshold: float = attrs.field(
-        default=0.05 / 86400, validator=attrs.validators.instance_of(float), converter=float
+        default=0.05 / 86400,
+        validator=attrs.validators.instance_of(float),
+        converter=float,
     )
 
     # Running window over years
@@ -172,25 +188,32 @@ class QuantileDeltaMapping(Debiaser):
         default=True, validator=attrs.validators.instance_of(bool)
     )
     running_window_over_years_of_cm_future_length: int = attrs.field(
-        default=31, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_over_years_of_cm_future_step_length: int = attrs.field(
         default=1, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
     )
 
     # Running window within years
-    running_window_mode_within_year: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
+    running_window_mode_within_year: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
     running_window_within_year_length: int = attrs.field(
-        default=91, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+        default=91,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_within_year_step_length: int = attrs.field(
-        default=31, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
     # Calculation parameters
     ecdf_method: str = attrs.field(
         default="linear_interpolation",
-        validator=attrs.validators.in_(["kernel_density", "linear_interpolation", "step_function"]),
+        validator=attrs.validators.in_(
+            ["kernel_density", "linear_interpolation", "step_function"]
+        ),
     )
     cdf_threshold: Optional[float] = attrs.field(
         default=None, validator=attrs.validators.instance_of((float, type(None)))
@@ -209,14 +232,20 @@ class QuantileDeltaMapping(Debiaser):
             )
         if self.cdf_threshold is None:
             self.cdf_threshold = 1 / (
-                self.running_window_within_year_length * self.running_window_over_years_of_cm_future_length + 1
+                self.running_window_within_year_length
+                * self.running_window_over_years_of_cm_future_length
+                + 1
             )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        if (variable == "pr" or variable == pr) and (censoring_threshold := kwargs.pop("censoring_threshold", None)):
+        if (variable == "pr" or variable == pr) and (
+            censoring_threshold := kwargs.pop("censoring_threshold", None)
+        ):
             return QuantileDeltaMapping.for_precipitation(censoring_threshold, **kwargs)
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
     @classmethod
     def for_precipitation(cls, censoring_threshold: float = 0.05 / 86400, **kwargs):
@@ -240,13 +269,24 @@ class QuantileDeltaMapping(Debiaser):
                 censoring_threshold=censoring_threshold, censor_in_ppf=False
             )
         return super()._from_variable(
-            cls, "pr", default_settings, censoring_threshold=censoring_threshold, distribution=distribution, **kwargs
+            cls,
+            "pr",
+            default_settings,
+            censoring_threshold=censoring_threshold,
+            distribution=distribution,
+            **kwargs,
         )
 
     # ----- Helpers ----- #
     @staticmethod
-    def _check_time_information_and_raise_error(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future):
-        if obs.size != time_obs.size or cm_hist.size != time_cm_hist.size or cm_future.size != time_cm_future.size:
+    def _check_time_information_and_raise_error(
+        obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+    ):
+        if (
+            obs.size != time_obs.size
+            or cm_hist.size != time_cm_hist.size
+            or cm_future.size != time_cm_future.size
+        ):
             raise ValueError(
                 """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
                 Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
@@ -254,7 +294,9 @@ class QuantileDeltaMapping(Debiaser):
 
     # ----- Main application functions ----- #
 
-    def _apply_debiasing_steps(self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray) -> np.ndarray:
+    def _apply_debiasing_steps(
+        self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray
+    ) -> np.ndarray:
         """
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.
         """
@@ -266,14 +308,20 @@ class QuantileDeltaMapping(Debiaser):
 
         if self.trend_preservation == "absolute":
             bias_corrected_vals = (
-                cm_future + self.distribution.ppf(tau_t, *fit_obs) - self.distribution.ppf(tau_t, *fit_cm_hist)
+                cm_future
+                + self.distribution.ppf(tau_t, *fit_obs)
+                - self.distribution.ppf(tau_t, *fit_cm_hist)
             )
         elif self.trend_preservation == "relative":
             bias_corrected_vals = (
-                cm_future * self.distribution.ppf(tau_t, *fit_obs) / self.distribution.ppf(tau_t, *fit_cm_hist)
+                cm_future
+                * self.distribution.ppf(tau_t, *fit_obs)
+                / self.distribution.ppf(tau_t, *fit_cm_hist)
             )
         else:
-            raise ValueError('self.trend_preservation needs to be one of ["absolute", "relative"]')
+            raise ValueError(
+                'self.trend_preservation needs to be one of ["absolute", "relative"]'
+            )
 
         if self.censor_values_to_zero:
             bias_corrected_vals[bias_corrected_vals < self.censoring_threshold] = 0
@@ -287,7 +335,11 @@ class QuantileDeltaMapping(Debiaser):
         return fit_obs, fit_cm_hist
 
     def _apply_on_within_year_window(
-        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, years_cm_future: np.ndarray
+        self,
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        years_cm_future: np.ndarray,
     ):
         fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
 
@@ -296,22 +348,35 @@ class QuantileDeltaMapping(Debiaser):
             debiased_cm_future = np.empty_like(cm_future)
 
             # Iteration over years of cm_future to account for trends
-            for years_to_debias, years_in_window in self.running_window_over_years_of_cm_future.use(years_cm_future):
+            for (
+                years_to_debias,
+                years_in_window,
+            ) in self.running_window_over_years_of_cm_future.use(years_cm_future):
 
-                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_in_window)
-                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(years_cm_future, years_to_debias)
-                mask_years_in_window_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future[mask_years_in_window], years_to_debias
+                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_in_window
+                )
+                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
+                    years_cm_future, years_to_debias
+                )
+                mask_years_in_window_to_debias = (
+                    RunningWindowOverYears.get_if_in_chosen_years(
+                        years_cm_future[mask_years_in_window], years_to_debias
+                    )
                 )
 
                 debiased_cm_future[mask_years_to_debias] = self._apply_debiasing_steps(
-                    cm_future=cm_future[mask_years_in_window], fit_obs=fit_obs, fit_cm_hist=fit_cm_hist
+                    cm_future=cm_future[mask_years_in_window],
+                    fit_obs=fit_obs,
+                    fit_cm_hist=fit_cm_hist,
                 )[mask_years_in_window_to_debias]
 
             return debiased_cm_future
 
         else:
-            return self._apply_debiasing_steps(cm_future=cm_future, fit_obs=fit_obs, fit_cm_hist=fit_cm_hist)
+            return self._apply_debiasing_steps(
+                cm_future=cm_future, fit_obs=fit_obs, fit_cm_hist=fit_cm_hist
+            )
 
     def apply_location(
         self,
@@ -330,7 +395,11 @@ class QuantileDeltaMapping(Debiaser):
                     This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
                     """
             )
-            time_obs, time_cm_hist, time_cm_future = infer_and_create_time_arrays_if_not_given(
+            (
+                time_obs,
+                time_cm_hist,
+                time_cm_future,
+            ) = infer_and_create_time_arrays_if_not_given(
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
@@ -349,28 +418,41 @@ class QuantileDeltaMapping(Debiaser):
             # Problem: not all cm_future values are filled!!!!
 
             # Iteration over year to account for seasonality
-            for window_center, indices_bias_corrected_values in self.running_window_within_year.use(
+            for (
+                window_center,
+                indices_bias_corrected_values,
+            ) in self.running_window_within_year.use(
                 days_of_year_cm_future, years_cm_future
             ):
 
-                indices_window_obs = self.running_window_within_year.get_indices_vals_in_window(
-                    days_of_year_obs, window_center
+                indices_window_obs = (
+                    self.running_window_within_year.get_indices_vals_in_window(
+                        days_of_year_obs, window_center
+                    )
                 )
-                indices_window_cm_hist = self.running_window_within_year.get_indices_vals_in_window(
-                    days_of_year_cm_hist, window_center
+                indices_window_cm_hist = (
+                    self.running_window_within_year.get_indices_vals_in_window(
+                        days_of_year_cm_hist, window_center
+                    )
                 )
-                indices_window_cm_future = self.running_window_within_year.get_indices_vals_in_window(
-                    days_of_year_cm_future, window_center
+                indices_window_cm_future = (
+                    self.running_window_within_year.get_indices_vals_in_window(
+                        days_of_year_cm_future, window_center
+                    )
                 )
 
-                debiased_cm_future[indices_bias_corrected_values] = self._apply_on_within_year_window(
+                debiased_cm_future[
+                    indices_bias_corrected_values
+                ] = self._apply_on_within_year_window(
                     obs=obs[indices_window_obs],
                     cm_hist=cm_hist[indices_window_cm_hist],
                     cm_future=cm_future[indices_window_cm_future],
                     years_cm_future=years_cm_future[indices_window_cm_future],
                 )[
                     np.logical_and(
-                        np.in1d(indices_window_cm_future, indices_bias_corrected_values),
+                        np.in1d(
+                            indices_window_cm_future, indices_bias_corrected_values
+                        ),
                         get_mask_for_unique_subarray(indices_window_cm_future),
                     )
                 ]

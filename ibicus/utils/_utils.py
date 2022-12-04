@@ -28,12 +28,16 @@ def get_years_and_yearly_means(x: np.ndarray, years: np.ndarray) -> np.ndarray:
     return np.unique(years), get_yearly_means(x, years)
 
 
-def threshold_cdf_vals(cdf_vals: np.ndarray, cdf_threshold: float = 1e-10) -> np.ndarray:
+def threshold_cdf_vals(
+    cdf_vals: np.ndarray, cdf_threshold: float = 1e-10
+) -> np.ndarray:
     """Thresholds an array of cdf-values away from 0 and 1. Rounds down to `1-cdf_threshold` and up to `cdf_threshold` if above or below."""
     return np.maximum(np.minimum(cdf_vals, 1 - cdf_threshold), cdf_threshold)
 
 
-def interp_sorted_cdf_vals_on_given_length(cdf_vals: np.ndarray, interpolation_length: int) -> np.ndarray:
+def interp_sorted_cdf_vals_on_given_length(
+    cdf_vals: np.ndarray, interpolation_length: int
+) -> np.ndarray:
     """Interpolates an array sorted cdf values onto a given length by linear interpolation."""
     return np.interp(
         np.linspace(1, cdf_vals.size, interpolation_length),
@@ -128,10 +132,14 @@ def day_of_year(x):
     return _day_of_year(x)
 
 
-def create_array_of_consecutive_dates(array_length, start_date=np.datetime64("1950-01-01")):
+def create_array_of_consecutive_dates(
+    array_length, start_date=np.datetime64("1950-01-01")
+):
     if not isinstance(start_date, np.datetime64):
         start_date = np.datetime64(start_date)
-    return np.arange(start_date, start_date + np.timedelta64(array_length, "D")).astype(object)
+    return np.arange(start_date, start_date + np.timedelta64(array_length, "D")).astype(
+        object
+    )
 
 
 def infer_and_create_time_arrays_if_not_given(
@@ -215,7 +223,9 @@ def get_tasskew(tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray) -> np.n
 
 
 # Tasmin and max
-def get_tasmin(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+def get_tasmin(
+    tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray
+) -> np.ndarray:
     """
     Calculates numpy array of :py:data:`tasmin` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
 
@@ -243,7 +253,9 @@ def get_tasmin(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np
     return tas - tasskew * tasrange
 
 
-def get_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+def get_tasmax(
+    tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray
+) -> np.ndarray:
     """
     Calculates numpy array of :py:data:`tasmax` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
 
@@ -268,11 +280,15 @@ def get_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np
     tasmax : np.ndarray
         Numpy array of :py:data:`tasmax` values
     """
-    return _get_tasmax_from_tasmin_and_range(get_tasmin(tas, tasrange, tasskew), tasrange)
+    return _get_tasmax_from_tasmin_and_range(
+        get_tasmin(tas, tasrange, tasskew), tasrange
+    )
 
 
 # Both
-def get_tasmin_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray) -> np.ndarray:
+def get_tasmin_tasmax(
+    tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray
+) -> np.ndarray:
     """
     Calculates numpy arrays of both :py:data:`tasmin` and :py:data:`tasmax` from arrays of :py:data:`tas`, :py:data:`tasrange` and :py:data:`tasskew`.
 
@@ -304,7 +320,9 @@ def get_tasmin_tasmax(tas: np.ndarray, tasrange: np.ndarray, tasskew: np.ndarray
     return tasmin, tasmax
 
 
-def get_tasrange_tasskew(tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray) -> np.ndarray:
+def get_tasrange_tasskew(
+    tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray
+) -> np.ndarray:
     """
     Calculates numpy arrays of both :py:data:`tasrange` and :py:data:`tasskew` from arrays of :py:data:`tas`, :py:data:`tasmin` and :py:data:`tasmax`.
 

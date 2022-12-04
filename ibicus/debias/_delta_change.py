@@ -82,28 +82,42 @@ class DeltaChange(Debiaser):
 
     """
 
-    delta_type: str = attrs.field(validator=attrs.validators.in_(["additive", "multiplicative"]))
+    delta_type: str = attrs.field(
+        validator=attrs.validators.in_(["additive", "multiplicative"])
+    )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
-    def apply_location(self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray) -> np.ndarray:
+    def apply_location(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
+    ) -> np.ndarray:
         if self.delta_type == "additive":
             return obs + (np.mean(cm_future) - np.mean(cm_hist))
         elif self.delta_type == "multiplicative":
             return obs * (np.mean(cm_future) / np.mean(cm_hist))
         else:
-            raise ValueError('self.delta_type needs to be one of ["additive", "multiplicative"].')
+            raise ValueError(
+                'self.delta_type needs to be one of ["additive", "multiplicative"].'
+            )
 
     def apply(self, obs, cm_hist, cm_future, verbosity="INFO", **kwargs):
         Debiaser._set_up_logging(verbosity)
         logging.info("----- Running debiasing for variable: %s -----" % self.variable)
 
-        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
+        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
+            obs, cm_hist, cm_future
+        )
 
         output = Debiaser.map_over_locations(
-            func=self.apply_location, output_size=obs.shape, obs=obs, cm_hist=cm_hist, cm_future=cm_future
+            func=self.apply_location,
+            output_size=obs.shape,
+            obs=obs,
+            cm_hist=cm_hist,
+            cm_future=cm_future,
         )
 
         self._check_output(output)

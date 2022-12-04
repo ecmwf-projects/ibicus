@@ -54,19 +54,29 @@ class Variable:
         List of upper and lower bound of expectable reasonable physical range of climatic variable.
     """
 
-    name: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
-    unit: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str))
+    name: str = attrs.field(
+        default="unknown", validator=attrs.validators.instance_of(str)
+    )
+    unit: str = attrs.field(
+        default="unknown", validator=attrs.validators.instance_of(str)
+    )
     reasonable_physical_range: list = attrs.field(default=None)
 
     @reasonable_physical_range.validator
     def _validate_reasonable_physical_range(self, attribute, value):
         if value is not None:
             if len(value) != 2:
-                raise ValueError("reasonable_physical_range should have only a lower and upper physical range")
+                raise ValueError(
+                    "reasonable_physical_range should have only a lower and upper physical range"
+                )
             if not all(isinstance(elem, (int, float)) for elem in value):
-                raise ValueError("reasonable_physical_range needs to be a list of floats")
+                raise ValueError(
+                    "reasonable_physical_range needs to be a list of floats"
+                )
             if not value[0] < value[1]:
-                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
+                raise ValueError(
+                    "lower bounds needs to be smaller than upper bound in reasonable_physical_range"
+                )
 
 
 hurs = Variable(name="Daily mean near-surface relative humidity", unit="%")
@@ -74,7 +84,11 @@ hurs = Variable(name="Daily mean near-surface relative humidity", unit="%")
 Daily mean near-surface relative humidity, unit: %
 """
 
-pr = Variable(name="Daily mean precipitation", unit="kg m-2 s-1", reasonable_physical_range=[0, np.inf])
+pr = Variable(
+    name="Daily mean precipitation",
+    unit="kg m-2 s-1",
+    reasonable_physical_range=[0, np.inf],
+)
 """
 Daily mean precipitation, unit: kg m-2 s-1
 """
@@ -89,7 +103,11 @@ prsnratio = Variable("Daily mean snowfall flux / Daily mean precipitation", unit
 Daily mean snowfall flux / Daily mean precipitation, unit: 1
 """
 
-psl = Variable(name="Daily mean sea-level pressure", unit="Pa", reasonable_physical_range=[0, 1000000])
+psl = Variable(
+    name="Daily mean sea-level pressure",
+    unit="Pa",
+    reasonable_physical_range=[0, 1000000],
+)
 """
 Daily mean sea-level pressure, unit: Pa
 """
@@ -104,35 +122,55 @@ rsds = Variable(name="Daily mean surface downwelling shortwave radiation", unit=
 Daily mean surface downwelling shortwave radiation, unit: W m-2
 """
 
-sfcwind = Variable(name="Daily mean near-surface wind speed", unit="m s-1", reasonable_physical_range=[0, 500])
+sfcwind = Variable(
+    name="Daily mean near-surface wind speed",
+    unit="m s-1",
+    reasonable_physical_range=[0, 500],
+)
 """
 Daily mean near-surface wind speed, unit: m s-1
 """
 
-tas = Variable(name="Daily mean near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tas = Variable(
+    name="Daily mean near-surface air temperature",
+    unit="K",
+    reasonable_physical_range=[0, 400],
+)
 """
 Daily mean near-surface air temperature, unit: K
 """
 
-tasmin = Variable(name="Daily minimum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tasmin = Variable(
+    name="Daily minimum near-surface air temperature",
+    unit="K",
+    reasonable_physical_range=[0, 400],
+)
 """
 Daily minimum near-surface air temperature, unit: K
 """
 
-tasmax = Variable(name="Daily maximum near-surface air temperature", unit="K", reasonable_physical_range=[0, 400])
+tasmax = Variable(
+    name="Daily maximum near-surface air temperature",
+    unit="K",
+    reasonable_physical_range=[0, 400],
+)
 """
 Daily maximum near-surface air temperature, unit: K
 """
 
 tasrange = Variable(
-    name="Daily near-surface air temperature range (tasmax-tasmin)", unit="K", reasonable_physical_range=[0, 100]
+    name="Daily near-surface air temperature range (tasmax-tasmin)",
+    unit="K",
+    reasonable_physical_range=[0, 100],
 )
 """
 Daily near-surface air temperature range (tasmax-tasmin), unit: K
 """
 
 tasskew = Variable(
-    name="Daily near-surface air temperature skew (tas-tasmin)/tasrange", unit="1", reasonable_physical_range=[0, 100]
+    name="Daily near-surface air temperature skew (tas-tasmin)/tasrange",
+    unit="1",
+    reasonable_physical_range=[0, 100],
 )
 """
 Daily near-surface air temperature skew (tas-tasmin)/tasrange, unit: 1
@@ -166,10 +204,14 @@ def map_standard_precipitation_method(
 ):
     if model_type == "censored":
         if model_type == "censored" and amounts_distribution != scipy.stats.gamma:
-            raise ValueError("Only the gamma distribution is supported for a censored precipitation model")
+            raise ValueError(
+                "Only the gamma distribution is supported for a censored precipitation model"
+            )
         if censoring_threshold < 0:
             raise ValueError("censoring_threshold needs to be >= 0")
-        method = utils.gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=censoring_threshold)
+        method = utils.gen_PrecipitationGammaLeftCensoredModel(
+            censoring_threshold=censoring_threshold
+        )
     elif model_type == "hurdle":
         method = utils.gen_PrecipitationHurdleModel(
             distribution=amounts_distribution,
@@ -179,7 +221,9 @@ def map_standard_precipitation_method(
     elif model_type == "ignore_zeros":
         method = utils.gen_PrecipitationIgnoreZeroValuesModel(amounts_distribution)
     else:
-        raise ValueError("model_type has wrong value. Needs to be one of ['censored', 'hurdle', 'ignore_zeros']")
+        raise ValueError(
+            "model_type has wrong value. Needs to be one of ['censored', 'hurdle', 'ignore_zeros']"
+        )
 
     return method
 

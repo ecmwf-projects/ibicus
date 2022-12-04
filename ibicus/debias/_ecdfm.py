@@ -94,16 +94,26 @@ class ECDFM(Debiaser):
     """
 
     distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+        scipy.stats.rv_continuous,
+        scipy.stats.rv_discrete,
+        scipy.stats.rv_histogram,
+        StatisticalModel,
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
+                StatisticalModel,
+            )
         )
     )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
     @classmethod
     def for_precipitation(
@@ -153,6 +163,10 @@ class ECDFM(Debiaser):
 
         return (
             cm_future
-            + self.distribution.ppf(self.distribution.cdf(cm_future, *fit_cm_future), *fit_obs)
-            - self.distribution.ppf(self.distribution.cdf(cm_future, *fit_cm_future), *fit_cm_hist)
+            + self.distribution.ppf(
+                self.distribution.cdf(cm_future, *fit_cm_future), *fit_obs
+            )
+            - self.distribution.ppf(
+                self.distribution.cdf(cm_future, *fit_cm_future), *fit_cm_hist
+            )
         )

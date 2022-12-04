@@ -113,10 +113,12 @@ class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
     """
 
     distribution: scipy.stats.rv_continuous = attrs.field(
-        default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
+        default=scipy.stats.gamma,
+        validator=attrs.validators.instance_of(scipy.stats.rv_continuous),
     )
     fit_kwds: Optional[dict] = attrs.field(
-        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, type(None)))
+        default={"floc": 0, "fscale": None},
+        validator=attrs.validators.instance_of((dict, type(None))),
     )
 
     def fit(self, data: np.ndarray) -> tuple:
@@ -187,7 +189,9 @@ class gen_PrecipitationIgnoreZeroValuesModel(StatisticalModel):
         return np.where(q != -np.inf, self.distribution.ppf(q, *fit), 0)
 
 
-PrecipitationGammaModelIgnoreZeroValues = gen_PrecipitationIgnoreZeroValuesModel(distribution=scipy.stats.gamma)
+PrecipitationGammaModelIgnoreZeroValues = gen_PrecipitationIgnoreZeroValuesModel(
+    distribution=scipy.stats.gamma
+)
 
 
 @attrs.define
@@ -211,12 +215,16 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
     """
 
     distribution: scipy.stats.rv_continuous = attrs.field(
-        default=scipy.stats.gamma, validator=attrs.validators.instance_of(scipy.stats.rv_continuous)
+        default=scipy.stats.gamma,
+        validator=attrs.validators.instance_of(scipy.stats.rv_continuous),
     )
     fit_kwds: Optional[dict] = attrs.field(
-        default={"floc": 0, "fscale": None}, validator=attrs.validators.instance_of((dict, type(None)))
+        default={"floc": 0, "fscale": None},
+        validator=attrs.validators.instance_of((dict, type(None))),
     )
-    cdf_randomization: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
+    cdf_randomization: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
 
     def fit(self, data: np.ndarray) -> tuple:
         """
@@ -265,7 +273,9 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         fit_rainy_days = fit[1]
 
         if not self.cdf_randomization:
-            return np.where(x == 0, p0, p0 + (1 - p0) * self.distribution.cdf(x, *fit_rainy_days))
+            return np.where(
+                x == 0, p0, p0 + (1 - p0) * self.distribution.cdf(x, *fit_rainy_days)
+            )
         else:
             return np.where(
                 x == 0,
@@ -293,11 +303,15 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         p0 = fit[0]
         fit_rainy_days = fit[1]
 
-        return np.where(q > p0, self.distribution.ppf((q - p0) / (1 - p0), *fit_rainy_days), 0)
+        return np.where(
+            q > p0, self.distribution.ppf((q - p0) / (1 - p0), *fit_rainy_days), 0
+        )
 
 
 PrecipitationHurdleModelGamma = gen_PrecipitationHurdleModel()
-PrecipitationHurdleModelGammaWithoutCDFRandomization = gen_PrecipitationHurdleModel(cdf_randomization=False)
+PrecipitationHurdleModelGammaWithoutCDFRandomization = gen_PrecipitationHurdleModel(
+    cdf_randomization=False
+)
 
 
 @attrs.define
@@ -319,9 +333,13 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
     """
 
     censoring_threshold: float = attrs.field(
-        default=0.1, validator=[attrs.validators.instance_of((float)), attrs.validators.gt(0)], converter=float
+        default=0.1,
+        validator=[attrs.validators.instance_of((float)), attrs.validators.gt(0)],
+        converter=float,
     )
-    censor_in_ppf: bool = attrs.field(default=True, validator=attrs.validators.instance_of(bool))
+    censor_in_ppf: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
 
     @staticmethod
     def _fit_censored_gamma(x: np.ndarray, nr_censored_x: int, min_x: float) -> tuple:
@@ -344,7 +362,9 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         """
 
         def neg_log_likelihood(params, x, nr_censored_x, min_x) -> float:
-            return -np.sum(scipy.stats.gamma.logpdf(x, a=params[0], scale=params[1])) - nr_censored_x * np.log(
+            return -np.sum(
+                scipy.stats.gamma.logpdf(x, a=params[0], scale=params[1])
+            ) - nr_censored_x * np.log(
                 scipy.stats.gamma.cdf(min_x, a=params[0], scale=params[1])
             )
 
@@ -379,7 +399,9 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         """
         noncensored_data = data[data > self.censoring_threshold]
         return gen_PrecipitationGammaLeftCensoredModel._fit_censored_gamma(
-            noncensored_data, data.size - noncensored_data.size, self.censoring_threshold
+            noncensored_data,
+            data.size - noncensored_data.size,
+            self.censoring_threshold,
         )
 
     def cdf(self, x: np.ndarray, *fit: tuple) -> np.ndarray:
@@ -399,7 +421,11 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         np.ndarray
             Array containing cdf-values for x.
         """
-        x = np.where(x < self.censoring_threshold, np.random.uniform(0, self.censoring_threshold), x)
+        x = np.where(
+            x < self.censoring_threshold,
+            np.random.uniform(0, self.censoring_threshold),
+            x,
+        )
         return scipy.stats.gamma.cdf(x, *fit)
 
     def ppf(self, q: np.ndarray, *fit: tuple) -> np.ndarray:
@@ -425,7 +451,9 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         return vals
 
 
-PrecipitationGammaLeftCensoredModel_5mm_threshold = gen_PrecipitationGammaLeftCensoredModel(0.05)
+PrecipitationGammaLeftCensoredModel_5mm_threshold = (
+    gen_PrecipitationGammaLeftCensoredModel(0.05)
+)
 
 
 """----- Other helpers -----"""
@@ -541,7 +569,9 @@ def ecdf(x: np.ndarray, y: np.ndarray, method: str = "step_function") -> np.ndar
         step_function = statsmodels.distributions.empirical_distribution.ECDF(x)
         return step_function(y)
     else:
-        raise ValueError('method needs to be one of ["kernel_density", "linear_interpolation", "step_function"] ')
+        raise ValueError(
+            'method needs to be one of ["kernel_density", "linear_interpolation", "step_function"] '
+        )
 
 
 def quantile_map_non_parametically(
@@ -601,7 +631,12 @@ def quantile_map_non_parametically_with_constant_extrapolation(
             Passed to iecdf.
     """
     mapped_vals = quantile_map_non_parametically(
-        x=x, y=y, vals=vals, ecdf_method=ecdf_method, iecdf_method=iecdf_method, **kwargs
+        x=x,
+        y=y,
+        vals=vals,
+        ecdf_method=ecdf_method,
+        iecdf_method=iecdf_method,
+        **kwargs,
     )
 
     vals_under = vals < (x_min := x.min())
@@ -616,7 +651,9 @@ def quantile_map_non_parametically_with_constant_extrapolation(
     return mapped_vals
 
 
-def _isimip_quantile_map_x_on_y_non_parametically(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def _isimip_quantile_map_x_on_y_non_parametically(
+    x: np.ndarray, y: np.ndarray
+) -> np.ndarray:
     p_x = (scipy.stats.rankdata(x) - 1.0) / x.size
     p_y = np.linspace(0.0, 1.0, y.size, dtype=y.dtype)
     z = np.interp(p_x, p_y, np.sort(y)).astype(y.dtype)
@@ -654,7 +691,12 @@ def quantile_map_x_on_y_non_parametically(
 
     if mode == "normal":
         return quantile_map_non_parametically(
-            x=x, y=y, vals=x, ecdf_method=ecdf_method, iecdf_method=iecdf_method, **kwargs
+            x=x,
+            y=y,
+            vals=x,
+            ecdf_method=ecdf_method,
+            iecdf_method=iecdf_method,
+            **kwargs,
         )
     elif mode == "isimipv3.0":
         return _isimip_quantile_map_x_on_y_non_parametically(x, y)

@@ -19,7 +19,9 @@ from sklearn.metrics import mutual_info_score
 from ..variables import *
 
 
-def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, **cm_data) -> pd.DataFrame:
+def rmse_spatial_correlation_distribution(
+    variable: str, obs_data: np.ndarray, **cm_data
+) -> pd.DataFrame:
     """
     Calculates Root-Mean-Squared-Error between observed and modelled spatial correlation matrix at each location.
 
@@ -53,23 +55,40 @@ def rmse_spatial_correlation_distribution(variable: str, obs_data: np.ndarray, *
 
             for i, j in np.ndindex(obs_data.shape[1:]):
 
-                corr_matrix_obs[i, j] = np.corrcoef(obs_data[:, a, b], obs_data[:, i, j])[0, 1]
-                corr_matrix_cm[i, j] = np.corrcoef(cm_data[k][:, a, b], cm_data[k][:, i, j])[0, 1]
+                corr_matrix_obs[i, j] = np.corrcoef(
+                    obs_data[:, a, b], obs_data[:, i, j]
+                )[0, 1]
+                corr_matrix_cm[i, j] = np.corrcoef(
+                    cm_data[k][:, a, b], cm_data[k][:, i, j]
+                )[0, 1]
 
             # calculate rmsd between two correlation matrices
-            rmsd = math.sqrt(sklearn.metrics.mean_squared_error(corr_matrix_obs, corr_matrix_cm))
+            rmsd = math.sqrt(
+                sklearn.metrics.mean_squared_error(corr_matrix_obs, corr_matrix_cm)
+            )
 
             rmsd_arrays.append(
-                pd.DataFrame(data={"x": [a], "y": [b], "Correction Method": k, "RMSE spatial correlation": rmsd})
+                pd.DataFrame(
+                    data={
+                        "x": [a],
+                        "y": [b],
+                        "Correction Method": k,
+                        "RMSE spatial correlation": rmsd,
+                    }
+                )
             )
 
     rmsd_data = pd.concat(rmsd_arrays)
-    rmsd_data["RMSE spatial correlation"] = pd.to_numeric(rmsd_data["RMSE spatial correlation"])
+    rmsd_data["RMSE spatial correlation"] = pd.to_numeric(
+        rmsd_data["RMSE spatial correlation"]
+    )
 
     return rmsd_data
 
 
-def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manual_title: str = " "):
+def rmse_spatial_correlation_boxplot(
+    variable: str, dataset: pd.DataFrame, manual_title: str = " "
+):
 
     """
     Boxplot of RMSE of spatial correlation across locations.
@@ -87,16 +106,24 @@ def rmse_spatial_correlation_boxplot(variable: str, dataset: pd.DataFrame, manua
 
     # create figure and plot
     fig = plt.figure(figsize=(8, 6))
-    seaborn.boxplot(y="RMSE spatial correlation", x="Correction Method", data=dataset, palette="colorblind")
+    seaborn.boxplot(
+        y="RMSE spatial correlation",
+        x="Correction Method",
+        data=dataset,
+        palette="colorblind",
+    )
 
     # set plot title
     if variable in str_to_variable_class.keys():
         plot_title = "{} ({}) \n RMSE of spatial correlation matrices".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
     fig.suptitle(plot_title)
 
     return fig

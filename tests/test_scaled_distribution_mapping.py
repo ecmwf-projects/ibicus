@@ -37,7 +37,12 @@ def get_min_distance_in_array(x):
 
 def gen_precip_data(p0, n, *gamma_args):
     nr_of_dry_days = scipy.stats.binom.rvs(n, p0)
-    return np.concatenate([np.repeat(0, nr_of_dry_days), scipy.stats.gamma.rvs(size=n - nr_of_dry_days, *gamma_args)])
+    return np.concatenate(
+        [
+            np.repeat(0, nr_of_dry_days),
+            scipy.stats.gamma.rvs(size=n - nr_of_dry_days, *gamma_args),
+        ]
+    )
 
 
 class TestScaledDistributionMapping(unittest.TestCase):

@@ -116,7 +116,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
 
     def test__init__(self):
         tas_1 = QuantileDeltaMapping.from_variable("tas")
-        tas_2 = QuantileDeltaMapping(distribution=scipy.stats.norm, trend_preservation="absolute")
+        tas_2 = QuantileDeltaMapping(
+            distribution=scipy.stats.norm, trend_preservation="absolute"
+        )
         assert tas_1 == tas_2
 
         pr_1 = QuantileDeltaMapping.from_variable("pr")
@@ -127,7 +129,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
 
         obs = scipy.stats.norm.rvs(loc=2, scale=4, size=1000)
         cm_hist = scipy.stats.norm.rvs(loc=8, scale=2, size=1000)
-        assert nested_tuples_similar_up_to_diff(tas._get_obs_and_cm_hist_fits(obs, cm_hist), ((2, 4), (8, 2)), 0.1)
+        assert nested_tuples_similar_up_to_diff(
+            tas._get_obs_and_cm_hist_fits(obs, cm_hist), ((2, 4), (8, 2)), 0.1
+        )
 
         pr = QuantileDeltaMapping.from_variable("pr")
 
@@ -136,7 +140,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_hist = model.ppf(np.random.random(size=1000), *(5, 0, 7))
 
         assert nested_tuples_similar_up_to_diff(
-            pr._get_obs_and_cm_hist_fits(obs, cm_hist), (model.fit(obs), model.fit(cm_hist)), 0.1
+            pr._get_obs_and_cm_hist_fits(obs, cm_hist),
+            (model.fit(obs), model.fit(cm_hist)),
+            0.1,
         )
 
     def test__apply_debiasing_steps_tas(self):
@@ -150,7 +156,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         # distance = get_min_distance_in_array(obs)
 
         fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: perfect match between obs and cm_hist
         obs = np.random.random(size=1000)
@@ -158,7 +166,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = np.random.random(size=1000)
 
         fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
         obs = np.random.random(size=1000)
@@ -166,7 +176,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = np.random.normal(size=1000)
 
         fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: corrects mean difference
         obs = np.random.normal(size=1000)
@@ -174,7 +186,13 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = np.random.normal(size=1000) + 5
 
         fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.abs(np.mean(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist)) - np.mean(obs)) < 0.1
+        assert (
+            np.abs(
+                np.mean(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist))
+                - np.mean(obs)
+            )
+            < 0.1
+        )
 
         # Test: perfect match between obs and cm_hist up to translation and cm_fut from new distribution
         obs = np.random.random(size=1000)
@@ -182,7 +200,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = np.random.normal(size=1000)
 
         fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future - 5)
+        assert np.allclose(
+            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future - 5
+        )
 
     def test__apply_debiasing_steps_pr(self):
         pr = QuantileDeltaMapping.from_variable("pr")
@@ -196,7 +216,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         # distance = get_min_distance_in_array(obs)
 
         fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: perfect match between obs and cm_hist
         obs = model.ppf(np.random.random(size=1000), *(2, 0, 3))
@@ -204,7 +226,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 3))
 
         fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
         obs = model.ppf(np.random.random(size=1000), *(2, 0, 3))
@@ -212,7 +236,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = model.ppf(np.random.random(size=1000), *(5, 0, 2))
 
         fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future)
+        assert np.allclose(
+            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+        )
 
         # Test: corrects mean relative difference
         obs = model.ppf(np.random.random(size=1000), *(2, 0, 3))
@@ -220,7 +246,14 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 3)) * 5
 
         fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.abs(np.mean(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist)) / np.mean(obs) - 1) < 0.1
+        assert (
+            np.abs(
+                np.mean(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist))
+                / np.mean(obs)
+                - 1
+            )
+            < 0.1
+        )
 
         # Test: perfect match between obs and cm_hist up to mutiplication and cm_fut from new distribution
         obs = model.ppf(np.random.random(size=1000), *(2, 0, 3))
@@ -228,4 +261,10 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 5)) * 5
 
         fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert all(np.abs(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist) - cm_future / 5) < 1e-5)
+        assert all(
+            np.abs(
+                pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist)
+                - cm_future / 5
+            )
+            < 1e-5
+        )

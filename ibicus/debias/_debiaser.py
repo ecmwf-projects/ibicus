@@ -49,18 +49,26 @@ class Debiaser(ABC):
         Reasonable physical range of the variable to debias in the form ``[lower_bound, upper_bound]``. It is checked against and warnings are raise if values fall outside the range. Default: ``None``.
     """
 
-    variable: str = attrs.field(default="unknown", validator=attrs.validators.instance_of(str), eq=False)
+    variable: str = attrs.field(
+        default="unknown", validator=attrs.validators.instance_of(str), eq=False
+    )
     reasonable_physical_range: Optional[list] = attrs.field(default=None, eq=False)
 
     @reasonable_physical_range.validator
     def _validate_reasonable_physical_range(self, attribute, value):
         if value is not None:
             if len(value) != 2:
-                raise ValueError("reasonable_physical_range should have only a lower and upper physical bound")
+                raise ValueError(
+                    "reasonable_physical_range should have only a lower and upper physical bound"
+                )
             if not all(isinstance(elem, (int, float)) for elem in value):
-                raise ValueError("reasonable_physical_range needs to be a list of floats")
+                raise ValueError(
+                    "reasonable_physical_range needs to be a list of floats"
+                )
             if not value[0] < value[1]:
-                raise ValueError("lower bounds needs to be smaller than upper bound in reasonable_physical_range")
+                raise ValueError(
+                    "lower bounds needs to be smaller than upper bound in reasonable_physical_range"
+                )
 
     # ----- Constructors ----- #
     # Helper for downstream classes
@@ -91,7 +99,15 @@ class Debiaser(ABC):
             All other class attributes that shall be set and where the standard values for variable shall be overwritten.
         """
         # Check default and experimental default settings
-        if len(intersection := (default_settings_variable.keys() & experimental_default_setting_variable.keys())) != 0:
+        if (
+            len(
+                intersection := (
+                    default_settings_variable.keys()
+                    & experimental_default_setting_variable.keys()
+                )
+            )
+            != 0
+        ):
             logging.warning(
                 f"Default and experimental default settings are not mutually exclusive for variables: {intersection} in debiaser {child_class.__name__}. Standard default settings are taken, but please review!"
             )
@@ -111,7 +127,9 @@ class Debiaser(ABC):
                 logging.warning(
                     f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!"
                 )
-                variable_settings = experimental_default_setting_variable[variable_object]
+                variable_settings = experimental_default_setting_variable[
+                    variable_object
+                ]
             else:
                 raise ValueError(
                     f"Unfortunately currently no default settings exist for the variable {variable} in the debiaser {child_class.__name__}. You can set the required class parameters manually by using the class constructor."
@@ -159,7 +177,9 @@ class Debiaser(ABC):
 
     @staticmethod
     def _have_same_shape(obs, cm_hist, cm_future):
-        return obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]
+        return (
+            obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]
+        )
 
     @staticmethod
     def _contains_inf_nan(x):
@@ -168,7 +188,8 @@ class Debiaser(ABC):
     def _not_if_or_nan_vals_outside_reasonable_physical_range(self, x):
         if self.reasonable_physical_range is not None:
             return not np.all(
-                (x >= self.reasonable_physical_range[0]) & (x <= self.reasonable_physical_range[1])
+                (x >= self.reasonable_physical_range[0])
+                & (x <= self.reasonable_physical_range[1])
                 | np.isinf(x)
                 | np.isnan(x)
             )
@@ -193,7 +214,9 @@ class Debiaser(ABC):
         try:
             return x.astype(float)
         except:
-            raise ValueError("Conversion to float not possible. Please use float datatype for obs, cm_hist, cm_future.")
+            raise ValueError(
+                "Conversion to float not possible. Please use float datatype for obs, cm_hist, cm_future."
+            )
 
     @staticmethod
     def _fill_masked_array_with_nan(x):
@@ -216,10 +239,14 @@ class Debiaser(ABC):
             logging.warning("obs does not have a float dtype. Attempting conversion.")
             obs = Debiaser._convert_to_float_dtype(obs)
         if not Debiaser._has_float_dtype(cm_hist):
-            logging.warning("cm_hist does not have a float dtype. Attempting conversion.")
+            logging.warning(
+                "cm_hist does not have a float dtype. Attempting conversion."
+            )
             cm_hist = Debiaser._convert_to_float_dtype(cm_hist)
         if not Debiaser._has_float_dtype(cm_future):
-            logging.warning("cm_future does not have a float dtype. Attempting conversion.")
+            logging.warning(
+                "cm_future does not have a float dtype. Attempting conversion."
+            )
             cm_future = Debiaser._convert_to_float_dtype(cm_future)
 
         # correct shape
@@ -327,7 +354,9 @@ class Debiaser(ABC):
         elif verbosity == "ERRORS_ONLY":
             level = logging.ERROR
         else:
-            raise ValueError('verbosity needs to be one of ["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]')
+            raise ValueError(
+                'verbosity needs to be one of ["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]'
+            )
 
         logging.basicConfig(level=level)
         logging.getLogger().setLevel(level)
@@ -351,17 +380,25 @@ class Debiaser(ABC):
     def map_over_locations(func, output_size, obs, cm_hist, cm_future, **kwargs):
         output = np.empty(output_size, dtype=cm_future.dtype)
         for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
-            output[:, i, j] = func(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs)
+            output[:, i, j] = func(
+                obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs
+            )
         return output
 
     @staticmethod
-    def parallel_map_over_locations(func, output_size, obs, cm_hist, cm_future, nr_processes=4, **kwargs):
+    def parallel_map_over_locations(
+        func, output_size, obs, cm_hist, cm_future, nr_processes=4, **kwargs
+    ):
 
         # compute results
         indices = [(i, j) for i in range(obs.shape[1]) for j in range(obs.shape[2])]
         with Pool(processes=nr_processes) as pool:
             result = pool.starmap(
-                partial(func, **kwargs), [(obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j]) for (i, j) in indices]
+                partial(func, **kwargs),
+                [
+                    (obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
+                    for (i, j) in indices
+                ],
             )
 
         # fill output
@@ -397,7 +434,16 @@ class Debiaser(ABC):
         """
         pass
 
-    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", parallel=False, nr_processes=4, **kwargs):
+    def apply(
+        self,
+        obs,
+        cm_hist,
+        cm_future,
+        verbosity="INFO",
+        parallel=False,
+        nr_processes=4,
+        **kwargs,
+    ):
         """
         Applies the debiaser onto given data.
 
@@ -429,7 +475,9 @@ class Debiaser(ABC):
         Debiaser._set_up_logging(verbosity)
         logging.info("----- Running debiasing for variable: %s -----" % self.variable)
 
-        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(obs, cm_hist, cm_future)
+        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
+            obs, cm_hist, cm_future
+        )
 
         if parallel:
             output = Debiaser.parallel_map_over_locations(

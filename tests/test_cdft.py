@@ -97,7 +97,9 @@ class TestCDFt(unittest.TestCase):
 
         distance = get_min_distance_in_array(obs)
 
-        assert check_equal_up_to_distance(tas._apply_CDFt_mapping(obs, cm_hist, cm_future), obs, distance)
+        assert check_equal_up_to_distance(
+            tas._apply_CDFt_mapping(obs, cm_hist, cm_future), obs, distance
+        )
 
         # Test: perfect match between obs and cm_hist
         obs = np.random.random(size=1000)
@@ -118,13 +120,20 @@ class TestCDFt(unittest.TestCase):
         cm_hist = np.random.normal(size=1000) + 5
         cm_future = np.random.normal(size=1000) + 5
 
-        assert np.abs(np.mean(tas._apply_CDFt_mapping(obs, cm_hist, cm_future)) - np.mean(obs)) < 0.1
+        assert (
+            np.abs(
+                np.mean(tas._apply_CDFt_mapping(obs, cm_hist, cm_future)) - np.mean(obs)
+            )
+            < 0.1
+        )
 
         # Test: perfect match between obs and cm_hist up to translation and cm_fut from new distribution
         obs = np.random.random(size=1000)
         cm_hist = obs + 5
         cm_future = np.random.normal(size=1000)
-        assert np.allclose(tas._apply_CDFt_mapping(obs, cm_hist, cm_future), cm_future - 5)
+        assert np.allclose(
+            tas._apply_CDFt_mapping(obs, cm_hist, cm_future), cm_future - 5
+        )
 
     def test__get_threshold(self):
         x, y, z = np.arange(-100, 200), np.arange(-100, 200), np.arange(-100, 200)
@@ -152,7 +161,9 @@ class TestCDFt(unittest.TestCase):
         )
         x[x < 0], y[y < 0], z[z < 0] = 0, 0, 0
 
-        x_new, y_new, z_new, threshold = CDFt._apply_SSR_steps_before_adjustment(x, y, z)
+        x_new, y_new, z_new, threshold = CDFt._apply_SSR_steps_before_adjustment(
+            x, y, z
+        )
 
         assert all(x_new > 0)
         assert all(y_new > 0)
@@ -173,16 +184,39 @@ class TestCDFt(unittest.TestCase):
         tas = CDFt.from_variable("tas")
 
         # Test perfect match up to translation, depending on season
-        obs = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
-        shift_cm_hist = np.concatenate([np.repeat(np.random.uniform(low=-5, high=5, size=1), 1000) for i in range(12)])
+        obs = np.concatenate(
+            [
+                np.sin(2 * np.pi * i / 12) * np.random.random(size=1000)
+                for i in range(12)
+            ]
+        )
+        shift_cm_hist = np.concatenate(
+            [
+                np.repeat(np.random.uniform(low=-5, high=5, size=1), 1000)
+                for i in range(12)
+            ]
+        )
         cm_hist = obs + shift_cm_hist
-        cm_future = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
+        cm_future = np.concatenate(
+            [
+                np.sin(2 * np.pi * i / 12) * np.random.random(size=1000)
+                for i in range(12)
+            ]
+        )
 
-        time_obs = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
-        time_cm_hist = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
-        time_cm_future = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
+        time_obs = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
+        time_cm_hist = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
+        time_cm_future = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
 
-        debiased_cm_future = tas._apply_on_window(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+        debiased_cm_future = tas._apply_on_window(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         assert np.allclose(debiased_cm_future, cm_future - shift_cm_hist)
 
@@ -190,16 +224,39 @@ class TestCDFt(unittest.TestCase):
         tas = CDFt.from_variable("tas")
 
         # Test perfect match up to translation, depending on season
-        obs = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
-        shift_cm_hist = np.concatenate([np.repeat(np.random.uniform(low=-5, high=5, size=1), 1000) for i in range(12)])
+        obs = np.concatenate(
+            [
+                np.sin(2 * np.pi * i / 12) * np.random.random(size=1000)
+                for i in range(12)
+            ]
+        )
+        shift_cm_hist = np.concatenate(
+            [
+                np.repeat(np.random.uniform(low=-5, high=5, size=1), 1000)
+                for i in range(12)
+            ]
+        )
         cm_hist = obs + shift_cm_hist
-        cm_future = np.concatenate([np.sin(2 * np.pi * i / 12) * np.random.random(size=1000) for i in range(12)])
+        cm_future = np.concatenate(
+            [
+                np.sin(2 * np.pi * i / 12) * np.random.random(size=1000)
+                for i in range(12)
+            ]
+        )
 
-        time_obs = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
-        time_cm_hist = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
-        time_cm_future = np.concatenate([np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)])
+        time_obs = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
+        time_cm_hist = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
+        time_cm_future = np.concatenate(
+            [np.repeat(date(2000, i, 1), 1000) for i in range(1, 13)]
+        )
 
-        debiased_cm_future = tas.apply_location(obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future)
+        debiased_cm_future = tas.apply_location(
+            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+        )
 
         assert np.allclose(debiased_cm_future, cm_future - shift_cm_hist)
 

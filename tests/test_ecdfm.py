@@ -37,7 +37,12 @@ def get_min_distance_in_array(x):
 
 def gen_precip_data(p0, n, *gamma_args):
     nr_of_dry_days = scipy.stats.binom.rvs(n, p0)
-    return np.concatenate([np.repeat(0, nr_of_dry_days), scipy.stats.gamma.rvs(size=n - nr_of_dry_days, *gamma_args)])
+    return np.concatenate(
+        [
+            np.repeat(0, nr_of_dry_days),
+            scipy.stats.gamma.rvs(size=n - nr_of_dry_days, *gamma_args),
+        ]
+    )
 
 
 class TestECDFM(unittest.TestCase):
@@ -113,7 +118,9 @@ class TestECDFM(unittest.TestCase):
 
         assert pr_1 != pr_2
 
-        pr_1 = ECDFM.for_precipitation(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
+        pr_1 = ECDFM.for_precipitation(
+            distribution=gen_PrecipitationGammaLeftCensoredModel(0.2)
+        )
         pr_2 = ECDFM.for_precipitation(
             model_type="censored",
             censoring_threshold=0.2,
@@ -162,13 +169,18 @@ class TestECDFM(unittest.TestCase):
         cm_hist = np.random.beta(5, 2, size=1000) + 5
         cm_future = np.random.beta(7, 3, size=1000) + 5
 
-        assert np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs)) < 0.1
+        assert (
+            np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 0.1
+        )
 
         # Test: perfect match between obs and cm_hist up to translation and cm_fut from new distribution
         obs = np.random.beta(5, 2, size=1000)
         cm_hist = obs + 5
         cm_future = np.random.beta(7, 4, size=1000) + 7
-        assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future - 5, atol=1e-5)
+        assert np.allclose(
+            tas.apply_location(obs, cm_hist, cm_future), cm_future - 5, atol=1e-5
+        )
 
     def test_apply_location_pr(self):
         # Compare all values
@@ -205,7 +217,8 @@ class TestECDFM(unittest.TestCase):
         cm_future_non_zero = cm_future > 0
 
         assert np.allclose(
-            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero], cm_future[cm_future_non_zero]
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
         )
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -215,7 +228,8 @@ class TestECDFM(unittest.TestCase):
         cm_future_non_zero = cm_future > 0
 
         assert np.allclose(
-            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero], cm_future[cm_future_non_zero]
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
         )
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -225,7 +239,8 @@ class TestECDFM(unittest.TestCase):
         cm_future_non_zero = cm_future > 0
 
         assert np.allclose(
-            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero], cm_future[cm_future_non_zero]
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
         )
 
         # Test: corrects mean difference
@@ -235,4 +250,7 @@ class TestECDFM(unittest.TestCase):
         cm_hist = gen_precip_data(0.4, 1000, 5, 2) + 5
         cm_future = gen_precip_data(0.4, 1000, 5, 2) + 5
 
-        assert np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs)) < 1
+        assert (
+            np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 1
+        )

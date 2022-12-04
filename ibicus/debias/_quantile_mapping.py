@@ -101,20 +101,31 @@ class QuantileMapping(Debiaser):
     """
 
     distribution: Union[
-        scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel
+        scipy.stats.rv_continuous,
+        scipy.stats.rv_discrete,
+        scipy.stats.rv_histogram,
+        StatisticalModel,
     ] = attrs.field(
         validator=attrs.validators.instance_of(
-            (scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel)
+            (
+                scipy.stats.rv_continuous,
+                scipy.stats.rv_discrete,
+                scipy.stats.rv_histogram,
+                StatisticalModel,
+            )
         )
     )
     detrending: str = attrs.field(
-        default="no_detrending", validator=attrs.validators.in_(["additive", "multiplicative", "no_detrending"])
+        default="no_detrending",
+        validator=attrs.validators.in_(["additive", "multiplicative", "no_detrending"]),
     )
 
     # ----- Constructors -----
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
-        return super()._from_variable(cls, variable, default_settings, experimental_default_settings, **kwargs)
+        return super()._from_variable(
+            cls, variable, default_settings, experimental_default_settings, **kwargs
+        )
 
     @classmethod
     def for_precipitation(

@@ -33,7 +33,9 @@ def _calculate_mean_trend_bias(
         bc_trend = np.mean(bc_future, axis=0) / np.mean(bc_validate, axis=0)
         raw_trend = np.mean(raw_future, axis=0) / np.mean(raw_validate, axis=0)
     else:
-        raise ValueError(f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}.")
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
 
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
@@ -50,8 +52,12 @@ def _calculate_quantile_trend_bias(
 ) -> np.ndarray:
 
     if trend_type == "additive":
-        bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(bc_validate, quantile, axis=0)
-        raw_trend = np.quantile(raw_future, quantile, axis=0) - np.quantile(raw_validate, quantile, axis=0)
+        bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(
+            bc_validate, quantile, axis=0
+        )
+        raw_trend = np.quantile(raw_future, quantile, axis=0) - np.quantile(
+            raw_validate, quantile, axis=0
+        )
 
     elif trend_type == "multiplicative":
         if (q_bc_validate := np.quantile(bc_validate, quantile, axis=0)) != 0 and (
@@ -65,7 +71,9 @@ def _calculate_quantile_trend_bias(
                 f"Selected quantile is zero either for the bias corrected or raw model in the validation period. Cannot analyse multiplicative trend in quantile: {str(quantile)}"
             )
     else:
-        raise ValueError(f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}.")
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
 
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
@@ -82,27 +90,35 @@ def _calculate_metrics_trend_bias(
 ) -> np.ndarray:
 
     if trend_type == "additive":
-        bc_trend = metric.calculate_exceedance_probability(bc_future) - metric.calculate_exceedance_probability(
-            bc_validate
-        )
-        raw_trend = metric.calculate_exceedance_probability(raw_future) - metric.calculate_exceedance_probability(
-            raw_validate
-        )
+        bc_trend = metric.calculate_exceedance_probability(
+            bc_future
+        ) - metric.calculate_exceedance_probability(bc_validate)
+        raw_trend = metric.calculate_exceedance_probability(
+            raw_future
+        ) - metric.calculate_exceedance_probability(raw_validate)
 
     elif trend_type == "multiplicative":
-        if (m_bc_validate := metric.calculate_exceedance_probability(bc_validate)) != 0 and (
+        if (
+            m_bc_validate := metric.calculate_exceedance_probability(bc_validate)
+        ) != 0 and (
             m_raw_validate := metric.calculate_exceedance_probability(bc_validate)
         ) != 0:
 
-            bc_trend = metric.calculate_exceedance_probability(bc_future) / m_bc_validate
-            raw_trend = metric.calculate_exceedance_probability(raw_future) / m_raw_validate
+            bc_trend = (
+                metric.calculate_exceedance_probability(bc_future) / m_bc_validate
+            )
+            raw_trend = (
+                metric.calculate_exceedance_probability(raw_future) / m_raw_validate
+            )
 
         else:
             raise ZeroDivisionError(
                 f"Occurrence probability of selected metric is zero either for the bias corrected or raw model in the validation period."
             )
     else:
-        raise ValueError(f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}.")
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
 
     trend_bias = 100 * (bc_trend - raw_trend) / raw_trend
     return trend_bias
@@ -160,7 +176,9 @@ def calculate_future_trend_bias(
 
         # calculate trend bias in descriptive statistics
 
-        mean_bias = _calculate_mean_trend_bias(variable, trend_type, raw_validate, raw_future, *debiased_cms_value)
+        mean_bias = _calculate_mean_trend_bias(
+            variable, trend_type, raw_validate, raw_future, *debiased_cms_value
+        )
 
         if np.any(mean_bias == np.inf):
             warning(
@@ -275,7 +293,9 @@ def calculate_future_trend_bias(
     return plot_data
 
 
-def plot_future_trend_bias_boxplot(variable: str, bias_df: pd.DataFrame, manual_title: str = " "):
+def plot_future_trend_bias_boxplot(
+    variable: str, bias_df: pd.DataFrame, manual_title: str = " "
+):
 
     """
     Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an overview boxplot of the bias in the trend of metrics.
@@ -291,29 +311,40 @@ def plot_future_trend_bias_boxplot(variable: str, bias_df: pd.DataFrame, manual_
     """
 
     # unpack numpy arrays in column 'Relative change bias (%)'
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df, numpy_column_name="Relative change bias (%)")
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(
+        df=bias_df, numpy_column_name="Relative change bias (%)"
+    )
 
     # create figure and plot
     fig = plt.figure(figsize=(10, 6))
     ax = seaborn.boxplot(
-        y="Relative change bias (%)", x="Metric", data=bias_df_unpacked, palette="colorblind", hue="Correction Method"
+        y="Relative change bias (%)",
+        x="Metric",
+        data=bias_df_unpacked,
+        palette="colorblind",
+        hue="Correction Method",
     )
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
 
     # generate and set plot title
     if variable in str_to_variable_class.keys():
         plot_title = "Bias in climate model trend between validation and future period \n {} ({})".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
     fig.suptitle(plot_title)
 
     return fig
 
 
-def plot_future_trend_bias_spatial(variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "):
+def plot_future_trend_bias_spatial(
+    variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "
+):
 
     """
     Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an spatial plot of trend bias for one chosen metric.
@@ -340,14 +371,19 @@ def plot_future_trend_bias_spatial(variable: str, metric: str, bias_df: pd.DataF
     # generate plot title
     if variable in str_to_variable_class.keys():
         plot_title = "Bias in climate model trend between validation and future period \n {} ({})".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
 
     # find maximum value to set axis bounds
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df_filtered, numpy_column_name="Percentage bias")
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(
+        df=bias_df_filtered, numpy_column_name="Percentage bias"
+    )
     axis_max = bias_df_unpacked["Percentage bias"].max()
     axis_min = -axis_max
 
@@ -362,7 +398,9 @@ def plot_future_trend_bias_spatial(variable: str, metric: str, bias_df: pd.DataF
         plot_title = row_array.values[0]
         plot_data = row_array.values[2]
 
-        plot = ax[i].imshow(plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max)
+        plot = ax[i].imshow(
+            plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max
+        )
         ax[i].set_title(plot_title)
         fig.colorbar(plot, ax=ax[i])
         i = i + 1

@@ -23,7 +23,11 @@ def _marginal_mean_bias(obs_data: np.ndarray, cm_data: np.ndarray):
     Calculates location-wise percentage bias of mean
     """
 
-    mean_bias = 100 * (np.mean(obs_data, axis=0) - np.mean(cm_data, axis=0)) / np.mean(obs_data, axis=0)
+    mean_bias = (
+        100
+        * (np.mean(obs_data, axis=0) - np.mean(cm_data, axis=0))
+        / np.mean(obs_data, axis=0)
+    )
 
     return mean_bias
 
@@ -117,7 +121,9 @@ def calculate_marginal_bias(
                 )
             )
 
-        lowqn_bias = _marginal_quantile_bias(quantile=0.05, obs_data=obs_data, cm_data=cm_data)
+        lowqn_bias = _marginal_quantile_bias(
+            quantile=0.05, obs_data=obs_data, cm_data=cm_data
+        )
 
         if np.any(lowqn_bias == np.inf):
             warning(
@@ -142,7 +148,9 @@ def calculate_marginal_bias(
                 )
             )
 
-        highqn_bias = _marginal_quantile_bias(quantile=0.95, obs_data=obs_data, cm_data=cm_data)
+        highqn_bias = _marginal_quantile_bias(
+            quantile=0.95, obs_data=obs_data, cm_data=cm_data
+        )
 
         if np.any(highqn_bias == np.inf):
             warning(
@@ -223,41 +231,62 @@ def plot_marginal_bias(variable: str, bias_df: pd.DataFrame, manual_title: str =
     """
 
     # unpack dataframe
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df, numpy_column_name="Percentage bias")
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(
+        df=bias_df, numpy_column_name="Percentage bias"
+    )
 
     # split dataframe for two plots
-    plot_data1 = bias_df_unpacked[bias_df_unpacked["Metric"].isin(["Mean", "5% qn", "95% qn"])]
-    plot_data2 = bias_df_unpacked[~bias_df_unpacked["Metric"].isin(["Mean", "5% qn", "95% qn"])]
+    plot_data1 = bias_df_unpacked[
+        bias_df_unpacked["Metric"].isin(["Mean", "5% qn", "95% qn"])
+    ]
+    plot_data2 = bias_df_unpacked[
+        ~bias_df_unpacked["Metric"].isin(["Mean", "5% qn", "95% qn"])
+    ]
 
     # generate plots
     fig_width = 2 * bias_df_unpacked["Metric"].nunique() + 3
     fig, ax = plt.subplots(1, 2, figsize=(fig_width, 6))
 
     seaborn.violinplot(
-        ax=ax[0], y="Percentage bias", x="Metric", data=plot_data1, palette="colorblind", hue="Correction Method"
+        ax=ax[0],
+        y="Percentage bias",
+        x="Metric",
+        data=plot_data1,
+        palette="colorblind",
+        hue="Correction Method",
     )
     [ax[0].axvline(x + 0.5, color="k") for x in ax[0].get_xticks()]
 
     seaborn.violinplot(
-        ax=ax[1], y="Percentage bias", x="Metric", data=plot_data2, palette="colorblind", hue="Correction Method"
+        ax=ax[1],
+        y="Percentage bias",
+        x="Metric",
+        data=plot_data2,
+        palette="colorblind",
+        hue="Correction Method",
     )
     [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
 
     # generate and set plot title
     if variable in str_to_variable_class.keys():
         plot_title = "{} ({}) - Bias".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
 
     fig.suptitle(plot_title)
 
     return fig
 
 
-def plot_bias_spatial(variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "):
+def plot_bias_spatial(
+    variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "
+):
 
     """
     Spatial plot of bias at each location with respect to one specified metric.
@@ -291,14 +320,19 @@ def plot_bias_spatial(variable: str, metric: str, bias_df: pd.DataFrame, manual_
     # generate plot title
     if variable in str_to_variable_class.keys():
         plot_title = "{} ({}) \n Percentage bias of mean".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
 
     # find maximum value to set axis bounds
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df_filtered, numpy_column_name="Percentage bias")
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(
+        df=bias_df_filtered, numpy_column_name="Percentage bias"
+    )
     axis_max = bias_df_unpacked["Percentage bias"].max()
     axis_min = -axis_max
 
@@ -313,13 +347,21 @@ def plot_bias_spatial(variable: str, metric: str, bias_df: pd.DataFrame, manual_
         plot_title = row_array.values[0]
         plot_data = row_array.values[2]
 
-        plot = ax[i].imshow(plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max)
+        plot = ax[i].imshow(
+            plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max
+        )
         ax[i].set_title(plot_title)
         fig.colorbar(plot, ax=ax[i])
         i = i + 1
 
 
-def plot_histogram(variable: str, data_obs: np.ndarray, bin_number: int = 100, manual_title: str = " ", **cm_data):
+def plot_histogram(
+    variable: str,
+    data_obs: np.ndarray,
+    bin_number: int = 100,
+    manual_title: str = " ",
+    **cm_data
+):
 
     """
     Plots histogram over entire are or at single location. Expects a one-dimensional array as input.
@@ -350,11 +392,14 @@ def plot_histogram(variable: str, data_obs: np.ndarray, bin_number: int = 100, m
     # generate plot title
     if variable in str_to_variable_class.keys():
         plot_title = "Distribution {} ({}) over entire area".format(
-            map_variable_str_to_variable_class(variable).name, map_variable_str_to_variable_class(variable).unit
+            map_variable_str_to_variable_class(variable).name,
+            map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning("Variable not recognized, using manual_title to generate plot_title")
+        raise Warning(
+            "Variable not recognized, using manual_title to generate plot_title"
+        )
     fig.suptitle(plot_title)
 
     # generate plots

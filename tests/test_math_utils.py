@@ -60,11 +60,19 @@ class TestStatisticalModel(unittest.TestCase):
     def test_gen_PrecipitationIgnoreZeroValuesModel(self):
         model1 = gen_PrecipitationIgnoreZeroValuesModel()
         model2 = gen_PrecipitationIgnoreZeroValuesModel(distribution=scipy.stats.gamma)
-        model3 = gen_PrecipitationIgnoreZeroValuesModel(distribution=scipy.stats.weibull_min, fit_kwds=None)
-        model4 = gen_PrecipitationIgnoreZeroValuesModel(fit_kwds={"floc": 0, "fscale": 2})
+        model3 = gen_PrecipitationIgnoreZeroValuesModel(
+            distribution=scipy.stats.weibull_min, fit_kwds=None
+        )
+        model4 = gen_PrecipitationIgnoreZeroValuesModel(
+            fit_kwds={"floc": 0, "fscale": 2}
+        )
 
-        data1 = np.concatenate([scipy.stats.gamma.rvs(scale=2, a=3, size=1000), np.repeat(0, 100)])
-        data2 = np.concatenate([scipy.stats.weibull_min.rvs(scale=2, c=3, size=1000), np.repeat(0, 100)])
+        data1 = np.concatenate(
+            [scipy.stats.gamma.rvs(scale=2, a=3, size=1000), np.repeat(0, 100)]
+        )
+        data2 = np.concatenate(
+            [scipy.stats.weibull_min.rvs(scale=2, c=3, size=1000), np.repeat(0, 100)]
+        )
 
         # Test init
         assert model1 == model2
@@ -78,10 +86,14 @@ class TestStatisticalModel(unittest.TestCase):
         fit3 = model1.fit(data1[data1 != 0])
         fit4 = model4.fit(data1)
 
-        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(
+            fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF
+        )
         assert fit1[1] == 0  # loc fixed to zero
         assert fit4[1] == 0 and fit4[2] == 2  # loc and scale fixed to zero and two
-        assert nested_tuples_similar_up_to_diff(fit2, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(
+            fit2, (3, 0, 2), self.ESTIMATION_MAX_DIFF
+        )
         assert np.allclose(fit1, fit3)
 
         # Test cdf
@@ -110,10 +122,16 @@ class TestStatisticalModel(unittest.TestCase):
 
         nr_dry_days = scipy.stats.binom.rvs(n=1000, p=0.6)
         data1 = np.concatenate(
-            [scipy.stats.gamma.rvs(scale=2, a=3, size=1000 - nr_dry_days), np.repeat(0, nr_dry_days)]
+            [
+                scipy.stats.gamma.rvs(scale=2, a=3, size=1000 - nr_dry_days),
+                np.repeat(0, nr_dry_days),
+            ]
         )
         data2 = np.concatenate(
-            [scipy.stats.gamma.rvs(scale=1, a=3, size=1000 - nr_dry_days), np.repeat(0, nr_dry_days)]
+            [
+                scipy.stats.gamma.rvs(scale=1, a=3, size=1000 - nr_dry_days),
+                np.repeat(0, nr_dry_days),
+            ]
         )
 
         # Test init
@@ -127,11 +145,15 @@ class TestStatisticalModel(unittest.TestCase):
         fit3 = model1.fit(data2)
         fit4 = model3.fit(data2)
 
-        assert nested_tuples_similar_up_to_diff(fit1, (0.6, (3, 0, 2)), self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(
+            fit1, (0.6, (3, 0, 2)), self.ESTIMATION_MAX_DIFF
+        )
         assert fit1[1][1] == 0  # loc fixed to 0
         assert np.allclose(fit1[1], fit2[1])
         assert nested_tuples_similar_up_to_diff(fit3, fit4, self.ESTIMATION_MAX_DIFF)
-        assert nested_tuples_similar_up_to_diff(fit3, (0.6, (3, 0, 1)), self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(
+            fit3, (0.6, (3, 0, 1)), self.ESTIMATION_MAX_DIFF
+        )
 
         # Test cdf
         cdf_vals = model1.cdf(data1, *(0.6, (3, 0, 2)))
@@ -144,12 +166,16 @@ class TestStatisticalModel(unittest.TestCase):
         assert np.array_equal(np.where(ppf_vals == 0), np.where(q <= 0.6))
 
         # Test ppf vs cdf
-        assert np.allclose(data1, model1.ppf(model1.cdf(data1, *(0.6, (3, 0, 2))), *(0.6, (3, 0, 2))))
+        assert np.allclose(
+            data1, model1.ppf(model1.cdf(data1, *(0.6, (3, 0, 2))), *(0.6, (3, 0, 2)))
+        )
 
         # Test cdf vs ppf
         ppf_vals = model1.ppf(q, *(0.6, (3, 0, 2)))
         vals_not_zero = ppf_vals > 0
-        assert np.allclose(q[vals_not_zero], model1.cdf(ppf_vals, *(0.6, (3, 0, 2)))[vals_not_zero])
+        assert np.allclose(
+            q[vals_not_zero], model1.cdf(ppf_vals, *(0.6, (3, 0, 2)))[vals_not_zero]
+        )
 
     def test_gen_PrecipitationGammaLeftCensoredModel(self):
         # Test init
@@ -171,24 +197,32 @@ class TestStatisticalModel(unittest.TestCase):
 
         fit1 = model1.fit(data1)
         fit2 = scipy.stats.gamma.fit(data2, floc=0)
-        model2 = gen_PrecipitationGammaLeftCensoredModel(censoring_threshold=np.min(data2) / 2)
+        model2 = gen_PrecipitationGammaLeftCensoredModel(
+            censoring_threshold=np.min(data2) / 2
+        )
         fit3 = model2.fit(data2)
 
         assert nested_tuples_similar_up_to_diff(fit1, fit2, self.ESTIMATION_MAX_DIFF)
         assert nested_tuples_similar_up_to_diff(fit2, fit3, self.ESTIMATION_MAX_DIFF)
-        assert nested_tuples_similar_up_to_diff(fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF)
+        assert nested_tuples_similar_up_to_diff(
+            fit1, (3, 0, 2), self.ESTIMATION_MAX_DIFF
+        )
 
         # Test cdf
         cdf_vals = model1.cdf(data1, *(3, 0, 2))
         assert np.array_equal(
-            np.where(cdf_vals <= scipy.stats.gamma.cdf(threshold, *(3, 0, 2))), np.where(data1 <= threshold)
+            np.where(cdf_vals <= scipy.stats.gamma.cdf(threshold, *(3, 0, 2))),
+            np.where(data1 <= threshold),
         )
 
         # Test ppf
         q = np.random.random(1000)
         ppf_vals = model1.ppf(q, *(3, 0, 2))
 
-        assert np.array_equal(np.where(ppf_vals == 0), np.where(q <= scipy.stats.gamma.cdf(threshold, *(3, 0, 2))))
+        assert np.array_equal(
+            np.where(ppf_vals == 0),
+            np.where(q <= scipy.stats.gamma.cdf(threshold, *(3, 0, 2))),
+        )
 
         # Test ppf vs cdf
         assert np.allclose(data1, model1.ppf(model1.cdf(data1, *(3, 0, 2)), *(3, 0, 2)))
@@ -196,7 +230,10 @@ class TestStatisticalModel(unittest.TestCase):
         # Test cdf vs ppf: values above threshold
         ppf_vals = model1.ppf(q, *(3, 0, 2))
         vals_above_threshold = ppf_vals > threshold
-        assert np.allclose(q[vals_above_threshold], model1.cdf(ppf_vals, *(3, 0, 2))[vals_above_threshold])
+        assert np.allclose(
+            q[vals_above_threshold],
+            model1.cdf(ppf_vals, *(3, 0, 2))[vals_above_threshold],
+        )
 
 
 class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
@@ -207,23 +244,46 @@ class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
         cls.x = np.random.random(10000)
         cls.p = np.random.random(1000)
         sorted_p = np.sort(cls.p)
-        cls.min_distance = np.max(np.abs(sorted_p[0 : (sorted_p.size - 1)] - sorted_p[1:]))
+        cls.min_distance = np.max(
+            np.abs(sorted_p[0 : (sorted_p.size - 1)] - sorted_p[1:])
+        )
 
     def test_linear_interpolation_against_linear(self):
         assert all(
-            np.abs(ecdf(self.x, iecdf(self.x, self.p, method="linear"), method="linear_interpolation") - self.p)
+            np.abs(
+                ecdf(
+                    self.x,
+                    iecdf(self.x, self.p, method="linear"),
+                    method="linear_interpolation",
+                )
+                - self.p
+            )
             < self.min_distance
         )
 
     def test_step_function_against_inverted_cdf(self):
         assert all(
-            np.abs(ecdf(self.x, iecdf(self.x, self.p, method="inverted_cdf"), method="step_function") - self.p)
+            np.abs(
+                ecdf(
+                    self.x,
+                    iecdf(self.x, self.p, method="inverted_cdf"),
+                    method="step_function",
+                )
+                - self.p
+            )
             < self.min_distance
         )
 
     def test_kernel_density_against_linear(self):
         assert all(
-            np.abs(ecdf(self.x, iecdf(self.x, self.p, method="linear"), method="kernel_density") - self.p)
+            np.abs(
+                ecdf(
+                    self.x,
+                    iecdf(self.x, self.p, method="linear"),
+                    method="kernel_density",
+                )
+                - self.p
+            )
             < self.min_distance
         )
 
@@ -240,7 +300,14 @@ class TestConsistencyOfIecdfandEcdfMethods(unittest.TestCase):
             "normal_unbiased",
         ]:
             assert all(
-                np.abs(ecdf(self.x, iecdf(self.x, self.p, method=iecdf_option), method="kernel_density") - self.p)
+                np.abs(
+                    ecdf(
+                        self.x,
+                        iecdf(self.x, self.p, method=iecdf_option),
+                        method="kernel_density",
+                    )
+                    - self.p
+                )
                 < self.min_distance
             )
 
@@ -257,11 +324,16 @@ class TestOtherHelpers(unittest.TestCase):
 
         # What to compare against
         sorted_vals = np.sort(vals)
-        min_distance = np.max(np.abs(sorted_vals[0 : (sorted_vals.size - 1)] - sorted_vals[1:]))
+        min_distance = np.max(
+            np.abs(sorted_vals[0 : (sorted_vals.size - 1)] - sorted_vals[1:])
+        )
 
         # Test inversion
         mapped_vals = quantile_map_non_parametically(x, y, vals)
-        assert all(np.abs(vals - quantile_map_non_parametically(y, x, mapped_vals)) < min_distance)
+        assert all(
+            np.abs(vals - quantile_map_non_parametically(y, x, mapped_vals))
+            < min_distance
+        )
 
         # Test mapping on same vector with translation
         y = x + 100
@@ -277,11 +349,21 @@ class TestOtherHelpers(unittest.TestCase):
 
         # What to compare against
         sorted_vals = np.sort(vals_within_xrange)
-        min_distance = np.max(np.abs(sorted_vals[0 : (sorted_vals.size - 1)] - sorted_vals[1:]))
+        min_distance = np.max(
+            np.abs(sorted_vals[0 : (sorted_vals.size - 1)] - sorted_vals[1:])
+        )
 
-        mapped_vals = quantile_map_non_parametically_with_constant_extrapolation(x, y, vals)
+        mapped_vals = quantile_map_non_parametically_with_constant_extrapolation(
+            x, y, vals
+        )
         assert all(
-            np.abs(vals - quantile_map_non_parametically_with_constant_extrapolation(y, x, mapped_vals)) < min_distance
+            np.abs(
+                vals
+                - quantile_map_non_parametically_with_constant_extrapolation(
+                    y, x, mapped_vals
+                )
+            )
+            < min_distance
         )
 
         # Test all values outside xrange have correction of maximum and minimum value respectively
@@ -289,15 +371,22 @@ class TestOtherHelpers(unittest.TestCase):
         mask_vals_below_xrange = vals <= x.min()
         mask_vals_above_xrange = vals >= x.max()
 
-        mapped_vals = quantile_map_non_parametically_with_constant_extrapolation(x, y, vals)
-        correction_min_and_max_xval = quantile_map_non_parametically_with_constant_extrapolation(
-            x, y, np.array([x.min(), x.max()])
-        ) - np.array([x.min(), x.max()])
-        assert np.allclose(
-            mapped_vals[mask_vals_below_xrange] - vals[mask_vals_below_xrange], correction_min_and_max_xval[0]
+        mapped_vals = quantile_map_non_parametically_with_constant_extrapolation(
+            x, y, vals
+        )
+        correction_min_and_max_xval = (
+            quantile_map_non_parametically_with_constant_extrapolation(
+                x, y, np.array([x.min(), x.max()])
+            )
+            - np.array([x.min(), x.max()])
         )
         assert np.allclose(
-            mapped_vals[mask_vals_above_xrange] - vals[mask_vals_above_xrange], correction_min_and_max_xval[1]
+            mapped_vals[mask_vals_below_xrange] - vals[mask_vals_below_xrange],
+            correction_min_and_max_xval[0],
+        )
+        assert np.allclose(
+            mapped_vals[mask_vals_above_xrange] - vals[mask_vals_above_xrange],
+            correction_min_and_max_xval[1],
         )
 
     def test_quantile_map_x_on_y_non_parametically(self):
