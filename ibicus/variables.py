@@ -27,7 +27,6 @@ The variables below represent all variables currently recognized by the package 
 """
 
 import attrs
-import numpy as np
 import scipy.stats
 
 import ibicus.utils as utils
