@@ -16,10 +16,6 @@ import numpy as np
 import scipy.stats
 
 from ibicus.debias import ScaledDistributionMapping
-from ibicus.utils import (
-    PrecipitationHurdleModelGamma,
-    gen_PrecipitationGammaLeftCensoredModel,
-)
 
 
 def check_different_maximally_up_to_1(x, y):

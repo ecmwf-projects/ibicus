@@ -49,7 +49,7 @@ class TestCDFt(unittest.TestCase):
 
         pr = CDFt.from_variable("pr")
         assert pr.delta_shift == "additive"
-        assert pr.SSR == True
+        assert pr.SSR is True
 
         psl = CDFt.from_variable("psl")
         assert psl.delta_shift == "additive"

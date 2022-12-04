@@ -85,7 +85,7 @@ class TestQuantileDeltaMapping(unittest.TestCase):
             censoring_threshold=0.05 / 86400, censor_in_ppf=False
         )
         assert pr.trend_preservation == "relative"
-        assert pr.censor_values_to_zero == True
+        assert pr.censor_values_to_zero is True
 
         psl = QuantileDeltaMapping.from_variable("psl")
         assert psl.distribution == scipy.stats.beta

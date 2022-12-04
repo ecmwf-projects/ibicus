@@ -13,17 +13,16 @@ Demo tests for raw template.
 import unittest
 
 import iris
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
-from cf_units import num2date
 
 from ibicus.debias import ISIMIP
 
 # ----- Helpers ----- #
 
-# Given an iris-cube this returns the dates stored in the last time-dimension
+
 def get_dates(x):
+    # Given an iris-cube this returns the dates stored in the last time-dimension
     time_dimension = x.coords()[2]
     dates = time_dimension.units.num2date(time_dimension.points)
     return dates
@@ -31,10 +30,11 @@ def get_dates(x):
 
 get_dates = np.vectorize(get_dates)
 
-# This reads in the testing-data from ISIMIP stored in isimip3basd-master/data
+
 def read_in_and_preprocess_testing_data(
     variable, data_path="tests/isimip_reference_data/"
 ):
+    # This reads in the testing-data from ISIMIP stored in isimip3basd-master/data
 
     # Load in data
     obs = iris.load_cube(data_path + variable + "_obs-hist_coarse_1979-2014.nc")

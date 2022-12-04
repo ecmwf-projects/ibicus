@@ -18,7 +18,6 @@ import scipy.stats
 from ibicus.debias import QuantileMapping
 from ibicus.utils import (
     PrecipitationHurdleModelGamma,
-    gen_PrecipitationGammaLeftCensoredModel,
 )
 
 

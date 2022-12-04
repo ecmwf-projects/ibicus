@@ -149,7 +149,7 @@ class TestRunningWindowOverYears(unittest.TestCase):
 
             debiased_years.append(years_to_adjust)
 
-        test = debiased_years.copy()
+        # test = debiased_years.copy()
         debiased_years = np.concatenate(debiased_years)
 
         # Check that no years are double debiased
