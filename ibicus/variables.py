@@ -79,7 +79,11 @@ class Variable:
                 )
 
 
-hurs = Variable(name="Daily mean near-surface relative humidity", unit="%")
+hurs = Variable(
+    name="Daily mean near-surface relative humidity",
+    unit="%",
+    reasonable_physical_range=[1e-5, 150],
+)
 """
 Daily mean near-surface relative humidity, unit: %
 """
@@ -87,13 +91,17 @@ Daily mean near-surface relative humidity, unit: %
 pr = Variable(
     name="Daily mean precipitation",
     unit="kg m-2 s-1",
-    reasonable_physical_range=[0, np.inf],
+    reasonable_physical_range=[0, 0.01],
 )
 """
 Daily mean precipitation, unit: kg m-2 s-1
 """
 
-prsn = Variable(name="Daily mean snowfall flux", unit="kg m-2 s-1")
+prsn = Variable(
+    name="Daily mean snowfall flux",
+    unit="kg m-2 s-1",
+    reasonable_physical_range=[0, 0.006],
+)
 """
 Daily mean snowfall flux, unit: kg m-2 s-1
 """
@@ -104,20 +112,28 @@ Daily mean snowfall flux / Daily mean precipitation, unit: 1
 """
 
 psl = Variable(
-    name="Daily mean sea-level pressure",
+    name="Daily mean surface air pressure",
     unit="Pa",
     reasonable_physical_range=[0, 1000000],
 )
 """
-Daily mean sea-level pressure, unit: Pa
+Daily mean surface air pressure, unit: Pa
 """
 
-rlds = Variable(name="Daily mean surface downwelling longwave radiation", unit="W m-2")
+rlds = Variable(
+    name="Daily mean surface downwelling longwave radiation",
+    unit="W m-2",
+    reasonable_physical_range=[0, 1000],
+)
 """
 Daily mean surface downwelling longwave radiation, unit: W m-2
 """
 
-rsds = Variable(name="Daily mean surface downwelling shortwave radiation", unit="W m-2")
+rsds = Variable(
+    name="Daily mean surface downwelling shortwave radiation",
+    unit="W m-2",
+    reasonable_physical_range=[0, 1000],
+)
 """
 Daily mean surface downwelling shortwave radiation, unit: W m-2
 """
@@ -125,7 +141,7 @@ Daily mean surface downwelling shortwave radiation, unit: W m-2
 sfcwind = Variable(
     name="Daily mean near-surface wind speed",
     unit="m s-1",
-    reasonable_physical_range=[0, 500],
+    reasonable_physical_range=[1e-5, 500],
 )
 """
 Daily mean near-surface wind speed, unit: m s-1
@@ -134,7 +150,7 @@ Daily mean near-surface wind speed, unit: m s-1
 tas = Variable(
     name="Daily mean near-surface air temperature",
     unit="K",
-    reasonable_physical_range=[0, 400],
+    reasonable_physical_range=[100, 400],
 )
 """
 Daily mean near-surface air temperature, unit: K
@@ -143,7 +159,7 @@ Daily mean near-surface air temperature, unit: K
 tasmin = Variable(
     name="Daily minimum near-surface air temperature",
     unit="K",
-    reasonable_physical_range=[0, 400],
+    reasonable_physical_range=[100, 400],
 )
 """
 Daily minimum near-surface air temperature, unit: K
@@ -152,7 +168,7 @@ Daily minimum near-surface air temperature, unit: K
 tasmax = Variable(
     name="Daily maximum near-surface air temperature",
     unit="K",
-    reasonable_physical_range=[0, 400],
+    reasonable_physical_range=[100, 400],
 )
 """
 Daily maximum near-surface air temperature, unit: K
@@ -161,7 +177,7 @@ Daily maximum near-surface air temperature, unit: K
 tasrange = Variable(
     name="Daily near-surface air temperature range (tasmax-tasmin)",
     unit="K",
-    reasonable_physical_range=[0, 100],
+    reasonable_physical_range=[1e-5, 100],
 )
 """
 Daily near-surface air temperature range (tasmax-tasmin), unit: K
@@ -170,7 +186,7 @@ Daily near-surface air temperature range (tasmax-tasmin), unit: K
 tasskew = Variable(
     name="Daily near-surface air temperature skew (tas-tasmin)/tasrange",
     unit="1",
-    reasonable_physical_range=[0, 100],
+    reasonable_physical_range=[0, 1],
 )
 """
 Daily near-surface air temperature skew (tas-tasmin)/tasrange, unit: 1
