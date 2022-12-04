@@ -18,6 +18,8 @@ Overview
 
 ibicus currently implements eight methods for bias correction published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). The package enables the user to modify and refine their settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
 
+You can find an introduction-video for ibicus `here <https://www.youtube.com/watch?v=n8QlGLU2gIo>`_.
+
 What is bias correction?
 ------------------------
 
