@@ -19,7 +19,7 @@ from ..utils import (
     interp_sorted_cdf_vals_on_given_length,
     threshold_cdf_vals,
 )
-from ..variables import tas, pr, tasmin, tasmax, Variable
+from ..variables import Variable, pr, tas, tasmax, tasmin
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #

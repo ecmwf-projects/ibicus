@@ -21,18 +21,18 @@ from ..utils import (
     year,
 )
 from ..variables import (
-    tas,
-    pr,
-    tasmin,
-    tasmax,
+    Variable,
     hurs,
+    pr,
     psl,
     rlds,
     rsds,
     sfcwind,
+    tas,
+    tasmax,
+    tasmin,
     tasrange,
     tasskew,
-    Variable,
 )
 from ._debiaser import Debiaser
 

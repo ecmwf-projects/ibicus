@@ -15,16 +15,16 @@ import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
 from ..variables import (
-    tas,
-    pr,
+    Variable,
     hurs,
+    map_standard_precipitation_method,
+    pr,
     psl,
     rlds,
     sfcwind,
-    tasmin,
+    tas,
     tasmax,
-    Variable,
-    map_standard_precipitation_method,
+    tasmin,
 )
 from ._debiaser import Debiaser
 

@@ -25,7 +25,7 @@ from ..utils import (
     threshold_cdf_vals,
     year,
 )
-from ..variables import tas, pr, hurs, psl, rlds, sfcwind, tasmin, tasmax, Variable
+from ..variables import Variable, hurs, pr, psl, rlds, sfcwind, tas, tasmax, tasmin
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #

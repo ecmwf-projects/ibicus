@@ -12,16 +12,16 @@ import attrs
 import numpy as np
 
 from ..variables import (
-    tas,
-    pr,
-    tasmin,
-    tasmax,
+    Variable,
     hurs,
+    pr,
     psl,
     rlds,
     rsds,
     sfcwind,
-    Variable,
+    tas,
+    tasmax,
+    tasmin,
 )
 from ._debiaser import Debiaser
 
