@@ -44,7 +44,7 @@ class ISIMIP(Debiaser):
 
     ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
 
-    `This notebook <https://nbviewer.org/github/esowc/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
+    `This notebook <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
 
     ISIMIP covers the following variables::
 
@@ -95,7 +95,7 @@ class ISIMIP(Debiaser):
     >>> debiaser = ISIMIP.from_variable("tas")
     >>> debiaser.detrending = False
 
-    If run with the default options, the results generated in this package are exactly identical to v3.0.1 (2022-06-27) of the `ISIMIP3BASD reference implementation <https://zenodo.org/record/6758997/>`_, as shown in the notebook `04 ISIMIP Consistency <https://nbviewer.org/github/esowc/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_. By setting parameters appropriately reproducing lower versions is possible and also consistency with future versions is considered.
+    If run with the default options, the results generated in this package are exactly identical to v3.0.1 (2022-06-27) of the `ISIMIP3BASD reference implementation <https://zenodo.org/record/6758997/>`_, as shown in the notebook `04 ISIMIP Consistency <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_. By setting parameters appropriately reproducing lower versions is possible and also consistency with future versions is considered.
 
     In contrast to the reference implementation implementation of ISIMIP this code includes further options for customization of the ISIMIP behavior, allows more flexible usage given that it operates on a numerical basis and handles a variety of cases that might lead to bugs in the reference implementation.
 

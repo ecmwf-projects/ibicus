@@ -52,7 +52,7 @@ setuptools.setup(
     ),
     author_email=meta.get("__author_email__", "software.support@ecmwf.int"),
     license="Apache License Version 2.0",
-    url="https://github.com/esowc/ibicus",
+    url="https://github.com/ecmwf-projects/ibicus",
     project_urls=project_urls,
     packages=setuptools.find_packages(),
     include_package_data=True,

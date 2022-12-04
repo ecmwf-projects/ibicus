@@ -132,7 +132,7 @@ Jakob Wessel is a PhD student at the University of Exeter where he is working on
 Get in touch
 ------------
 
-This project was conducted as part of the ESoWC challenge 2022. If you have suggestions on additional methods we could add, questions you'd like to ask, issues that you are finding in the application of the methods that are already implemented, or bugs in the code, please contact us under ibicus.py@gmail.com or `raise an issue on github <https://github.com/esowc/ibicus/issues>`_.
+This project was conducted as part of the ESoWC challenge 2022. If you have suggestions on additional methods we could add, questions you'd like to ask, issues that you are finding in the application of the methods that are already implemented, or bugs in the code, please contact us under ibicus.py@gmail.com or `raise an issue on github <https://github.com/ecmwf-projects/ibicus/issues>`_.
 
 References
 ----------
