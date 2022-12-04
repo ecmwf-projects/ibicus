@@ -77,7 +77,7 @@ specific variables such as precipitation or temperature. Where possible, the aut
 as well.
 
 The following table provides an overview of which debiasers currently have which default settings for which variables. Crosses in brackets signify so-called
-'experimental default settings' that have been chosen by the creators of this package and and may not have been evaluated by the peer reviewed literature. It is advised to evaluate those carefully.
+'experimental default settings' that have been chosen by the creators of this package and may not have been evaluated by the peer reviewed literature. It is advised to evaluate those carefully.
 
 
 +------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
