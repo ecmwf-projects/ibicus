@@ -19,8 +19,8 @@ def read(fname):
 
 project_urls = {
     "Documentation": "https://ibicus.readthedocs.io/en/latest/",
-    "Source": "https://github.com/esowc/ibicus",
-    "Tracker": "https://github.com/esowc/ibicus/issues",
+    "Source": "https://github.com/ecmwf-projects/ibicus",
+    "Tracker": "https://github.com/ecmwf-projects/ibicus/issues",
 }
 
 install_requires = [
