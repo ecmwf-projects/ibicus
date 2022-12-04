@@ -7,16 +7,14 @@
 # nor does it submit to any jurisdiction.
 
 import math
-from itertools import chain
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
 import sklearn.metrics
-from sklearn.metrics import mutual_info_score
 
-from ..variables import *
+from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
 def rmse_spatial_correlation_distribution(

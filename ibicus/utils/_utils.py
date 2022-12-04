@@ -58,7 +58,7 @@ def sort_array_like_another_one(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 def _day(x):
     try:
         return x.day
-    except:
+    except Exception:
         raise ValueError(
             "Your datetime object needs to implement a .day attribute. In doubt please use standard python datetime or cftime"
         )
@@ -76,7 +76,7 @@ def day(x):
 def _month(x):
     try:
         return x.month
-    except:
+    except Exception:
         raise ValueError(
             "Your datetime object needs to implement a .month attribute. In doubt please use standard python datetime or cftime"
         )
@@ -94,7 +94,7 @@ def month(x):
 def _year(x):
     try:
         return x.year
-    except:
+    except Exception:
         raise ValueError(
             "Your datetime object needs to implement a .year attribute. In doubt please use standard python datetime or cftime"
         )
@@ -117,7 +117,7 @@ def _day_of_year(x):
             first_date_in_year = type(x)(year(x), 1, 1)
             diff = x - first_date_in_year
             return diff.days + 1
-    except:
+    except Exception:
         raise ValueError(
             "Your datetime object needs to implement either the .timetuple-method or a timedelta and datetime constructor using the type-name. In doubt please use standard python datetime or cftime"
         )

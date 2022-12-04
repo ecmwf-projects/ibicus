@@ -16,7 +16,7 @@ import seaborn
 from scipy.stats import kstest
 
 from ..utils._utils import _unpack_df_of_numpy_arrays
-from ..variables import *
+from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
 def _calculate_chi(metric1, metric2, dataset1, dataset2):

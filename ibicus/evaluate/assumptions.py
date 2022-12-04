@@ -18,7 +18,7 @@ import seaborn
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf
 
-from ..variables import *
+from ..variables import str_to_variable_class, map_variable_str_to_variable_class
 
 
 def _calculate_aic(dataset, distribution):

@@ -11,10 +11,10 @@
 """
 The :py:mod:`evaluate`-module: provides a set of functionalities to assess the performance of your bias correction method.
 
-Bias correction is prone to mis-use and requires careful evaluation, as demonstrated and argued in Maraun et al. 2017. 
-In particular, the bias correction methods implemented in this package operate on a marginal level, that is they correct 
-distribution of individual variables at individual locations. There is therefore only a subset of climate model biases 
-that these debiasers will be able to correct. Biases in the temporal or spatial structure of climate models, or the 
+Bias correction is prone to mis-use and requires careful evaluation, as demonstrated and argued in Maraun et al. 2017.
+In particular, the bias correction methods implemented in this package operate on a marginal level, that is they correct
+distribution of individual variables at individual locations. There is therefore only a subset of climate model biases
+that these debiasers will be able to correct. Biases in the temporal or spatial structure of climate models, or the
 feedbacks to large-scale weather patterns might not be well corrected.
 
 The :py:mod:`evaluate`-module: attempts to provide the user with the functionality to make an informed decision whether a chosen bias correction
@@ -25,14 +25,14 @@ climate impact metrics.
 
 **There are three components to the evaluation module:**
 
-**1. Testing assumptions of different debiasers** 
-    
-Different debiasers rely on different assumptions - 
-some are parametrics, others non-parametric, some bias correct each day or month of the year separately, 
-others are applied to all days of the year in the same way. 
+**1. Testing assumptions of different debiasers**
+
+Different debiasers rely on different assumptions -
+some are parametrics, others non-parametric, some bias correct each day or month of the year separately,
+others are applied to all days of the year in the same way.
 
 This components is meant to check some of these assumptions and for example help the user choose an appropriate function
-to fit the data to, an appropriate application window (entire year vs each days or month individually) and rule out the use 
+to fit the data to, an appropriate application window (entire year vs each days or month individually) and rule out the use
 of some debiasers that are not fit for purpose in a specific application.
 
 The current version of this component can analyse the following two questions?
@@ -49,30 +49,30 @@ The following functions are currently available:
 
 
 
-**2. Evaluating the bias corrected model on a validation period** 
+**2. Evaluating the bias corrected model on a validation period**
 
 In order to assess the performance of a bias correction method, the bias corrected model
 data has to be compared to observational / reanalysis data. The historical period for which observations exist is therefore split
-into to dataset in pre-processing - a reference period, and a validation period. 
+into to dataset in pre-processing - a reference period, and a validation period.
 
-There are two types of analysis that the evaluation module enables you to conduct: 
+There are two types of analysis that the evaluation module enables you to conduct:
 
-1. Statistical properties: this includes the marginal bias of descriptive statistics such as the mean, or 5th and 95th percentile, as well as the difference in spatial and multivariate correlation structure. 
+1. Statistical properties: this includes the marginal bias of descriptive statistics such as the mean, or 5th and 95th percentile, as well as the difference in spatial and multivariate correlation structure.
 2. Threshold metrics: A threshold metric is an instance of the class :py:mod:`ThresholdMetric`-class and is needs to be one of
    four types: exceedance of the specified threshold value ('higher'), underceedance of the threshold value ('lower'), falling within two specified bounds ('between')
    or falling outside two specified bounds ('outside'). With the functionalities provided as part of :py:mod:`ThresholdMetric`-class, the marginal exceedance probability as well
    as the temporal spell length, the spatial extent and the spatiotemporal cluster size can be analysed. Some threshold metrics are pre-specified, and the user can add further
    metrics in the following way:
-       
+
 >>> frost_days = ThresholdMetric(name="Frost days (tasmin<0°C)", variable="tasmin", threshold_value=273.13, threshold_type="lower")
 
 The following table provides an overview of the different components that can be analysed in each of these two categories:
 
 
 +----------------+------------------------+-----------------------+
-|                | Statistical properties | Threshold metrics     | 
+|                | Statistical properties | Threshold metrics     |
 +================+========================+=======================+
-| Marginal       | x                      |  x                    | 
+| Marginal       | x                      |  x                    |
 +----------------+------------------------+-----------------------+
 | Temporal       |                        |  x (spell length)     |
 +----------------+------------------------+-----------------------+
@@ -86,7 +86,7 @@ The following table provides an overview of the different components that can be
 
 
 Within the metrics class, the following functions are available:
-    
+
 .. autosummary::
     metrics.ThresholdMetric.calculate_instances_of_threshold_exceedance
     metrics.ThresholdMetric.filter_threshold_exceedances
@@ -96,17 +96,17 @@ Within the metrics class, the following functions are available:
     metrics.ThresholdMetric.calculate_spatial_extent
     metrics.ThresholdMetric.calculate_spatiotemporal_clusters
     metrics.ThresholdMetric.violinplots_clusters
-    
+
 :py:mod:`AccumulativeThresholdMetric`-class is a child class of :py:mod:`ThresholdMetric`-class that adds additional functionalities for variables and metrics where
 the total accumulative amount over a given threshold is of interest - this is the case for precipitation, but not for temperature for example. The following functions are added:
-    
+
 .. autosummary::
     metrics.AccumulativeThresholdMetric.calculate_percent_of_total_amount_beyond_threshold
     metrics.AccumulativeThresholdMetric.calculate_annual_value_beyond_threshold
     metrics.AccumulativeThresholdMetric.calculate_intensity_index
-    
+
 For the evaluation of marginal properties, the following functions are currently available:
- 
+
 .. autosummary::
     marginal.calculate_marginal_bias
     marginal.plot_marginal_bias
@@ -120,16 +120,16 @@ The following functions are available to analyse the bias in spatial correlation
     correlation.rmse_spatial_correlation_boxplot
 
 To analyse the multivariate correlation structure, as well as joint threshold exceedances:
-    
+
 .. autosummary::
     multivariate.calculate_conditional_joint_threshold_exceedance
     multivariate.plot_conditional_joint_threshold_exceedance
     multivariate.calculate_and_spatialplot_multivariate_correlation
     multivariate.plot_correlation_single_location
     multivariate.plot_bootstrap_correlation_replicates
-    
- 
-**3. Investigating whether the climate change trend is preserved** 
+
+
+**3. Investigating whether the climate change trend is preserved**
 
 Bias correction methods can significantly
 modify the trend projected in the climate model simulation (Switanek 2017). If the user does not consider
