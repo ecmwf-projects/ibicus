@@ -41,7 +41,7 @@ Contact
 -------
 
 If you have feedback on the package, suggestions for additions, questions you'd like to ask or would like to contribute, please contact us under `ibicus.py@gmail.com <mailto:ibicus.py@gmail.com>`_.
-Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/esowc/ibicus/issues>`_. or write to us using the email adress above.
+Similarly should you encounter bugs or issues using the package please `open an issue <https://github.com/ecmwf-projects/ibicus/issues>`_. or write to us using the email adress above.
 
 
 .. |pypi_release| image:: https://img.shields.io/pypi/v/ibicus?color=green
@@ -57,7 +57,7 @@ Similarly should you encounter bugs or issues using the package please `open an 
   :target: https://ibicus.readthedocs.io/en/latest/?badge=latest      
 
 .. |Maintenance yes| image:: https://img.shields.io/badge/Maintained%3F-yes-green.svg
-   :target: https://github.com/esowc/ibicus/graphs/commit-activity
+   :target: https://github.com/ecmwf-projects/ibicus/graphs/commit-activity
 
 .. |Website ibicus| image:: https://img.shields.io/website-up-down-green-red/http/monip.org.svg
    :target: https://readthedocs.org/
@@ -86,5 +86,5 @@ Similarly should you encounter bugs or issues using the package please `open an 
 .. |PyPI status| image:: https://img.shields.io/pypi/status/ibicus
    :target: https://pypi.org/project/ibicus/
 
-.. |GitHub contributors| image:: https://img.shields.io/github/contributors/esowc/ibicus
-   :target: https://github.com/esowc/ibicus
+.. |GitHub contributors| image:: https://img.shields.io/github/contributors/ecmwf-projects/ibicus
+   :target: https://github.com/ecmwf-projects/ibicus
