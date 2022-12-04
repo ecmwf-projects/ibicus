@@ -12,7 +12,18 @@ import attrs
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
-from ..variables import *
+from ..variables import (
+    tas,
+    pr,
+    hurs,
+    psl,
+    rlds,
+    sfcwind,
+    tasmin,
+    tasmax,
+    Variable,
+    map_standard_precipitation_method,
+)
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #
@@ -29,7 +40,10 @@ experimental_default_settings = {
     tasmax: {"distribution": scipy.stats.beta},
 }
 
+
 # ----- Debiaser ----- #
+
+
 @attrs.define(slots=False)
 class ECDFM(Debiaser):
     """

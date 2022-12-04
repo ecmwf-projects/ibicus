@@ -20,7 +20,20 @@ from ..utils import (
     month,
     year,
 )
-from ..variables import *
+from ..variables import (
+    tas,
+    pr,
+    tasmin,
+    tasmax,
+    hurs,
+    psl,
+    rlds,
+    rsds,
+    sfcwind,
+    tasrange,
+    tasskew,
+    Variable,
+)
 from ._debiaser import Debiaser
 
 default_settings = {
@@ -39,7 +52,10 @@ experimental_default_settings = {
     tasskew: {"delta_shift": "multiplicative"},
 }
 
+
 # ----- Debiaser ----- #
+
+
 @attrs.define(slots=False)
 class CDFt(Debiaser):
     """
@@ -200,8 +216,10 @@ class CDFt(Debiaser):
             or cm_future.size != time_cm_future.size
         ):
             raise ValueError(
-                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
-                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
+                """
+                Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
+                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays.
+                """
             )
 
     # ----- Helpers: CDFt application -----#
@@ -337,10 +355,10 @@ class CDFt(Debiaser):
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
             warning(
                 """
-                    CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
-                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information. 
-                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
-                    """
+                CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
+                This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
+                This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
+                """
             )
             (
                 time_obs,

@@ -416,7 +416,7 @@ class ISIMIP(Debiaser):
             or cm_future.size != time_cm_future.size
         ):
             raise ValueError(
-                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
+                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
                 Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
             )
 
@@ -476,14 +476,14 @@ class ISIMIP(Debiaser):
         else:
             # One of obs, cm_hist, cm_future has one or multiple days of year more
             debiased_annual_cycle = annual_cycle_cm_future.copy()
-            for index, day_of_year in enumerate(unique_days_of_year_cm_future):
+            for index, day_of_year_i in enumerate(unique_days_of_year_cm_future):
 
                 val_cm_future = annual_cycle_cm_future[index]
                 val_cm_hist = annual_cycle_cm_hist[
-                    unique_days_of_year_cm_hist == day_of_year
+                    unique_days_of_year_cm_hist == day_of_year_i
                 ]
                 val_obs_hist = annual_cycle_obs_hist[
-                    unique_days_of_year_obs_hist == day_of_year
+                    unique_days_of_year_obs_hist == day_of_year_i
                 ]
 
                 # Day of year exists in unique_days_of_year_cm_hist
@@ -1291,7 +1291,7 @@ class ISIMIP(Debiaser):
             warning(
                 """
                     ISIMIP runs without time-information for at least one of obs, cm_hist or cm_future.
-                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information. 
+                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
                     This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
                     """
             )

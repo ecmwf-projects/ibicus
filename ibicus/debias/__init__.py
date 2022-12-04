@@ -12,7 +12,7 @@
 
 The foundation of the module is the :py:class:`Debiaser` class from which every debiaser inherits and which provides a unified interface to instantiate and apply debiasers .
 
-The following bias correction methodologies are currently implemented in the package, each based on the respective publication cited. 
+The following bias correction methodologies are currently implemented in the package, each based on the respective publication cited.
 
 .. autosummary::
     Debiaser
@@ -27,9 +27,9 @@ The following bias correction methodologies are currently implemented in the pac
 
 **Methodology**
 
-For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`'What is debiasing?' <getting_started/whatisdebiasing>` page. 
+For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`'What is debiasing?' <getting_started/whatisdebiasing>` page.
 
-The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output. 
+The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output.
 This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
 For a detailed description of their methodology, we refer you to the class descriptions and the cited publications.
 
@@ -46,7 +46,7 @@ Three types of data are required in order to conduct bias correction for a given
 
 2. Climate model simulation for same historical period as observations: ``cm_hist``.
 
-3. Climate model simulation for the period that is to be bias corrected, often a future period: ``cm_future``. 
+3. Climate model simulation for the period that is to be bias corrected, often a future period: ``cm_future``.
 
 Let's generate some pseudo climate data:
 
@@ -58,7 +58,7 @@ Every debiaser can be instatiated using :py:func:`from_variable` and a standard 
 
 >>> debiaser = CDFt.from_variable("tas")
 
-This instantiates a debiaser with default settings for ``"tas"`` (daily mean 2m air surface temperature (K)). 
+This instantiates a debiaser with default settings for ``"tas"`` (daily mean 2m air surface temperature (K)).
 
 The following code the applies this debiaser, given the data ``obs``, ``cm_hist`` and ``cm_future``.
 
@@ -67,17 +67,17 @@ The following code the applies this debiaser, given the data ``obs``, ``cm_hist`
 
 **Variable support**
 
-Variables currently supported across debiasers include:: 
+Variables currently supported across debiasers include::
 
 ["hurs", "pr", "prsnratio", "psl", "rlds", "rsds", "sfcWind", "tas", "tasmin", "tasmax", "tasrange", "tasskew"]
 
-However, whereas some bias correction methods such as ISIMIP have explicitly been published and implemented for all these variables 
+However, whereas some bias correction methods such as ISIMIP have explicitly been published and implemented for all these variables
 (tasmin and tasmax are not explicitely debiased but can be calculated from tas, tasrange and taskew), other methods have been published only for
-specific variables such as precipitation or temperature. Where possible, the authors have introduced informed choices for the default settings of other variables 
-as well. 
+specific variables such as precipitation or temperature. Where possible, the authors have introduced informed choices for the default settings of other variables
+as well.
 
 The following table provides an overview of which debiasers currently have which default settings for which variables. Crosses in brackets signify so-called
-'experimental default settings' that have been chosen by the creators of this package and and may not have been evaluated by the peer reviewed literature. It is advised to evaluate those carefully. 
+'experimental default settings' that have been chosen by the creators of this package and and may not have been evaluated by the peer reviewed literature. It is advised to evaluate those carefully.
 
 
 +------------+---------------------------+-------------------------+-----------------------------+---------------------------------------+-------------------+-------------------+----------------------------------+--------------------+
@@ -139,7 +139,7 @@ Some debiasers additionally provide a :py:func:`for_precipitation` classmethod t
 The documentation of the individual debiasers provides some information on this.
 
 
-When applying the debiaser we can control the verbosity with: 
+When applying the debiaser we can control the verbosity with:
 
 >>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, verbosity = "ERRORS_ONLY")
 

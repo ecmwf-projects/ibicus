@@ -19,7 +19,7 @@ from ..utils import (
     interp_sorted_cdf_vals_on_given_length,
     threshold_cdf_vals,
 )
-from ..variables import *
+from ..variables import tas, pr, tasmin, tasmax, Variable
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #
@@ -37,7 +37,10 @@ experimental_default_settings = {
     tasmax: {"mapping_type": "absolute", "distribution": scipy.stats.norm},
 }
 
+
 # ----- Debiaser ----- #
+
+
 @attrs.define(slots=False)
 class ScaledDistributionMapping(Debiaser):
     """
@@ -85,7 +88,7 @@ class ScaledDistributionMapping(Debiaser):
 
     :math:`\\text{RI}_{\\text{scaled}}` and :math:`\\text{CDF}_{\\text{scaled}}` are calculated similarly as for temperature. The final bias corrected precipitation values on rainy days are then given as:
 
-    .. math:: F^{-1}_{\\text{obs}}(\\text{CDF}_{\\text{scaled}}) \cdot \\text{scaling}
+    .. math:: F^{-1}_{\\text{obs}}(\\text{CDF}_{\\text{scaled}}) \\cdot \\text{scaling}
 
     The :math:`\\text{# total}_{\\text{bc}} - \\text{# rain}_{\\text{bc}}` days with the smallest precipitation values in cm_fut are then set to zero and all bias corrected rain values are inserted at the correct locations, starting with the biggest one.
 
@@ -229,7 +232,7 @@ class ScaledDistributionMapping(Debiaser):
         if expected_nr_rainy_days_cm_future > mask_rainy_days_cm_future.sum():
             warning(
                 """
-                The relative ScaledDistributionMapping does not currently support adjusting the number of rainy days upwards: so to transform dry days into rainy ones in cm_future. 
+                The relative ScaledDistributionMapping does not currently support adjusting the number of rainy days upwards: so to transform dry days into rainy ones in cm_future.
                 The number of dry and rainy days is left unadjusted.
                 """
             )

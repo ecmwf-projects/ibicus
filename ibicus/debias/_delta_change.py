@@ -12,7 +12,18 @@ from typing import Union
 import attrs
 import numpy as np
 
-from ..variables import *
+from ..variables import (
+    tas,
+    pr,
+    tasmin,
+    tasmax,
+    hurs,
+    psl,
+    rlds,
+    rsds,
+    sfcwind,
+    Variable,
+)
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #
@@ -30,7 +41,10 @@ experimental_default_settings = {
     sfcwind: {"delta_type": "multiplicative"},
 }
 
+
 # ----- Debiaser ----- #
+
+
 @attrs.define(slots=False)
 class DeltaChange(Debiaser):
     """

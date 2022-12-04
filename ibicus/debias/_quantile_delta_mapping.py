@@ -25,7 +25,7 @@ from ..utils import (
     threshold_cdf_vals,
     year,
 )
-from ..variables import *
+from ..variables import tas, pr, hurs, psl, rlds, sfcwind, tasmin, tasmax, Variable
 from ._debiaser import Debiaser
 
 # ----- Default settings for debiaser ----- #
@@ -49,7 +49,10 @@ experimental_default_settings = {
     tasmax: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
 }
 
+
 # ----- Debiaser ----- #
+
+
 @attrs.define(slots=False)
 class QuantileDeltaMapping(Debiaser):
     """
@@ -288,8 +291,10 @@ class QuantileDeltaMapping(Debiaser):
             or cm_future.size != time_cm_future.size
         ):
             raise ValueError(
-                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future. 
-                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
+                """
+                Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
+                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays.
+                """
             )
 
     # ----- Main application functions ----- #
@@ -390,10 +395,10 @@ class QuantileDeltaMapping(Debiaser):
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
             warning(
                 """
-                    QuantileDeltaMapping runs without time-information for at least one of obs, cm_hist or cm_future.
-                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information. 
-                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
-                    """
+                QuantileDeltaMapping runs without time-information for at least one of obs, cm_hist or cm_future.
+                This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
+                This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
+                """
             )
             (
                 time_obs,

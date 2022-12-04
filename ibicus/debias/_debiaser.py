@@ -213,7 +213,7 @@ class Debiaser(ABC):
     def _convert_to_float_dtype(x):
         try:
             return x.astype(float)
-        except:
+        except Exception:
             raise ValueError(
                 "Conversion to float not possible. Please use float datatype for obs, cm_hist, cm_future."
             )
