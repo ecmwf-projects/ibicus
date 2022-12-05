@@ -16,9 +16,7 @@ import numpy as np
 import scipy.stats
 
 from ibicus.debias import QuantileMapping
-from ibicus.utils import (
-    PrecipitationHurdleModelGamma,
-)
+from ibicus.utils import PrecipitationHurdleModelGamma
 
 
 def check_different_maximally_up_to_1(x, y):
