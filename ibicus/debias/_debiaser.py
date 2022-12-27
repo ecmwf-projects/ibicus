@@ -377,9 +377,16 @@ class Debiaser(ABC):
         }
 
     @staticmethod
-    def map_over_locations(func, output_size, obs, cm_hist, cm_future, **kwargs):
+    def map_over_locations(
+        func, output_size, obs, cm_hist, cm_future, progressbar=True, **kwargs
+    ):
         output = np.empty(output_size, dtype=cm_future.dtype)
-        for i, j in tqdm(np.ndindex(obs.shape[1:]), total=np.prod(obs.shape[1:])):
+
+        indices = np.ndindex(obs.shape[1:])
+        if progressbar:
+            indices = tqdm(indices, total=np.prod(obs.shape[1:]))
+
+        for i, j in indices:
             output[:, i, j] = func(
                 obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs
             )
@@ -440,6 +447,7 @@ class Debiaser(ABC):
         cm_hist,
         cm_future,
         verbosity="INFO",
+        progressbar=True,
         parallel=False,
         nr_processes=4,
         **kwargs,
@@ -496,6 +504,7 @@ class Debiaser(ABC):
                 obs=obs,
                 cm_hist=cm_hist,
                 cm_future=cm_future,
+                progressbar=progressbar,
                 **kwargs,
             )
 
