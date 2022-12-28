@@ -13,7 +13,7 @@ import numpy as np
 import scipy
 import scipy.stats
 
-from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
+from ..utils import PrecipitationHurdleModelGamma, StatisticalModel, threshold_cdf_vals
 from ..variables import (
     Variable,
     hurs,
@@ -104,12 +104,14 @@ class QuantileMapping(Debiaser):
 
     Attributes
     ----------
-    distribution: Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
+    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Distribution or statistical model used to compute the CDFs F.
         Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
-    detrending: str
+    detrending : str
         One of ``["additive", "multiplicative", "no_detrending"]``. What kind of scaling is applied to the future climate model data before quantile mapping. Default: ``"no_detrending"``.
-    variable: str
+    cdf_threshold : float
+        Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+    variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
     """
 
@@ -131,6 +133,9 @@ class QuantileMapping(Debiaser):
     detrending: str = attrs.field(
         default="no_detrending",
         validator=attrs.validators.in_(["additive", "multiplicative", "no_detrending"]),
+    )
+    cdf_threshold: float = attrs.field(
+        default=1e-10, validator=attrs.validators.instance_of(float)
     )
 
     # ----- Constructors -----
@@ -189,7 +194,12 @@ class QuantileMapping(Debiaser):
 
     # ----- Helpers -----
     def _standard_qm(self, x, fit_cm_hist, fit_obs):
-        return self.distribution.ppf(self.distribution.cdf(x, *fit_cm_hist), *fit_obs)
+        return self.distribution.ppf(
+            threshold_cdf_vals(
+                self.distribution.cdf(x, *fit_cm_hist), self.cdf_threshold
+            ),
+            *fit_obs
+        )
 
     # ----- Apply location function -----
     def apply_location(self, obs, cm_hist, cm_future):
