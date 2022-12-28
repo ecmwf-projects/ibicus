@@ -11,7 +11,7 @@ from typing import Union
 import attrs
 import scipy.stats
 
-from ..utils import PrecipitationHurdleModelGamma, StatisticalModel
+from ..utils import PrecipitationHurdleModelGamma, StatisticalModel, threshold_cdf_vals
 from ..variables import (
     Variable,
     hurs,
@@ -103,6 +103,8 @@ class ECDFM(Debiaser):
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Method used for the fit to the historical and future climate model outputs as well as the observations.
         Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
+    cdf_threshold : float
+        Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
@@ -121,6 +123,9 @@ class ECDFM(Debiaser):
                 StatisticalModel,
             )
         )
+    )
+    cdf_threshold: float = attrs.field(
+        default=1e-10, validator=attrs.validators.instance_of(float)
     )
 
     @classmethod
@@ -175,12 +180,12 @@ class ECDFM(Debiaser):
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)
 
+        quantile_cm_future = threshold_cdf_vals(
+            self.distribution.cdf(cm_future, *fit_cm_future), self.cdf_threshold
+        )
+
         return (
             cm_future
-            + self.distribution.ppf(
-                self.distribution.cdf(cm_future, *fit_cm_future), *fit_obs
-            )
-            - self.distribution.ppf(
-                self.distribution.cdf(cm_future, *fit_cm_future), *fit_cm_hist
-            )
+            + self.distribution.ppf(quantile_cm_future, *fit_obs)
+            - self.distribution.ppf(quantile_cm_future, *fit_cm_hist)
         )
