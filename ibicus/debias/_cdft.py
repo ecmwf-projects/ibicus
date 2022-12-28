@@ -257,11 +257,10 @@ class CDFt(Debiaser):
 
     @staticmethod
     def _get_threshold(obs, cm_hist, cm_future):
-        return min(
-            obs[obs > 0].min(),
-            cm_hist[cm_hist > 0].min(),
-            cm_future[cm_future > 0].min(),
+        positive_values = np.concatenate(
+            [obs[obs > 0], cm_hist[cm_hist > 0], cm_future[cm_future > 0]]
         )
+        return positive_values.min() if positive_values.size > 0 else 0
 
     @staticmethod
     def _randomize_zero_values_between_zero_and_threshold(x, threshold):
