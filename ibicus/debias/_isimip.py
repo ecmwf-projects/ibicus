@@ -199,6 +199,9 @@ class ISIMIP(Debiaser):
         Iteration: Length of the running window in days: how many values are used to the debiased climate model values. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
         Iteration: Step length of the running window in days: how many values are debiased inside the running window. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
+    variable : str
+        Variable for which the debiasing is done. Default: ``"unknown"``.
     """
 
     # Core arguments

@@ -131,7 +131,7 @@ class ScaledDistributionMapping(Debiaser):
         Dict of additional arguments passed to the ``distribution.fit``-method. Useful for fixing certain parameters of a distribution. Default: ``{}`` (empty dict).
     cdf_threshold : float
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
-    variable: str
+    variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
     """
 

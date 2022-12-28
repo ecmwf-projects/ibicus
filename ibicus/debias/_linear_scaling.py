@@ -89,10 +89,10 @@ class LinearScaling(Debiaser):
 
     Attributes
     ----------
-    variable : str
-        Variable for which the debiasing is used
     delta_type : str
         One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
+    variable : str
+        Variable for which the debiasing is used
     """
 
     delta_type: str = attrs.field(
