@@ -127,11 +127,12 @@ class ScaledDistributionMapping(Debiaser):
         One of ``["absolute", "relative"]``. Type of SDM used. Default are "absolute" for ``tas`` and ``"relative"`` for ``pr``.
     pr_lower_threshold : float
         Lower threshold used for setting precipitation values to zero in relative SDM. Only used if ``mapping_type = "relative"``.
-
     distribution_fit_kwargs : dict
         Dict of additional arguments passed to the ``distribution.fit``-method. Useful for fixing certain parameters of a distribution. Default: ``{}`` (empty dict).
     cdf_threshold : float
-        Threshold to round CDF-values away from zero and one. Default: ``1e-5``.
+        Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+    variable: str
+        Variable for which the debiasing is done. Default: ``"unknown"``.
     """
 
     # Core algorithm
@@ -164,7 +165,7 @@ class ScaledDistributionMapping(Debiaser):
         default={}, validator=attrs.validators.instance_of(dict)
     )
     cdf_threshold: float = attrs.field(
-        default=1e-5, validator=attrs.validators.instance_of(float)
+        default=1e-10, validator=attrs.validators.instance_of(float)
     )
 
     @classmethod
