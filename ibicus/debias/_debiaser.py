@@ -465,12 +465,8 @@ class Debiaser(ABC):
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         parallel : bool = False
             Whether the debiasing shall be executed in parallel. Default: ``False``.
-
-            .. warning:: This feature is still experimental and might be removed or changed in future versions.
         nr_processes : int = 4
             Number of processes for parallel code execution. Default: 4.
-
-            .. warning:: This feature is still experimental and might be removed or changed in future versions.
 
         Returns
         -------
