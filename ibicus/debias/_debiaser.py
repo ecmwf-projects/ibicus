@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import logging
+import warnings
 from abc import ABC, abstractmethod
 from functools import partial
 from multiprocessing import Pool
@@ -16,6 +16,7 @@ import attrs
 import numpy as np
 from tqdm import tqdm
 
+from ..utils import get_library_logger
 from ..variables import Variable, map_variable_str_to_variable_class
 
 
@@ -98,6 +99,9 @@ class Debiaser(ABC):
         **kwargs:
             All other class attributes that shall be set and where the standard values for variable shall be overwritten.
         """
+
+        logger = get_library_logger()
+
         # Check default and experimental default settings
         if (
             len(
@@ -108,7 +112,7 @@ class Debiaser(ABC):
             )
             != 0
         ):
-            logging.warning(
+            logger.warning(
                 f"Default and experimental default settings are not mutually exclusive for variables: {intersection} in debiaser {child_class.__name__}. Standard default settings are taken, but please review!"
             )
 
@@ -124,8 +128,9 @@ class Debiaser(ABC):
         else:
             # If experimental default settings exist
             if variable_object in experimental_default_setting_variable.keys():
-                logging.warning(
-                    f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!"
+                warnings.warn(
+                    f"The default settings for variable {variable} in debiaser {child_class.__name__} are currently still experimental and may not have been evaluated in the peer-reviewed literature. Please review the results with care!",
+                    stacklevel=2,
                 )
                 variable_settings = experimental_default_setting_variable[
                     variable_object
@@ -236,16 +241,20 @@ class Debiaser(ABC):
 
         # correct dtype
         if not Debiaser._has_float_dtype(obs):
-            logging.warning("obs does not have a float dtype. Attempting conversion.")
+            warnings.warn(
+                "obs does not have a float dtype. Attempting conversion.", stacklevel=2
+            )
             obs = Debiaser._convert_to_float_dtype(obs)
         if not Debiaser._has_float_dtype(cm_hist):
-            logging.warning(
-                "cm_hist does not have a float dtype. Attempting conversion."
+            warnings.warn(
+                "cm_hist does not have a float dtype. Attempting conversion.",
+                stacklevel=2,
             )
             cm_hist = Debiaser._convert_to_float_dtype(cm_hist)
         if not Debiaser._has_float_dtype(cm_future):
-            logging.warning(
-                "cm_future does not have a float dtype. Attempting conversion."
+            warnings.warn(
+                "cm_future does not have a float dtype. Attempting conversion.",
+                stacklevel=2,
             )
             cm_future = Debiaser._convert_to_float_dtype(cm_future)
 
@@ -265,64 +274,76 @@ class Debiaser(ABC):
 
         # contains inf or nan
         if Debiaser._contains_inf_nan(obs):
-            logging.warning(
-                "obs contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            warnings.warn(
+                "obs contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
+                stacklevel=2,
             )
         if Debiaser._contains_inf_nan(cm_hist):
-            logging.warning(
-                "cm_hist contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            warnings.warn(
+                "cm_hist contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
+                stacklevel=2,
             )
         if Debiaser._contains_inf_nan(cm_future):
-            logging.warning(
-                "cm_future contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values."
+            warnings.warn(
+                "cm_future contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
+                stacklevel=2,
             )
 
         # in reasonable physical range:
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(obs):
-            logging.warning(
+            warnings.warn(
                 "obs contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable)
+                % (self.reasonable_physical_range, self.variable),
+                stacklevel=2,
             )
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_hist):
-            logging.warning(
+            warnings.warn(
                 "cm_hist contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable)
+                % (self.reasonable_physical_range, self.variable),
+                stacklevel=2,
             )
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_future):
-            logging.warning(
+            warnings.warn(
                 "cm_future contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable)
+                % (self.reasonable_physical_range, self.variable),
+                stacklevel=2,
             )
 
         # masked arrays
         if Debiaser._is_masked_array(obs):
             if Debiaser._masked_array_contains_invalid_values(obs):
-                logging.warning(
-                    "obs is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                warnings.warn(
+                    "obs is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values.",
+                    stacklevel=2,
                 )
             else:
-                logging.info(
-                    "obs is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                warnings.warn(
+                    "obs is a masked array, but contains no invalid data. It is converted to a normal numpy array.",
+                    stacklevel=2,
                 )
             obs = Debiaser._fill_masked_array_with_nan(obs)
         if Debiaser._is_masked_array(cm_hist):
             if Debiaser._masked_array_contains_invalid_values(cm_hist):
-                logging.warning(
-                    "cm_hist is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                warnings.warn(
+                    "cm_hist is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values.",
+                    stacklevel=2,
                 )
             else:
-                logging.info(
-                    "cm_hist is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                warnings.warn(
+                    "cm_hist is a masked array, but contains no invalid data. It is converted to a normal numpy array.",
+                    stacklevel=2,
                 )
             cm_hist = Debiaser._fill_masked_array_with_nan(cm_hist)
         if Debiaser._is_masked_array(cm_future):
             if Debiaser._masked_array_contains_invalid_values(cm_future):
-                logging.warning(
-                    "cm_future is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values."
+                warnings.warn(
+                    "cm_future is a masked array and contains cells with invalid data. Not all debiasers support invalid/missing values and their presence might lead to infs or nans inside the debiased values. Consider infilling them. For computation the masked values here are filled in by nan-values.",
+                    stacklevel=2,
                 )
             else:
-                logging.info(
-                    "cm_future is a masked array, but contains no invalid data. It is converted to a normal numpy array."
+                warnings.warn(
+                    "cm_future is a masked array, but contains no invalid data. It is converted to a normal numpy array.",
+                    stacklevel=2,
                 )
             cm_future = Debiaser._fill_masked_array_with_nan(cm_future)
 
@@ -330,40 +351,20 @@ class Debiaser(ABC):
 
     def _check_output(self, output):
         if Debiaser._contains_inf_nan(output):
-            logging.warning(
-                "The debiaser output contains inf or nan values. This might be due to inf or nan values inside the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully"
+            warnings.warn(
+                "The debiaser output contains inf or nan values. This might be due to inf or nan values inside the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully",
+                stacklevel=2,
             )
 
         # in reasonable physical range:
         if self._not_if_or_nan_vals_outside_reasonable_physical_range(output):
-            logging.warning(
+            warnings.warn(
                 "The debiaser output contains values outside the reasonable physical range of %s for the variable: %s. This might be due to values outside the range in the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully."
-                % (self.reasonable_physical_range, self.variable)
+                % (self.reasonable_physical_range, self.variable),
+                stacklevel=2,
             )
 
     # ----- Helpers ----- #
-
-    @staticmethod
-    def _set_up_logging(verbosity):
-        verbosity = verbosity.upper()
-
-        if verbosity == "INFO":
-            level = logging.INFO
-        elif verbosity == "WARNINGS_AND_ERRORS":
-            level = logging.WARNING
-        elif verbosity == "ERRORS_ONLY":
-            level = logging.ERROR
-        else:
-            raise ValueError(
-                'verbosity needs to be one of ["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]'
-            )
-
-        logging.basicConfig(level=level)
-        logging.getLogger().setLevel(level)
-
-    @staticmethod
-    def _clean_up_logging():
-        logging.getLogger().setLevel(logging.INFO)
 
     @staticmethod
     def _unpack_iterable_args_and_get_locationwise_info(i, j, iterable_args):
@@ -446,7 +447,6 @@ class Debiaser(ABC):
         obs,
         cm_hist,
         cm_future,
-        verbosity="INFO",
         progressbar=True,
         parallel=False,
         nr_processes=4,
@@ -463,8 +463,6 @@ class Debiaser(ABC):
             3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         cm_future : np.ndarray
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
-        verbosity : str
-            One of ``["INFO", "WARNINGS_AND_ERRORS", "ERRORS_ONLY"]``. Determines the verbosity of the debiaser. Default: ``"INFO"``.
         parallel : bool = False
             Whether the debiasing shall be executed in parallel. Default: ``False``.
 
@@ -480,8 +478,8 @@ class Debiaser(ABC):
             3-dimensional numpy array containing the debiased climate model values for the future run (cm_future). Has the spatial dimensions as obs, cm_hist, cm_future.
         """
 
-        Debiaser._set_up_logging(verbosity)
-        logging.info("----- Running debiasing for variable: %s -----" % self.variable)
+        logger = get_library_logger()
+        logger.info("----- Running debiasing for variable: %s -----" % self.variable)
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
@@ -509,7 +507,5 @@ class Debiaser(ABC):
             )
 
         self._check_output(output)
-
-        Debiaser._clean_up_logging()
 
         return output

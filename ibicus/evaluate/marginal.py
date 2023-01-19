@@ -6,14 +6,14 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
 
-from ..utils._utils import _unpack_df_of_numpy_arrays
+from ..utils import _unpack_df_of_numpy_arrays
 from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
@@ -99,16 +99,18 @@ def calculate_marginal_bias(
         mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data)
 
         if np.any(np.isinf(mean_bias)):
-            warning(
+            warnings.warn(
                 "{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         elif remove_outliers is True and np.any(abs(mean_bias) > 1000):
-            warning(
+            warnings.warn(
                 "{}: Bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         else:
             marginal_bias_dfs.append(
@@ -126,16 +128,18 @@ def calculate_marginal_bias(
         )
 
         if np.any(np.isinf(lowqn_bias)):
-            warning(
+            warnings.warn(
                 "{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         elif remove_outliers is True and np.any(abs(lowqn_bias) > 1000):
-            warning(
+            warnings.warn(
                 "{}: Bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         else:
             marginal_bias_dfs.append(
@@ -153,16 +157,18 @@ def calculate_marginal_bias(
         )
 
         if np.any(np.isinf(highqn_bias)):
-            warning(
+            warnings.warn(
                 "{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         elif remove_outliers is True and np.any(abs(highqn_bias) > 1000):
-            warning(
+            warnings.warn(
                 "{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                     cm_data_key
-                )
+                ),
+                stacklevel=2,
             )
         else:
             marginal_bias_dfs.append(
@@ -181,16 +187,18 @@ def calculate_marginal_bias(
             metric_bias = _marginal_metrics_bias(m, obs_data, cm_data)
 
             if np.any(np.isinf(metric_bias)):
-                warning(
+                warnings.warn(
                     "{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(
                         cm_data_key, m
-                    )
+                    ),
+                    stacklevel=2,
                 )
             elif remove_outliers is True and np.any(abs(metric_bias) > 1000):
-                warning(
+                warnings.warn(
                     "{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                         cm_data_key, m, m
-                    )
+                    ),
+                    stacklevel=2,
                 )
             else:
                 marginal_bias_dfs.append(
@@ -325,8 +333,9 @@ def plot_bias_spatial(
         )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
+        warnings.warn(
+            "Variable not recognized, using manual_title to generate plot_title",
+            stacklevel=2,
         )
 
     # find maximum value to set axis bounds
@@ -342,7 +351,7 @@ def plot_bias_spatial(
     fig.suptitle(plot_title)
 
     i = 0
-    for index, row_array in bias_df_filtered.iterrows():
+    for _, row_array in bias_df_filtered.iterrows():
 
         plot_title = row_array.values[0]
         plot_data = row_array.values[2]

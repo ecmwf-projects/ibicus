@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
+import warnings
 
 import attrs
 import numpy as np
@@ -60,13 +60,15 @@ class RunningWindowOverYears:
 
     def __attrs_post_init__(self):
         if self.window_length_in_years % 2 == 0:
-            warning(
-                "Currently only uneven window lengths are allowed for window_length_in_years. Automatically increased by 1."
+            warnings.warn(
+                "Currently only uneven window lengths are allowed for window_length_in_years. Automatically increased by 1.",
+                stacklevel=2,
             )
             self.window_length_in_years = self.window_length_in_years + 1
         if self.window_step_length_in_years % 2 == 0:
-            warning(
-                "Currently only uneven step lengths are allowed for window_step_length_in_years. Automatically increased by 1."
+            warnings.warn(
+                "Currently only uneven step lengths are allowed for window_step_length_in_years. Automatically increased by 1.",
+                stacklevel=2,
             )
             self.window_step_length_in_years = self.window_step_length_in_years + 1
 
@@ -250,13 +252,15 @@ class RunningWindowOverDaysOfYear:
 
     def __attrs_post_init__(self):
         if self.window_length_in_days % 2 == 0:
-            warning(
-                "Currently only uneven window lengths are allowed for window_length_in_days. Automatically increased by 1."
+            warnings.warn(
+                "Currently only uneven window lengths are allowed for window_length_in_days. Automatically increased by 1.",
+                stacklevel=2,
             )
             self.window_length_in_days = self.window_length_in_days + 1
         if self.window_step_length_in_days % 2 == 0:
-            warning(
-                "Currently only uneven step lengths are allowed for window_step_length_in_years. Automatically increased by 1."
+            warnings.warn(
+                "Currently only uneven step lengths are allowed for window_step_length_in_years. Automatically increased by 1.",
+                stacklevel=2,
             )
             self.window_step_length_in_days = self.window_step_length_in_days + 1
 

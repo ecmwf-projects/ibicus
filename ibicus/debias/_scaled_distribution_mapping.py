@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
+import warnings
 from typing import Union
 
 import attrs
@@ -231,11 +231,10 @@ class ScaledDistributionMapping(Debiaser):
         )
 
         if expected_nr_rainy_days_cm_future > mask_rainy_days_cm_future.sum():
-            warning(
-                """
-                The relative ScaledDistributionMapping does not currently support adjusting the number of rainy days upwards: so to transform dry days into rainy ones in cm_future.
-                The number of dry and rainy days is left unadjusted.
-                """
+            warnings.warn(
+                """The relative ScaledDistributionMapping does not currently support adjusting the number of rainy days upwards: so to transform dry days into rainy ones in cm_future.
+                The number of dry and rainy days is left unadjusted.""",
+                stacklevel=2,
             )
             expected_nr_rainy_days_cm_future = mask_rainy_days_cm_future.sum()
 

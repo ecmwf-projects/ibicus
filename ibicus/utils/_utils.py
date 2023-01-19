@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import logging
 from typing import Optional
 
 import numpy as np
@@ -455,3 +456,30 @@ def get_mask_for_unique_subarray(x):
     mask = np.zeros_like(x).astype(bool)
     mask[indices] = True
     return mask
+
+
+# ----- Logging functionality -----
+
+
+def _get_library_name():
+    return __name__.split(".")[0]
+
+
+def get_library_logger():
+    return logging.getLogger(_get_library_name())
+
+
+def get_verbosity_library_logger():
+    return get_library_logger().getEffectiveLevel()
+
+
+def set_verbosity_library_logger(verbosity):
+    """
+    Sets the verbosity/level for the library logger.
+
+    Parameters
+    ----------
+    verbosity :
+        Logging level: `["logging.INFO", logging.WARNING, "logging.ERROR", ...]`.
+    """
+    get_library_logger().setLevel(verbosity)

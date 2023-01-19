@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
+import warnings
 from typing import Optional, Union
 
 import attrs
@@ -352,13 +352,13 @@ class CDFt(Debiaser):
     ):
 
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
-            warning(
-                """
-                CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
+            warnings.warn(
+                """CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
                 This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
-                This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
-                """
+                This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.""",
+                stacklevel=2,
             )
+
             (
                 time_obs,
                 time_cm_hist,

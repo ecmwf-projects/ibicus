@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
+import warnings
 from typing import Optional, Union
 
 import attrs
@@ -832,8 +832,9 @@ class ISIMIP(Debiaser):
                 not self.nonparametric_qm
                 and cm_future_sorted_entries_between_thresholds.size == 0
             ):
-                warning(
-                    "Step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold."
+                warnings.warn(
+                    "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold.",
+                    stacklevel=2,
                 )
             return quantile_map_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
@@ -879,8 +880,9 @@ class ISIMIP(Debiaser):
                     fit_obs_future,
                 )
             ):
-                warning(
-                    "Step 6: Goodness of fit not good enough according to ks-test. Using nonparametric quantile mapping instead."
+                warnings.warn(
+                    "ISIMIP step 6: Goodness of fit not good enough according to ks-test. Using nonparametric quantile mapping instead.",
+                    stacklevel=2,
                 )
                 return quantile_map_non_parametically(
                     x=cm_future_sorted_entries_not_sent_to_bound,
@@ -1291,13 +1293,13 @@ class ISIMIP(Debiaser):
     ) -> np.ndarray:
 
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
-            warning(
-                """
-                    ISIMIP runs without time-information for at least one of obs, cm_hist or cm_future.
+            warnings.warn(
+                """ISIMIP runs without time-information for at least one of obs, cm_hist or cm_future.
                     This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
-                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
-                    """
+                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.""",
+                stacklevel=2,
             )
+
             (
                 time_obs,
                 time_cm_hist,
