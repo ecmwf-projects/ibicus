@@ -31,6 +31,7 @@ from ..utils import (
     sort_array_like_another_one,
     threshold_cdf_vals,
     year,
+    get_library_logger,
 )
 from ..variables import Variable
 from ._debiaser import Debiaser
@@ -808,6 +809,8 @@ class ISIMIP(Debiaser):
         cm_future_sorted_entries_between_thresholds,
     ):
 
+        logger = get_library_logger()
+
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
         if (
             self.has_threshold
@@ -832,9 +835,8 @@ class ISIMIP(Debiaser):
                 not self.nonparametric_qm
                 and cm_future_sorted_entries_between_thresholds.size == 0
             ):
-                warnings.warn(
-                    "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold.",
-                    stacklevel=2,
+                logger.info(
+                    "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold."
                 )
             return quantile_map_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
@@ -880,9 +882,8 @@ class ISIMIP(Debiaser):
                     fit_obs_future,
                 )
             ):
-                warnings.warn(
-                    "ISIMIP step 6: Goodness of fit not good enough according to ks-test. Using nonparametric quantile mapping instead.",
-                    stacklevel=2,
+                logger.info(
+                    "ISIMIP step 6: Goodness of fit not good enough according to ks-test. Using nonparametric quantile mapping instead."
                 )
                 return quantile_map_non_parametically(
                     x=cm_future_sorted_entries_not_sent_to_bound,
