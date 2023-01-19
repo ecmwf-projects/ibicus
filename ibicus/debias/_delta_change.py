@@ -25,6 +25,7 @@ from ..variables import (
     tasmin,
 )
 from ._debiaser import Debiaser
+from ..utils import get_library_logger
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -117,21 +118,43 @@ class DeltaChange(Debiaser):
                 'self.delta_type needs to be one of ["additive", "multiplicative"].'
             )
 
-    def apply(self, obs, cm_hist, cm_future, verbosity="INFO", **kwargs):
-        Debiaser._set_up_logging(verbosity)
-        logging.info("----- Running debiasing for variable: %s -----" % self.variable)
+    def apply(
+        self,
+        obs,
+        cm_hist,
+        cm_future,
+        progressbar=True,
+        parallel=False,
+        nr_processes=4,
+        **kwargs
+    ):
+        logger = get_library_logger()
+        logger.info("----- Running debiasing for variable: %s -----" % self.variable)
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
         )
 
-        output = Debiaser.map_over_locations(
-            func=self.apply_location,
-            output_size=obs.shape,
-            obs=obs,
-            cm_hist=cm_hist,
-            cm_future=cm_future,
-        )
+        if parallel:
+            output = Debiaser.parallel_map_over_locations(
+                self.apply_location,
+                output_size=obs.shape,
+                obs=obs,
+                cm_hist=cm_hist,
+                cm_future=cm_future,
+                nr_processes=nr_processes,
+                **kwargs,
+            )
+        else:
+            output = Debiaser.map_over_locations(
+                self.apply_location,
+                output_size=obs.shape,
+                obs=obs,
+                cm_hist=cm_hist,
+                cm_future=cm_future,
+                progressbar=progressbar,
+                **kwargs,
+            )
 
         self._check_output(output)
 
