@@ -77,3 +77,13 @@ ibicus.utils Mathematical helpers
 .. autofunction:: iecdf
 
 .. autofunction:: quantile_map_non_parametically
+
+
+ibicus.utils Logging
+-----------------------------------------
+
+.. autofunction:: get_library_logger
+
+.. autofunction:: get_verbosity_library_logger
+
+.. autofunction:: set_verbosity_library_logger

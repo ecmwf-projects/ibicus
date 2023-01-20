@@ -466,10 +466,16 @@ def _get_library_name():
 
 
 def get_library_logger():
+    """
+    Returns the library logger used by the ibicus package.
+    """
     return logging.getLogger(_get_library_name())
 
 
 def get_verbosity_library_logger():
+    """
+    Returns the verbosity/level for the library logger as ``int``.
+    """
     return get_library_logger().getEffectiveLevel()
 
 
@@ -480,6 +486,6 @@ def set_verbosity_library_logger(verbosity):
     Parameters
     ----------
     verbosity :
-        Logging level: `["logging.INFO", logging.WARNING, "logging.ERROR", ...]`.
+        Logging level: ``["logging.INFO", logging.WARNING, "logging.ERROR", ...]``.
     """
     get_library_logger().setLevel(verbosity)
