@@ -362,45 +362,46 @@ def plot_bias_spatial(
         ax[i].set_title(plot_title)
         fig.colorbar(plot, ax=ax[i])
         i = i + 1
-        
-        
-        
+
+
 def _yearly_exceedances(metric, dataset: np.ndarray, year_array):
 
     threshold_matrix = metric.calculate_instances_of_threshold_exceedance(dataset)
-    
+
     unique, counts = np.unique(year_array, return_counts=True)
     index_array = [counts[0]]
-    for i in range(len(counts)-2):
-        index_array = np.append(index_array, sum(counts[0:i+2]))
-        
+    for i in range(len(counts) - 2):
+        index_array = np.append(index_array, sum(counts[0 : i + 2]))
+
     list_years = np.split(threshold_matrix, index_array, axis=0)
 
     year_count = list()
-    
+
     for i in range(len(list_years)):
         year_count.append(np.sum(list_years[i], axis=0))
-    
-    
+
     yearly_threshold_exceedances = np.stack(year_count, axis=0)
 
     return yearly_threshold_exceedances
 
+
 def _mean_yearly_exceedances(metric, dataset: np.ndarray, year_array):
-    
+
     yearly_threshold_exceedances = _yearly_exceedances(metric, dataset, year_array)
-    
+
     mean_yearly_threshold_exceedances = np.mean(yearly_threshold_exceedances, axis=0)
-    
+
     return mean_yearly_threshold_exceedances
 
 
-def calculate_bias_days_metrics(obs_data: np.ndarray, year_array: np.ndarray, metrics: list = [], **cm_data) -> pd.DataFrame:
-    
+def calculate_bias_days_metrics(
+    obs_data: np.ndarray, year_array: np.ndarray, metrics: list = [], **cm_data
+) -> pd.DataFrame:
+
     """
     Returns a :py:class:`pd.DataFrame` containing location-wise mean number of yearly threshold exceedances
     Output dataframes contains five columns: 'Correction Method' (str) correspond to the cm_data keys,
-    'Metric', which is in [metrics_names], 'CM' which contains the mean number of days of threshold exceedance in the climate 
+    'Metric', which is in [metrics_names], 'CM' which contains the mean number of days of threshold exceedance in the climate
     models, 'Obs' which which contains the mean number of days of threshold exceedance in the observations,
     and 'Bias' which contains the difference (CM-Obs) between the mean number of threshold exceedance days in the climate
     model and the observations.
@@ -434,32 +435,32 @@ def calculate_bias_days_metrics(obs_data: np.ndarray, year_array: np.ndarray, me
     for cm_data_key, cm_data in cm_data.items():
 
         for m in metrics:
-            
+
             # calculate days per year that this metric is exceeded
 
-            cm_mean = _mean_yearly_exceedances(metric = m, dataset=cm_data, year_array = year_array)
-            
-            obs_mean = _mean_yearly_exceedances(metric = m, dataset=obs_data, year_array = year_array)
-            
-            metric_bias = cm_mean - obs_mean
-            
-            marginal_bias_dfs.append(pd.DataFrame(
-                        data={
-                            "Correction Method": cm_data_key,
-                            "Metric": m.name,
-                            "CM": [cm_mean],
-                            "Obs": [obs_mean],
-                            "Bias": [metric_bias]
-                        }
-                    )
-                )
+            cm_mean = _mean_yearly_exceedances(
+                metric=m, dataset=cm_data, year_array=year_array
+            )
 
-    return pd.concat(marginal_bias_dfs)       
-        
-        
-        
-        
-        
+            obs_mean = _mean_yearly_exceedances(
+                metric=m, dataset=obs_data, year_array=year_array
+            )
+
+            metric_bias = cm_mean - obs_mean
+
+            marginal_bias_dfs.append(
+                pd.DataFrame(
+                    data={
+                        "Correction Method": cm_data_key,
+                        "Metric": m.name,
+                        "CM": [cm_mean],
+                        "Obs": [obs_mean],
+                        "Bias": [metric_bias],
+                    }
+                )
+            )
+
+    return pd.concat(marginal_bias_dfs)
 
 
 def plot_histogram(

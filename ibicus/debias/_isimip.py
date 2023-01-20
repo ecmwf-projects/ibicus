@@ -20,6 +20,7 @@ from ..utils import (
     StatisticalModel,
     day_of_year,
     ecdf,
+    get_library_logger,
     get_mask_for_unique_subarray,
     get_years_and_yearly_means,
     iecdf,
@@ -31,7 +32,6 @@ from ..utils import (
     sort_array_like_another_one,
     threshold_cdf_vals,
     year,
-    get_library_logger,
 )
 from ..variables import Variable
 from ._debiaser import Debiaser

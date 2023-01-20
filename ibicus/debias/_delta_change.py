@@ -6,12 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import logging
 from typing import Union
 
 import attrs
 import numpy as np
 
+from ..utils import get_library_logger
 from ..variables import (
     Variable,
     hurs,
@@ -25,7 +25,6 @@ from ..variables import (
     tasmin,
 )
 from ._debiaser import Debiaser
-from ..utils import get_library_logger
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
