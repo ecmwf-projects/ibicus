@@ -47,23 +47,30 @@ _____________
    02 Adjusting Debiasers <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/02%20Adjusting%20Debiasers.ipynb>
    03 Evaluation <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/03%20Evaluation.ipynb>
 
-**Reference**
+**Documentation / API reference**
 
 * :doc:`reference/api`
+   * :doc:`reference/debias`
+   * :doc:`reference/evaluate`
+   * :doc:`reference/utils`
+   * :doc:`reference/variables`
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Reference
+   :caption: Documentation
 
-   reference/api
+   ibicus.debias module <reference/debias>
+   ibicus.evaluate module <reference/evaluate>
+   ibicus.utils module <reference/utils>
+   ibicus.variables module <reference/variables>
 
 License
 -------
 
-ibicus is available under the open source `Apache License`__.
+ibicus is available under the open source `Apache-2.0 License`__.
 
-__ http://www.apache.org/licenses/LICENSE-2.0.html
+__ https://github.com/ecmwf-projects/ibicus/blob/main/LICENSE
 
 
 Acknowledgements
