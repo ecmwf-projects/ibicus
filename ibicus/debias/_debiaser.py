@@ -463,8 +463,10 @@ class Debiaser(ABC):
             3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         cm_future : np.ndarray
             3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
+        progressbar : bool = False
+            Whether a progressbar shall be shown to indicate the debiaser status. Default: ``True``.
         parallel : bool = False
-            Whether the debiasing shall be executed in parallel. Default: ``False``.
+            Whether the debiasing shall be executed in parallel. No progressbar is shown in this case. Default: ``False``.
         nr_processes : int = 4
             Number of processes for parallel code execution. Default: 4.
 
