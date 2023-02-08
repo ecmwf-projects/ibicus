@@ -378,8 +378,34 @@ class Debiaser(ABC):
         }
 
     @staticmethod
+    def _run_func_on_location_and_catch_error(
+        obs, cm_hist, cm_future, func, failsafe=False, **kwargs
+    ):
+        # Note: obs, cm_hist, cm_future need to be the first arguments instead of func,
+        # because pool.starmap is used for which the argument order matters.
+        try:
+            return func(obs, cm_hist, cm_future, **kwargs)
+        except Exception as e:
+            if failsafe:
+                # Log error
+                logger = get_library_logger()
+                logger.error(e)
+                # Return nan
+                return np.nan
+            else:
+                # Raise error if not in failsafe mode
+                raise
+
+    @staticmethod
     def map_over_locations(
-        func, output_size, obs, cm_hist, cm_future, progressbar=True, **kwargs
+        func,
+        output_size,
+        obs,
+        cm_hist,
+        cm_future,
+        progressbar=True,
+        failsafe=False,
+        **kwargs,
     ):
         output = np.empty(output_size, dtype=cm_future.dtype)
 
@@ -388,21 +414,38 @@ class Debiaser(ABC):
             indices = tqdm(indices, total=np.prod(obs.shape[1:]))
 
         for i, j in indices:
-            output[:, i, j] = func(
-                obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j], **kwargs
+            output[:, i, j] = Debiaser._run_func_on_location_and_catch_error(
+                obs[:, i, j],
+                cm_hist[:, i, j],
+                cm_future[:, i, j],
+                func,
+                failsafe=failsafe,
+                **kwargs,
             )
         return output
 
     @staticmethod
     def parallel_map_over_locations(
-        func, output_size, obs, cm_hist, cm_future, nr_processes=4, **kwargs
+        func,
+        output_size,
+        obs,
+        cm_hist,
+        cm_future,
+        nr_processes=4,
+        failsafe=False,
+        **kwargs,
     ):
 
         # compute results
         indices = [(i, j) for i in range(obs.shape[1]) for j in range(obs.shape[2])]
         with Pool(processes=nr_processes) as pool:
             result = pool.starmap(
-                partial(func, **kwargs),
+                partial(
+                    Debiaser._run_func_on_location_and_catch_error,
+                    func=func,
+                    failsafe=failsafe,
+                    **kwargs,
+                ),
                 [
                     (obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
                     for (i, j) in indices
@@ -450,6 +493,7 @@ class Debiaser(ABC):
         progressbar=True,
         parallel=False,
         nr_processes=4,
+        failsafe=False,
         **kwargs,
     ):
         """
@@ -484,6 +528,9 @@ class Debiaser(ABC):
         )
 
         if parallel:
+            if progressbar:
+                logger.info("progressbar argument is ignored when parallel = True.")
+
             output = Debiaser.parallel_map_over_locations(
                 self.apply_location,
                 output_size=cm_future.shape,
@@ -491,6 +538,7 @@ class Debiaser(ABC):
                 cm_hist=cm_hist,
                 cm_future=cm_future,
                 nr_processes=nr_processes,
+                failsafe=failsafe,
                 **kwargs,
             )
         else:
@@ -501,6 +549,7 @@ class Debiaser(ABC):
                 cm_hist=cm_hist,
                 cm_future=cm_future,
                 progressbar=progressbar,
+                failsafe=failsafe,
                 **kwargs,
             )
 
