@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import seaborn
 
-from ..utils import _unpack_df_of_numpy_arrays
+from ..utils._utils import _unpack_df_of_numpy_arrays
 from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
