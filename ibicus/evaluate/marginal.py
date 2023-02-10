@@ -355,9 +355,10 @@ def plot_bias_spatial(
 
     # generate plot title
     if variable in str_to_variable_class.keys():
-        plot_title = "{} ({}) \n Percentage bias of mean".format(
+        plot_title = "{} ({}) \n {} bias of mean".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
+            bias_df_filtered['Type'].iloc[0]
         )
     else:
         plot_title = manual_title
@@ -368,22 +369,22 @@ def plot_bias_spatial(
 
     # find maximum value to set axis bounds
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
-        df=bias_df_filtered, numpy_column_name="Percentage bias"
+        df=bias_df_filtered, numpy_column_name="Bias"
     )
-    axis_max = bias_df_unpacked["Percentage bias"].max()
+    axis_max = bias_df_unpacked["Bias"].max()
     axis_min = -axis_max
 
     # create figure and plot
     fig_width = 6 * bias_df_filtered.shape[0]
     fig, ax = plt.subplots(1, bias_df_filtered.shape[0], figsize=(fig_width, 5))
     fig.suptitle(plot_title)
-
+    
     i = 0
     for _, row_array in bias_df_filtered.iterrows():
 
         plot_title = row_array.values[0]
-        plot_data = row_array.values[2]
-
+        plot_data = row_array.values[3]
+        
         plot = ax[i].imshow(
             plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max
         )
