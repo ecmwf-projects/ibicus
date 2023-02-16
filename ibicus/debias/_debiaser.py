@@ -389,6 +389,9 @@ class Debiaser(ABC):
             if failsafe:
                 # Log error
                 logger = get_library_logger()
+                logger.error(
+                    "ibicus encountered at error at runtime. Please check the output carefully!"
+                )
                 logger.error(e)
                 # Return nan
                 return np.nan
@@ -529,7 +532,7 @@ class Debiaser(ABC):
 
         if parallel:
             if progressbar:
-                logger.info("progressbar argument is ignored when parallel = True.")
+                warnings.warn("progressbar argument is ignored when parallel = True.")
 
             output = Debiaser.parallel_map_over_locations(
                 self.apply_location,
