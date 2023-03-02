@@ -325,6 +325,7 @@ def plot_future_trend_bias_boxplot(
         hue="Correction Method",
     )
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
+    [ax.axhline(linestyle='--', color="k")]
 
     # generate and set plot title
     if variable in str_to_variable_class.keys():
