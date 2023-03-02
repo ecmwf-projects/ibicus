@@ -80,10 +80,12 @@ class TestFullISIMIPAgainstReference(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(12345)
 
-    def _run_isimip(self, variable):
+    def _run_isimip(self, variable, parallel=False):
         obs, cm_hist, cm_future, dates = read_in_and_preprocess_testing_data(variable)
         debiaser = ISIMIP.from_variable(variable)
-        debiased_values = debiaser.apply(obs, cm_hist, cm_future, **dates)
+        debiased_values = debiaser.apply(
+            obs, cm_hist, cm_future, parallel=parallel, **dates
+        )
         return debiased_values
 
     def _test_pct_agreement(self, debiased_values, debiased_values_reference):
@@ -108,51 +110,102 @@ class TestFullISIMIPAgainstReference(unittest.TestCase):
 
     def test_tas(self):
         variable = "tas"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_pct_agreement(debiased_values, debiased_values_reference)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_pct_agreement(debiased_values, debiased_values_reference)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_pr(self):
         variable = "pr"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_ps(self):
         variable = "ps"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_pct_agreement(debiased_values, debiased_values_reference)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_pct_agreement(debiased_values, debiased_values_reference)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_rlds(self):
         variable = "rlds"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_pct_agreement(debiased_values, debiased_values_reference)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_pct_agreement(debiased_values, debiased_values_reference)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_sfcwind(self):
         variable = "sfcWind"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_tasrange(self):
         variable = "tasrange"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_tasskew(self):
         variable = "tasskew"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_linear_regression(debiased_values, debiased_values_reference)
 
     def test_hurs(self):
         variable = "hurs"
-        debiased_values = self._run_isimip(variable)
         debiased_values_reference = read_in_reference_data(variable)
+
+        # Test normal
+        debiased_values = self._run_isimip(variable)
+        self._test_linear_regression(debiased_values, debiased_values_reference)
+
+        # Test parallel
+        debiased_values = self._run_isimip(variable, parallel=True)
         self._test_linear_regression(debiased_values, debiased_values_reference)
