@@ -220,7 +220,7 @@ def get_tasskew(tas: np.ndarray, tasmin: np.ndarray, tasmax: np.ndarray) -> np.n
     tasskew : np.ndarray
         Numpy array of :py:data:`tasskew` values
     """
-    return (tas - tasmin) / (tasmin - tasmax)
+    return (tas - tasmin) / (tasmax - tasmin)
 
 
 # Tasmin and max
