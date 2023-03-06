@@ -1219,17 +1219,28 @@ class ISIMIP(Debiaser):
             np.logical_not(mask_for_entries_to_set_to_upper_bound),
         )
 
-        # Calculate values between bounds (if any are to be calculated)
+        # Calculate values between bounds (if any are to be calculated) and there is anything to map to
         if any(mask_for_entries_not_set_to_either_bound):
-            mapped_vals[
-                mask_for_entries_not_set_to_either_bound
-            ] = self._step6_adjust_values_between_thresholds(
-                self._get_values_between_thresholds(obs_hist_sorted),
-                self._get_values_between_thresholds(obs_future_sorted),
-                self._get_values_between_thresholds(cm_hist_sorted),
-                mapped_vals[mask_for_entries_not_set_to_either_bound],
-                self._get_values_between_thresholds(cm_future_sorted),
-            )
+            if (
+                values_between_thresholds_obs_future_sorted := self._get_values_between_thresholds(
+                    obs_future_sorted
+                )
+            ).size > 0:
+                mapped_vals[
+                    mask_for_entries_not_set_to_either_bound
+                ] = self._step6_adjust_values_between_thresholds(
+                    self._get_values_between_thresholds(obs_hist_sorted),
+                    values_between_thresholds_obs_future_sorted,
+                    self._get_values_between_thresholds(cm_hist_sorted),
+                    mapped_vals[mask_for_entries_not_set_to_either_bound],
+                    self._get_values_between_thresholds(cm_future_sorted),
+                )
+            else:
+                warnings.warn(
+                    """ISIMIP step6: no pseudo-future observations between thresholds to quantile map to. Leaving %s values unadjusted."""
+                    % mask_for_entries_not_set_to_either_bound.sum(),
+                    stacklevel=2,
+                )
 
         # Return values inserted back at correct locations
         reverse_sorting_idx = np.argsort(cm_future_argsort)
