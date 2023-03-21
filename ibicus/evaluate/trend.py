@@ -18,7 +18,6 @@ from ..variables import map_variable_str_to_variable_class, str_to_variable_clas
 
 
 def _calculate_mean_trend_bias(
-    variable: str,
     trend_type: str,
     raw_validate: np.ndarray,
     raw_future: np.ndarray,
@@ -42,7 +41,6 @@ def _calculate_mean_trend_bias(
 
 
 def _calculate_quantile_trend_bias(
-    variable: str,
     trend_type: str,
     quantile: float,
     raw_validate: np.ndarray,
@@ -80,35 +78,41 @@ def _calculate_quantile_trend_bias(
 
 
 def _calculate_metrics_trend_bias(
-    variable: str,
     trend_type: str,
     metric,
     raw_validate: np.ndarray,
     raw_future: np.ndarray,
     bc_validate: np.ndarray,
     bc_future: np.ndarray,
+    time_validate: np.ndarray = None,
+    time_future: np.ndarray = None,
 ) -> np.ndarray:
-
     if trend_type == "additive":
         bc_trend = metric.calculate_exceedance_probability(
-            bc_future
-        ) - metric.calculate_exceedance_probability(bc_validate)
+            bc_future, time=time_future
+        ) - metric.calculate_exceedance_probability(bc_validate, time=time_validate)
         raw_trend = metric.calculate_exceedance_probability(
-            raw_future
-        ) - metric.calculate_exceedance_probability(raw_validate)
+            raw_future, time=time_future
+        ) - metric.calculate_exceedance_probability(raw_validate, time=time_validate)
 
     elif trend_type == "multiplicative":
         if (
-            m_bc_validate := metric.calculate_exceedance_probability(bc_validate)
+            m_bc_validate := metric.calculate_exceedance_probability(
+                bc_validate, time=time_validate
+            )
         ) != 0 and (
-            m_raw_validate := metric.calculate_exceedance_probability(bc_validate)
+            m_raw_validate := metric.calculate_exceedance_probability(
+                bc_validate, time=time_validate
+            )
         ) != 0:
 
             bc_trend = (
-                metric.calculate_exceedance_probability(bc_future) / m_bc_validate
+                metric.calculate_exceedance_probability(bc_future, time=time_future)
+                / m_bc_validate
             )
             raw_trend = (
-                metric.calculate_exceedance_probability(raw_future) / m_raw_validate
+                metric.calculate_exceedance_probability(raw_future, time=time_future)
+                / m_raw_validate
             )
 
         else:
@@ -131,6 +135,8 @@ def calculate_future_trend_bias(
     metrics: list = [],
     trend_type: str = "additive",
     remove_outliers: bool = True,
+    time_validate: np.ndarray = None,
+    time_future: np.ndarray = None,
     **debiased_cms,
 ) -> pd.DataFrame:
 
@@ -148,20 +154,24 @@ def calculate_future_trend_bias(
     variable : str
         Variable name, has to be given in standard form following CMIP convention.
     raw_validate : np.ndarray
-        Raw climate data set in validation period
+        Raw climate data set in validation period.
     raw_future: np.ndarray
-        Raw climate data set in future period
+        Raw climate data set in future period.
     metrics : np.ndarray
-        1d numpy array of strings containing the keys of the metrics to be analysed. Example: `metrics = ['dry', 'wet']`
-    trend_type: str
-        Determines whether additive or multiplicative trend is analysed. Has to be one of ['additive', 'multiplicative']
+        1d numpy array of strings containing the keys of the metrics to be analysed. Example: `metrics = ['dry', 'wet']`.
+    trend_type : str
+        Determines whether additive or multiplicative trend is analysed. Has to be one of ['additive', 'multiplicative'].
+    time_validate : np.ndarray
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_validate` and the first entry of each `debiased_cms` keyword arguments correspond.
+    time_future : np.ndarray
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_future` and the second entry of each `debiased_cms` keyword arguments correspond.
     debiased_cms : np.ndarray
-        Keyword arguments given in format `debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`
+        Keyword arguments given in format `debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`.
         Example: `QM = [tas_val_debiased_QM, tas_future_debiased_QM]`.
 
     Examples
     --------
-    >>> tas_trend_bias_data = trend.calculate_future_trend_bias(variable = 'tas', raw_validate = tas_cm_validate, raw_future = tas_cm_future, metrics = ['warm_days', 'cold_days'], trend_type = additive, QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
+    >>> tas_trend_bias_data = trend.calculate_future_trend_bias(variable = 'tas', raw_validate = tas_cm_validate, raw_future = tas_cm_future, metrics = [warm_days, cold_days], trend_type = "additive", QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
 
     """
 
@@ -177,7 +187,7 @@ def calculate_future_trend_bias(
         # calculate trend bias in descriptive statistics
 
         mean_bias = _calculate_mean_trend_bias(
-            variable, trend_type, raw_validate, raw_future, *debiased_cms_value
+            trend_type, raw_validate, raw_future, *debiased_cms_value
         )
 
         if np.any(np.isinf(mean_bias)):
@@ -204,7 +214,7 @@ def calculate_future_trend_bias(
             )
 
         lowqn_bias = _calculate_quantile_trend_bias(
-            variable, trend_type, 0.05, raw_validate, raw_future, *debiased_cms_value
+            trend_type, 0.05, raw_validate, raw_future, *debiased_cms_value
         )
 
         if np.any(np.isinf(lowqn_bias)):
@@ -231,7 +241,7 @@ def calculate_future_trend_bias(
             )
 
         highqn_bias = _calculate_quantile_trend_bias(
-            variable, trend_type, 0.95, raw_validate, raw_future, *debiased_cms_value
+            trend_type, 0.95, raw_validate, raw_future, *debiased_cms_value
         )
 
         if np.any(np.isinf(highqn_bias)):
@@ -262,7 +272,13 @@ def calculate_future_trend_bias(
         for m in metrics:
 
             metric_bias = _calculate_metrics_trend_bias(
-                variable, trend_type, m, raw_validate, raw_future, *debiased_cms_value
+                trend_type,
+                m,
+                raw_validate,
+                raw_future,
+                *debiased_cms_value,
+                time_validate,
+                time_future,
             )
 
             if np.any(np.isinf(metric_bias)):
@@ -325,7 +341,7 @@ def plot_future_trend_bias_boxplot(
         hue="Correction Method",
     )
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
-    [ax.axhline(linestyle='--', color="k")]
+    [ax.axhline(linestyle="--", color="k")]
 
     # generate and set plot title
     if variable in str_to_variable_class.keys():
@@ -352,10 +368,12 @@ def plot_future_trend_bias_spatial(
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    bias_array: np.ndarray
-        Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]
+    metric : str
+        Metric in `bias_df` to plot.
+    bias_df: pd.DataFrame
+        Dataframe with three columns: [Bias correction method, Metric, Bias value at certain location].
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
     """
