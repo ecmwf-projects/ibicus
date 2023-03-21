@@ -19,16 +19,20 @@ from ..utils._utils import _unpack_df_of_numpy_arrays
 from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
-def _calculate_chi(metric1, metric2, dataset1, dataset2):
+def _calculate_chi(metric1, metric2, dataset1, dataset2, time=None):
 
-    metric1_instances = metric1.calculate_instances_of_threshold_exceedance(dataset1)
-    metric2_instances = metric2.calculate_instances_of_threshold_exceedance(dataset2)
+    metric1_instances = metric1.calculate_instances_of_threshold_exceedance(
+        dataset1, time=time
+    )
+    metric2_instances = metric2.calculate_instances_of_threshold_exceedance(
+        dataset2, time=time
+    )
 
     metric1_instances[metric1_instances == 0] = 2
 
     cooccurrence = (metric1_instances == metric2_instances).astype(int)
 
-    if np.any(np.einsum("ijk -> jk", metric2_instances)) == 0:
+    if np.any(np.einsum("ijk -> jk", metric2_instances) == 0):
         raise ValueError(
             "There is at least one location where threshold exceedance for metric2 does not occur. Calculation cannot be performed"
         )
@@ -57,11 +61,13 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
     Parameters
     ----------
     metric1 : ThresholdMetric
-        observational dataset in validation period
+        Metric 1 whose exceedance conditional on metric 2 shall be assessed.
     metric2 : ThresholdMetric
-        Array of strings containing the names of the metrics that are to be assessed.
+        Metric 2 on which metric 1 is contioned upon..
     **climate_data :
-        Keyword arguments of type key = debiased_dataset in validation period (example: 'QM = tas_val_debiased_QM', or 'obs = tas_val_debiased_obs').
+        Keyword arguments of type `key = [variable1_debiased_dataset, variable2_debiased_dataset]`. Here the exceedance of metric 1 is calculated on the first dataset (`variable1_debiased_dataset`) and the exceedance of metric 2 on the second one (`variable2_debiased_dataset`) to calculate the conditional exceedance. Example: 'obs = [pr_obs_validate, tasmin_obs_validate]', or 'ISIMIP = [pr_val_debiased_ISIMIP, tasmin_val_debiased_ISIMIP]').
+        If one the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) a third list element needs to be passed: a 1D `np.ndarray` containing the time information corresponding to the entries in the variable1 and variable2 datasets. Example: 'obs = [pr_obs_validate, tasmin_obs_validate, time_obs_validate]'.
+        ..warning:: datasets for variable1 and variable2 need to be during the same time period and the entries need to happen at the same dates.
 
     Returns
     -------
@@ -81,7 +87,11 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
 
         chi = (
             _calculate_chi(
-                metric1, metric2, climate_data_value[0], climate_data_value[1]
+                metric1,
+                metric2,
+                climate_data_value[0],
+                climate_data_value[1],
+                time=climate_data_value[2] if len(climate_data_value) > 2 else None,
             )
             * 100
         )
