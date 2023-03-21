@@ -13,19 +13,30 @@ import numpy as np
 import pandas as pd
 import seaborn
 
-from ..utils._utils import _unpack_df_of_numpy_arrays
+from ..utils._utils import (
+    _unpack_df_of_numpy_arrays,
+    _check_if_list_of_two_and_unpack_else_none,
+    year,
+)
 from ..variables import map_variable_str_to_variable_class, str_to_variable_class
 
 
-def _marginal_metrics_absolute_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
+def _marginal_metrics_absolute_bias(
+    metric,
+    obs_data: np.ndarray,
+    cm_data: np.ndarray,
+    time_obs_data: np.ndarray = None,
+    time_cm_data: np.ndarray = None,
+):
     """
     Calculates location-wise percentage bias of metric specified
     """
-    obs_metric = metric.calculate_exceedance_probability(obs_data)
-    cm_metric = metric.calculate_exceedance_probability(cm_data)
-    bias = 365*cm_metric - 365*obs_metric
+    obs_metric = metric.calculate_exceedance_probability(obs_data, time=time_obs_data)
+    cm_metric = metric.calculate_exceedance_probability(cm_data, time=time_cm_data)
+    bias = 365 * cm_metric - 365 * obs_metric
 
     return bias
+
 
 def _marginal_mean_bias(obs_data: np.ndarray, cm_data: np.ndarray):
 
@@ -58,21 +69,31 @@ def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.n
     return qn_bias
 
 
-def _marginal_metrics_bias(metric, obs_data: np.ndarray, cm_data: np.ndarray):
+def _marginal_metrics_bias(
+    metric,
+    obs_data: np.ndarray,
+    cm_data: np.ndarray,
+    time_obs_data: np.ndarray = None,
+    time_cm_data: np.ndarray = None,
+):
     """
     Calculates location-wise percentage bias of metric specified
     """
 
-    obs_metric = metric.calculate_exceedance_probability(obs_data)
-    cm_metric = metric.calculate_exceedance_probability(cm_data)
+    obs_metric = metric.calculate_exceedance_probability(obs_data, time=time_obs_data)
+    cm_metric = metric.calculate_exceedance_probability(cm_data, time=time_cm_data)
     bias = 100 * (cm_metric - obs_metric) / obs_metric
 
     return bias
 
 
 def calculate_marginal_bias(
-    obs_data: np.ndarray, statistics: list = ['mean', [0.05, 0.95]], metrics: list = [], percentage_or_absolute: str = 'percentage',
-    remove_outliers: bool = True, **cm_data
+    obs: np.ndarray,
+    statistics: list = ["mean", [0.05, 0.95]],
+    metrics: list = [],
+    percentage_or_absolute: str = "percentage",
+    remove_outliers: bool = True,
+    **cm_data
 ) -> pd.DataFrame:
 
     """
@@ -82,20 +103,21 @@ def calculate_marginal_bias(
 
     Parameters
     ----------
-    obs_data : np.ndarray
-        observational dataset in validation period
+    obs : np.ndarray
+        observational dataset in validation period.
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally) this needs to be a list of form `[obs_data, time_obs_data]` where `time_obs_data` is a 1d numpy arrays of times corresponding the the values in `obs_data`.
     statistics: list
         List of summary statistics. Format should be ['mean', list_of_quantiles], whereby the list of quantile should be of the form [0.5, 0.25, 0.95].
     metrics : list
-        Array of strings containing the names of the metrics that are to be assessed.
+        Array of strings containing the metrics that are to be assessed.
     percentage_or_absolute: str
-        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias, 
+        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias,
         meaning the difference in the mean days per year that this metric is exceeded.
     remove_outliers: bool
         If set to True, percentage biases beyond 1000% will be removed.
     **cm_data :
-        Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
-        covering all debiasers that are to be compared
+        Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: `QM = tas_val_debiased_QM`), covering all debiasers that are to be compared.
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) this needs to be a list of form lists of `[cm_data, time_cm_data]` where `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data`.
 
     Returns
     -------
@@ -110,11 +132,17 @@ def calculate_marginal_bias(
 
     marginal_bias_dfs = []
 
-    for cm_data_key, cm_data in cm_data.items():
+    obs_data, time_obs_data = _check_if_list_of_two_and_unpack_else_none(obs)
 
-        if 'mean' in statistics:
+    for cm_data_key, cm_data_value in cm_data.items():
 
-            mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data)
+        cm_data_value, time_cm_data_value = _check_if_list_of_two_and_unpack_else_none(
+            cm_data_value
+        )
+
+        if "mean" in statistics:
+
+            mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data_value)
 
             if np.any(np.isinf(mean_bias)):
                 warnings.warn(
@@ -143,15 +171,19 @@ def calculate_marginal_bias(
                 )
 
         if not statistics:
-            print('no quantiles calculated')
-        elif not (all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])):
-            warnings.warn("Quantile values below 0 or above 1 encountered. No quantiles are calculated.")
+            print("no quantiles calculated")
+        elif not (
+            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
+        ):
+            warnings.warn(
+                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
+            )
         else:
-            
+
             for q in statistics[1]:
-        
+
                 qn_bias = _marginal_quantile_bias(
-                    quantile=q, obs_data=obs_data, cm_data=cm_data
+                    quantile=q, obs_data=obs_data, cm_data=cm_data_value
                 )
 
                 if np.any(np.isinf(qn_bias)):
@@ -173,18 +205,23 @@ def calculate_marginal_bias(
                         pd.DataFrame(
                             data={
                                 "Correction Method": cm_data_key,
-                                "Metric": str(q)+" qn",
+                                "Metric": str(q) + " qn",
                                 "Type": "Percentage",
                                 "Bias": [qn_bias],
                             }
                         )
                     )
 
-        
         for m in metrics:
 
-            if percentage_or_absolute=='percentage':
-                metric_bias = _marginal_metrics_bias(m, obs_data, cm_data)
+            if percentage_or_absolute == "percentage":
+                metric_bias = _marginal_metrics_bias(
+                    m,
+                    obs_data=obs_data,
+                    cm_data=cm_data_value,
+                    time_obs_data=time_obs_data,
+                    time_cm_data=time_cm_data_value,
+                )
 
                 if np.any(np.isinf(metric_bias)):
                     warnings.warn(
@@ -211,29 +248,42 @@ def calculate_marginal_bias(
                             }
                         )
                     )
-                    
-            elif percentage_or_absolute=='absolute':
-                metric_bias = _marginal_metrics_absolute_bias(m, obs_data, cm_data)
+
+            elif percentage_or_absolute == "absolute":
+                metric_bias = _marginal_metrics_absolute_bias(
+                    m,
+                    obs_data=obs_data,
+                    cm_data=cm_data_value,
+                    time_obs_data=time_obs_data,
+                    time_cm_data=time_cm_data_value,
+                )
                 marginal_bias_dfs.append(
-                        pd.DataFrame(
-                            data={
-                                "Correction Method": cm_data_key,
-                                "Metric": m.name,
-                                "Type": "Absolute",
-                                "Bias": [metric_bias],
-                            }
-                        )
+                    pd.DataFrame(
+                        data={
+                            "Correction Method": cm_data_key,
+                            "Metric": m.name,
+                            "Type": "Absolute",
+                            "Bias": [metric_bias],
+                        }
                     )
-                
+                )
+
             else:
-                warnings.warn('percentage_or_absolute values not valid, needs to be either percentage or absolute.')
+                warnings.warn(
+                    "percentage_or_absolute values not valid, needs to be either 'percentage' or 'absolute'."
+                )
 
     plot_data = pd.concat(marginal_bias_dfs)
 
     return plot_data
 
 
-def plot_marginal_bias(variable: str, bias_df: pd.DataFrame, statistics: list = ['Mean', '0.95 qn', '0.05 qn'], manual_title: str = " "):
+def plot_marginal_bias(
+    variable: str,
+    bias_df: pd.DataFrame,
+    statistics: list = ["Mean", "0.95 qn", "0.05 qn"],
+    manual_title: str = " ",
+):
 
     """
     Returns boxplots showing distribution of the percentage bias over locations of different metrics, based on calculation performed in :py:func:`calculate_marginal_bias`.
@@ -258,17 +308,11 @@ def plot_marginal_bias(variable: str, bias_df: pd.DataFrame, statistics: list = 
     """
 
     # unpack dataframe
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(
-        df=bias_df, numpy_column_name="Bias"
-    )
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df, numpy_column_name="Bias")
 
     # split dataframe for two plots
-    plot_data1 = bias_df_unpacked[
-        bias_df_unpacked["Metric"].isin(statistics)
-    ]
-    plot_data2 = bias_df_unpacked[
-        ~bias_df_unpacked["Metric"].isin(statistics)
-    ]
+    plot_data1 = bias_df_unpacked[bias_df_unpacked["Metric"].isin(statistics)]
+    plot_data2 = bias_df_unpacked[~bias_df_unpacked["Metric"].isin(statistics)]
 
     # generate plots
     fig_width = 3 * bias_df_unpacked["Metric"].nunique() + 3
@@ -281,27 +325,27 @@ def plot_marginal_bias(variable: str, bias_df: pd.DataFrame, statistics: list = 
         data=plot_data1,
         palette="colorblind",
         hue="Correction Method",
-    ).set_title('Percentage Bias (%)')
+    ).set_title("Percentage Bias (%)")
     [ax[0].axvline(x + 0.5, color="k") for x in ax[0].get_xticks()]
-    [ax[0].axhline(linestyle='--', color="k")]
-    
-    if plot_data2['Type'].iloc[0]=='Percentage':
-        y_metrics_addon = '(%)'
-    elif plot_data2['Type'].iloc[0]=='Absolute':
-        y_metrics_addon = '(days)'
+    [ax[0].axhline(linestyle="--", color="k")]
+
+    if plot_data2["Type"].iloc[0] == "Percentage":
+        y_metrics_addon = "(%)"
+    elif plot_data2["Type"].iloc[0] == "Absolute":
+        y_metrics_addon = "(days)"
     else:
-        y_metrics_addon = ''
+        y_metrics_addon = ""
 
     seaborn.boxplot(
         ax=ax[1],
-        y='Bias',
+        y="Bias",
         x="Metric",
         data=plot_data2,
         palette="colorblind",
         hue="Correction Method",
-    ).set_title(plot_data2['Type'].iloc[0]+" bias "+y_metrics_addon)
+    ).set_title(plot_data2["Type"].iloc[0] + " bias " + y_metrics_addon)
     [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
-    [ax[1].axhline(linestyle='--', color="k")]
+    [ax[1].axhline(linestyle="--", color="k")]
 
     # generate and set plot title
     if variable in str_to_variable_class.keys():
@@ -358,7 +402,7 @@ def plot_bias_spatial(
         plot_title = "{} ({}) \n {} bias of mean".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
-            bias_df_filtered['Type'].iloc[0]
+            bias_df_filtered["Type"].iloc[0],
         )
     else:
         plot_title = manual_title
@@ -378,13 +422,13 @@ def plot_bias_spatial(
     fig_width = 6 * bias_df_filtered.shape[0]
     fig, ax = plt.subplots(1, bias_df_filtered.shape[0], figsize=(fig_width, 5))
     fig.suptitle(plot_title)
-    
+
     i = 0
     for _, row_array in bias_df_filtered.iterrows():
 
         plot_title = row_array.values[0]
         plot_data = row_array.values[3]
-        
+
         plot = ax[i].imshow(
             plot_data, cmap=plt.get_cmap("coolwarm"), vmin=axis_min, vmax=axis_max
         )
@@ -393,11 +437,14 @@ def plot_bias_spatial(
         i = i + 1
 
 
-def _yearly_exceedances(metric, dataset: np.ndarray, year_array):
+def _yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
 
-    threshold_matrix = metric.calculate_instances_of_threshold_exceedance(dataset)
+    threshold_matrix = metric.calculate_instances_of_threshold_exceedance(
+        dataset, time=time
+    )
 
-    unique, counts = np.unique(year_array, return_counts=True)
+    year_array = year(time)
+    _, counts = np.unique(year_array, return_counts=True)
     index_array = [counts[0]]
     for i in range(len(counts) - 2):
         index_array = np.append(index_array, sum(counts[0 : i + 2]))
@@ -414,9 +461,9 @@ def _yearly_exceedances(metric, dataset: np.ndarray, year_array):
     return yearly_threshold_exceedances
 
 
-def _mean_yearly_exceedances(metric, dataset: np.ndarray, year_array):
+def _mean_yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
 
-    yearly_threshold_exceedances = _yearly_exceedances(metric, dataset, year_array)
+    yearly_threshold_exceedances = _yearly_exceedances(metric, dataset, time)
 
     mean_yearly_threshold_exceedances = np.mean(yearly_threshold_exceedances, axis=0)
 
@@ -424,7 +471,7 @@ def _mean_yearly_exceedances(metric, dataset: np.ndarray, year_array):
 
 
 def calculate_bias_days_metrics(
-    obs_data: np.ndarray, year_array: np.ndarray, metrics: list = [], **cm_data
+    obs_data: np.ndarray, metrics: list = [], **cm_data
 ) -> pd.DataFrame:
 
     """
@@ -438,15 +485,11 @@ def calculate_bias_days_metrics(
     Parameters
     ----------
     obs_data : np.ndarray
-        observational dataset in validation period
-    year_array : np.ndarray
-        one-dimensional numpy array containing years corresponding to the period investigated, can be obtained using
-        the utils._utils function year on the dates array
+        List of observational dataset in validation period and corresponding time information: `[obs_data, time_obs_data]`. Here `time_obs_data` is a 1d numpy arrays of times corresponding to the values in `obs_data`.
     metrics : list
         Array of strings containing the names of the metrics that are to be assessed.
     **cm_data :
-        Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: QM = tas_val_debiased_QM),
-        covering all debiasers that are to be compared
+        Keyword arguments of type `debiaser_name = [cm_data, time_cm_data]` covering all debiasers to be compared. Here `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data` and `cm_data` refers to a debiased dataset in a validation period. Example: `QM = [tas_val_debiased_QM, time_val]`
 
     Returns
     -------
@@ -461,18 +504,36 @@ def calculate_bias_days_metrics(
 
     marginal_bias_dfs = []
 
-    for cm_data_key, cm_data in cm_data.items():
+    if not isinstance(obs_data, (list, tuple)):
+        raise ValueError(
+            "obs_data needs to be a list of two of the form [obs, time_obs]."
+        )
+    if not len(obs_data) == 2:
+        raise ValueError(
+            "obs_data needs to be a list of two of the form [obs, time_obs]."
+        )
+
+    for cm_data_key, cm_data_value in cm_data.items():
+
+        if not isinstance(cm_data_value, (list, tuple)):
+            raise ValueError(
+                "Each cm_data keyword needs to be a list of two of the form [cm_data, time_cm_data]."
+            )
+        if not len(cm_data_value) == 2:
+            raise ValueError(
+                "Each cm_data keyword needs to be a list of two of the form [cm_data, time_cm_data]."
+            )
 
         for m in metrics:
 
             # calculate days per year that this metric is exceeded
 
             cm_mean = _mean_yearly_exceedances(
-                metric=m, dataset=cm_data, year_array=year_array
+                metric=m, dataset=cm_data_value[0], time=cm_data_value[1]
             )
 
             obs_mean = _mean_yearly_exceedances(
-                metric=m, dataset=obs_data, year_array=year_array
+                metric=m, dataset=obs_data[0], time=obs_data[1]
             )
 
             metric_bias = cm_mean - obs_mean

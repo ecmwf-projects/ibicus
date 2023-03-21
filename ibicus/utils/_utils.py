@@ -179,6 +179,7 @@ def infer_and_create_time_arrays_if_not_given(
         time_cm_future = create_array_of_consecutive_dates(cm_future.size)
 
     return time_obs, time_cm_hist, time_cm_future
+    
 
 
 # ----- Variables ----- #
@@ -477,6 +478,13 @@ def get_mask_for_unique_subarray(x):
     mask[indices] = True
     return mask
 
+def _check_if_list_of_two_and_unpack_else_none(x):
+    if isinstance(x, (list, tuple)):
+        if len(x) > 2:
+            raise ValueError("Error in input. Needs to be a list of two.")
+        return x[0], x[1]
+    else:
+        return x, None
 
 # ----- Logging functionality -----
 
