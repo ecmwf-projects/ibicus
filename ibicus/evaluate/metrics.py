@@ -9,6 +9,7 @@
 """Metrics module - Standard metric definitions"""
 
 from typing import Union
+import warnings
 
 import attrs
 import matplotlib.pyplot as plt
@@ -30,12 +31,19 @@ class ThresholdMetric:
 
     Attributes
     ----------
-    threshold_value : Union[float, list[float], tuple[float]]
+    threshold_value : Union[int, float, list[float], tuple[float]]
         Threshold value(s) for the variable (in the correct unit).
-        If `threshold_type = "higher"` or `threshold_type = "lower"` this is just a single `float` value and the metric is defined as exceedance or underceedance of that value.
-        If `threshold_type = "between"` or `threshold_type = "outside"` then this needs to be a list in the form: `[lower_bound, upper_bound]` and the metric is defined as falling in between, or falling outside these values.
+        If `threshold_type = "higher"` or `threshold_type = "lower"`, this is just a single `float` value and the metric is defined as exceedance or underceedance of that value (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
+        If `threshold_type = "between"` or `threshold_type = "outside"`, then this needs to be a list in the form: `[lower_bound, upper_bound]` and the metric is defined as falling in between, or falling outside these values (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
+
+        If `threshold_locality = "local"` then instead of a single element (within a list, depending on `threshold_type`) a `np.ndarray` is stored here for locally defined threshold.
+        If `threshold_scope` is one of `["day", "month", "season"]` then instead of a (list of) single element(s) or a `np.ndarray` a dict is stored whose keys are the times (for example the seasons) and values contain the thresholds (either locally or globally).
     threshold_type : str
         One of `["higher", "lower", "between", "outside"]`. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, not strict including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
+    threshold_scope : str = "overall"
+        One of `["day", "month", "season", "overall"]`. Indicates wether thresholds are irrespective of time or defined on a daily, monthly or seasonal basis.
+    threshold_locality : str = "global"
+        One of `["global", "local"]`. Indicates wether thresholds are defined globally or locationwise.
     name : str = "unknown"
         Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: `"unknown"`.
     variable : str = "unknown"
@@ -44,13 +52,21 @@ class ThresholdMetric:
     Examples
     --------
 
-    >>> warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = [295], threshold_type = 'higher')
+    >>> warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = 295, threshold_type = 'higher')
 
     """
 
-    threshold_value: Union[float, list] = attrs.field()
+    threshold_value: Union[np.array, float, list, dict] = attrs.field()
     threshold_type: str = attrs.field(
         validator=attrs.validators.in_(["higher", "lower", "between", "outside"])
+    )
+    threshold_scope: str = attrs.field(
+        default="overall",
+        validator=attrs.validators.in_(["day", "month", "season", "overall"]),
+    )
+    threshold_locality: str = attrs.field(
+        default="global",
+        validator=attrs.validators.in_(["global", "local"]),
     )
     name: str = attrs.field(
         default="unknown", validator=attrs.validators.instance_of(str)
@@ -59,44 +75,336 @@ class ThresholdMetric:
         default="unknown", validator=attrs.validators.instance_of(str)
     )
 
+    # Helpers attrs_post_init
+    @staticmethod
+    def _check_types_locality(threshold_value, threshold_locality):
+        if threshold_locality == "global":
+            if not isinstance(threshold_value, (float, int)):
+                raise ValueError(
+                    "If threshold_locality is global then threshold_value should have int/floats as entries (in a dict if threshold_scope != 'overall' and in a list if threshold_type is 'between' or 'outside')."
+                )
+        elif threshold_locality == "local":
+            if not isinstance(threshold_value, (np.ndarray, list)):
+                raise ValueError(
+                    "If threshold_locality is local then threshold_value should have np.ndarrays (a threshold for each location) as entries (in a dict if threshold_scope != 'overall' and in a list if threshold_type is 'between' or 'outside')."
+                )
+        else:
+            raise ValueError("threshold_scope needs to be 'local' or 'global'.")
+
+    @staticmethod
+    def check_types_scope_and_locality(
+        threshold_value, threshold_scope, threshold_locality
+    ):
+        if threshold_scope in ["day", "month", "season"]:
+            if not isinstance(threshold_value, dict):
+                raise ValueError(
+                    "threshold_value should be a dict with days, months, seasons as keys and thresholds as values for threshold_scope in ['day', 'month', 'season']"
+                )
+            ThresholdMetric._check_completeness_of_time_categories_and_warn(
+                threshold_value, threshold_scope
+            )
+            for key, value in threshold_value.items():
+                ThresholdMetric._check_types_locality(value, threshold_locality)
+        elif threshold_scope == "overall":
+            ThresholdMetric._check_types_locality(threshold_value, threshold_locality)
+        else:
+            raise ValueError(
+                "threshold_scope needs to be one of ['day', 'month', 'season', 'overall']"
+            )
+
     def __attrs_post_init__(self):
-        if self.threshold_type in ["between", "outside"]:
+        if self.threshold_type in ["higher", "lower"]:
+            ThresholdMetric.check_types_scope_and_locality(
+                self.threshold_value, self.threshold_scope, self.threshold_locality
+            )
+        elif self.threshold_type in ["between", "outside"]:
             if not isinstance(self.threshold_value, (list, tuple)):
                 raise ValueError(
-                    "threshold_value should be a list with a lower and upper bound for threshold_type = 'between'."
+                    "threshold_value should be a list with a lower and upper bound for threshold_type in ['between', 'outside']."
                 )
             if len(self.threshold_value) != 2:
                 raise ValueError(
-                    "threshold_value should have only a lower and upper bound for threshold_type = 'between'."
+                    "threshold_value should have (only) a lower and upper bound for threshold_type in ['between', 'outside']."
                 )
-            if not all(isinstance(elem, (int, float)) for elem in self.threshold_value):
-                raise ValueError("threshold_value needs to be a list of floats")
-            if not self.threshold_value[0] < self.threshold_value[1]:
-                raise ValueError(
-                    "lower bounds needs to be smaller than upper bound in threshold_value for threshold_type = 'between'."
-                )
-        elif self.threshold_type in ["higher", "lower"]:
-            if not isinstance(self.threshold_value, (int, float)):
-                raise ValueError(
-                    "threshold_value needs to be either int or float for threshold_type = 'higher' or threshold_type = 'lower'."
-                )
-        else:
-            raise ValueError(
-                "Invalid threshold_type. Needs to be one of ['higher', 'lower', 'between']. Modify the class attribute."
+            ThresholdMetric.check_types_scope_and_locality(
+                self.threshold_value[0], self.threshold_scope, self.threshold_locality
+            )
+            ThresholdMetric.check_types_scope_and_locality(
+                self.threshold_value[1], self.threshold_scope, self.threshold_locality
             )
 
-    def _get_mask_threshold_condition(self, x):
+    @staticmethod
+    def _get_time_group_by_scope(time, threshold_scope):
+        if threshold_scope in ["day", "month", "season"]:
+            if time is None:
+                raise ValueError(
+                    "time argument cannot be None if the threshold is time-sensitive (threshold_scope is one of['day', 'month', 'season'])."
+                )
+            if threshold_scope == "day":
+                return utils.day_of_year(time)
+            elif threshold_scope == "month":
+                return utils.month(time)
+            elif threshold_scope == "season":
+                return utils.season(time)
+        elif threshold_scope == "overall":
+            return None
+        else:
+            raise ValueError(
+                "threshold_scope needs to be one of ['day', 'month', 'season', 'overall']"
+            )
+
+    @staticmethod
+    def _get_quantile_by_locality(x, q, time, threshold_scope, threshold_locality):
+        if threshold_scope == "overall":
+            if threshold_locality == "global":
+                quantiles = np.quantile(x, q)
+            elif threshold_locality == "local":
+                quantiles = np.quantile(x, q, axis=0)
+            else:
+                raise ValueError(
+                    "threshold_locality needs to be either 'global' or 'local'"
+                )
+        else:
+            if threshold_locality == "global":
+                quantiles = {
+                    t: np.quantile(x[np.where(time == t)], q) for t in np.unique(time)
+                }
+            elif threshold_locality == "local":
+                quantiles = {
+                    t: [np.quantile(x[np.where(time == t)], q, axis=0)]
+                    for t in np.unique(time)
+                }
+            else:
+                raise ValueError(
+                    "threshold_locality needs to be either 'global' or 'local'"
+                )
+
+        return quantiles
+
+    @staticmethod
+    def _check_completeness_of_time_categories_and_warn(thresholds, threshold_scope):
+        if threshold_scope == "day":
+            days_of_year = np.arange(1, 367)
+            if not all(
+                mask_days_of_year_in_quantiles := np.in1d(
+                    days_of_year, list(thresholds.keys())
+                )
+            ):
+                warnings.warn(
+                    "Not all days of year present inside the dataset used for initialisation. Not threshold defined for days %s"
+                    % days_of_year[np.logical_not(mask_days_of_year_in_quantiles)]
+                )
+        elif threshold_scope == "month":
+            months = np.arange(1, 13)
+            if not all(
+                mask_months_in_quantiles := np.in1d(months, list(thresholds.keys()))
+            ):
+                warnings.warn(
+                    "Not all months present inside the dataset used for initialisation. Not threshold defined for months %s"
+                    % months[np.logical_not(mask_months_in_quantiles)]
+                )
+        elif threshold_scope == "season":
+            seasons = np.array(["Spring", "Summer", "Autumn", "Winter"])
+            if not all(
+                mask_seasons_in_quantiles := np.in1d(seasons, list(thresholds.keys()))
+            ):
+                warnings.warn(
+                    "Not all seasons present inside the dataset used for initialisation. Not threshold defined for seasons %s"
+                    % seasons[np.logical_not(mask_seasons_in_quantiles)]
+                )
+        elif threshold_scope == "overall":
+            pass
+        else:
+            raise ValueError(
+                "scope needs to be one of ['day', 'month', 'season', 'overall']"
+            )
+
+    @staticmethod
+    def _get_threshold_from_quantile(
+        x, q, time=None, threshold_scope="overall", threshold_locality="global"
+    ):
+
+        time = ThresholdMetric._get_time_group_by_scope(time, threshold_scope)
+
+        thresholds = ThresholdMetric._get_quantile_by_locality(
+            x,
+            q,
+            time,
+            threshold_scope,
+            threshold_locality,
+        )
+
+        ThresholdMetric._check_completeness_of_time_categories_and_warn(
+            thresholds, threshold_scope
+        )
+
+        return thresholds
+
+    @classmethod
+    def from_quantile(
+        cls,
+        x,
+        q,
+        threshold_type,
+        threshold_scope="overall",
+        threshold_locality="global",
+        time=None,
+        name="unknown",
+        variable="unknown",
+    ):
+        """
+        Creates a threshold metrics from a quantile respective to an array x.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Array respective to which the quantile is calculated.
+        q : Union[int, float, list]
+            Quantile (or list of lower and upper quantile if `threshold_type` in ["higher", "lower"]) as which the threshold is instantiated.
+        threshold_type : str
+            One of `["higher", "lower", "between", "outside"]`. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, strict, not including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
+        threshold_scope : str = "overall"
+            One of `["day", "month", "season", "overall"]`. Indicates wether thresholds (and the quantiles calculated) are irrespective of time or defined on a daily, monthly or seasonal basis.
+        threshold_locality : str = "global"
+            One of `["global", "local"]`. Indicates wether thresholds (and the quantiles calculated) are defined globally or locationwise.
+        time: Optional[np.ndarray] = None
+            If  the threshold is time-sensitive (`threshold_scope` in ["day", "month", "season"]) then time information corresponding to `x` is required. Should be a numpy 1d array of times.
+        name : str = "unknown"
+            Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: `"unknown"`.
+        variable : str = "unknown"
+            Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: `"unknown"`.
+        """
+        if threshold_type == "inside" or threshold_type == "outside":
+            if not isinstance(q, (list, tuple, np.ndarray)):
+                raise ValueError(
+                    "If threshold_type is one of ['inside', 'outside'] then q needs to be a list of lower and upper quantile."
+                )
+
+            if len(q) != 2:
+                raise ValueError(
+                    "If threshold_type is one of ['inside', 'outside'] then q needs to be a list of lower and upper quantile."
+                )
+            if not q[0] < q[1]:
+                raise ValueError(
+                    "The lower quantile needs to be smaller than the upper quantile."
+                )
+
+            threshold_value = [
+                ThresholdMetric._get_threshold_from_quantile(
+                    x,
+                    q[0],
+                    time=time,
+                    threshold_scope=threshold_scope,
+                    threshold_locality=threshold_locality,
+                ),
+                ThresholdMetric._get_threshold_from_quantile(
+                    x,
+                    q[1],
+                    time=time,
+                    threshold_scope=threshold_scope,
+                    threshold_locality=threshold_locality,
+                ),
+            ]
+        else:
+            threshold_value = ThresholdMetric._get_threshold_from_quantile(
+                x,
+                q,
+                time=time,
+                threshold_scope=threshold_scope,
+                threshold_locality=threshold_locality,
+            )
+
+        return cls(
+            threshold_value=threshold_value,
+            threshold_scope=threshold_scope,
+            threshold_type=threshold_type,
+            threshold_locality=threshold_locality,
+            name=name,
+            variable=variable,
+        )
+
+    def _get_mask_higher_or_lower(self, x, threshold_value, higher_or_lower, time=None):
+
+        if self.threshold_scope == "overall":
+            thresholds = threshold_value
+
+            # Extend upon spatial dimension
+            if self.threshold_locality == "local":
+                thresholds = thresholds[None, :, :]
+        elif self.threshold_scope in ["day", "month", "season"]:
+
+            if time is None:
+                raise ValueError(
+                    "For ThresholdMetrics with scope ['day', 'month', 'season'] time information is required to calculate the score"
+                )
+
+            time = ThresholdMetric._get_time_group_by_scope(time, self.threshold_scope)
+
+            if not np.all(np.in1d(time, list(threshold_value.keys()))):
+                raise ValueError(
+                    "time contains values for %ss for which no thresholds exist in self.threshold_value"
+                    % self.threshold_scope
+                )
+
+            thresholds = (
+                pd.DataFrame({"time": time})
+                .merge(
+                    pd.DataFrame(
+                        threshold_value.items(), columns=["time", "threshold"]
+                    ),
+                    how="left",
+                    on="time",
+                )
+                .threshold.values
+            )
+
+            if self.threshold_locality == "local":
+                thresholds = np.concatenate(thresholds)
+            elif self.threshold_locality == "global":
+                thresholds = np.array(thresholds)
+                # Extend upon spatial dimension
+                thresholds = thresholds[:, None, None]
+            else:
+                ValueError("self.threshold_locality needs to be global or local")
+        else:
+            raise ValueError(
+                "self.threshold_scope needs to be one of ['day', 'month', 'season', 'overall']"
+            )
+
+        if higher_or_lower == "higher":
+            return x > thresholds
+        elif higher_or_lower == "lower":
+            return x < thresholds
+        else:
+            raise ValueError("higher_or_lower needs to be one of ['higher', 'lower'].")
+
+    def _get_mask_threshold_condition(self, x, time=None):
+
         if self.threshold_type == "higher":
-            return x > self.threshold_value
+            return self._get_mask_higher_or_lower(
+                x, self.threshold_value, "higher", time
+            )
         elif self.threshold_type == "lower":
-            return x < self.threshold_value
+            return self._get_mask_higher_or_lower(
+                x, self.threshold_value, "lower", time
+            )
         elif self.threshold_type == "between":
             return np.logical_and(
-                x > self.threshold_value[0], x < self.threshold_value[1]
+                self._get_mask_higher_or_lower(
+                    x, self.threshold_value[0], "higher", time
+                ),
+                self._get_mask_higher_or_lower(
+                    x, self.threshold_value[1], "lower", time
+                ),
             )
         elif self.threshold_type == "outside":
-            return np.logical_and(
-                x < self.threshold_value[0], x > self.threshold_value[1]
+            return np.logical_or(
+                self._get_mask_higher_or_lower(
+                    x, self.threshold_value[0], "lower", time
+                ),
+                self._get_mask_higher_or_lower(
+                    x, self.threshold_value[1], "higher", time
+                ),
             )
         else:
             raise ValueError(
@@ -104,7 +412,7 @@ class ThresholdMetric:
             )
 
     def calculate_instances_of_threshold_exceedance(
-        self, dataset: np.ndarray
+        self, dataset: np.ndarray, time: np.ndarray = None
     ) -> np.ndarray:
         """
         Returns an array of the same size as `dataset` containing 1 when the threshold condition is met and 0 when not.
@@ -113,10 +421,14 @@ class ThresholdMetric:
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected.
+        time : np.ndarray = None
+            Time corresponding to each observation in dataset, required only for time sensitive thresholds (threshold_scope = ['day', 'month', 'year']).
         """
-        return self._get_mask_threshold_condition(dataset).astype(int)
+        return self._get_mask_threshold_condition(dataset, time=time).astype(int)
 
-    def filter_threshold_exceedances(self, dataset: np.ndarray) -> np.ndarray:
+    def filter_threshold_exceedances(
+        self, dataset: np.ndarray, time: np.ndarray = None
+    ) -> np.ndarray:
         """
         Returns an array containing the values of dataset where the threshold condition is met and zero where not.
 
@@ -124,13 +436,19 @@ class ThresholdMetric:
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected.
+        time : np.ndarray = None
+            Time corresponding to each observation in dataset, required only for time sensitive thresholds (threshold_scope = ['day', 'month', 'year']).
         """
 
-        mask_threshold_condition = self._get_mask_threshold_condition(dataset)
+        mask_threshold_condition = self._get_mask_threshold_condition(
+            dataset, time=time
+        )
         dataset[mask_threshold_condition] = 0
         return dataset
 
-    def calculate_exceedance_probability(self, dataset: np.ndarray) -> np.ndarray:
+    def calculate_exceedance_probability(
+        self, dataset: np.ndarray, time: np.ndarray = None
+    ) -> np.ndarray:
         """
         Returns the probability of metrics occurrence (threshold exceedance/underceedance or inside/outside range), at each location (across the entire time period).
 
@@ -138,21 +456,24 @@ class ThresholdMetric:
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected
-
+        time : np.ndarray = None
+            Time corresponding to each observation in dataset, required only for time sensitive thresholds (threshold_scope = ['day', 'month', 'year']).
         Returns
         -------
         np.ndarray
             Probability of metric occurrence at each location.
         """
 
-        threshold_data = self.calculate_instances_of_threshold_exceedance(dataset)
+        threshold_data = self.calculate_instances_of_threshold_exceedance(
+            dataset, time=time
+        )
         threshold_probability = (
             np.einsum("ijk -> jk", threshold_data) / threshold_data.shape[0]
         )
         return threshold_probability
 
     def calculate_number_annual_days_beyond_threshold(
-        self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year
+        self, dataset: np.ndarray, time: np.ndarray
     ) -> np.ndarray:
 
         """
@@ -162,20 +483,19 @@ class ThresholdMetric:
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected.
-        dates_array : np.ndarray
-            Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
-        time_func : functions
-            Points to utils function to either extract days or months.
-
+        time : np.ndarray
+            Time corresponding to each observation in dataset, required to calculate annual threshold occurrences.
         Returns
         -------
         np.ndarray
             3d array - [years, lat, long]
         """
 
-        eot_matrix = self.calculate_instances_of_threshold_exceedance(dataset)
+        eot_matrix = self.calculate_instances_of_threshold_exceedance(
+            dataset, time=time
+        )
 
-        time_array = time_func(dates_array)
+        time_array = utils.year(time)
 
         years = np.unique(time_array)
 
@@ -221,8 +541,7 @@ class ThresholdMetric:
         minimum length : int
             Minimum spell length (in days) investigated.
         climate_data :
-            Keyword arguments, providing the input data to investigate.
-
+            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
         Returns
         -------
         pd.DataFrame
@@ -235,12 +554,21 @@ class ThresholdMetric:
 
         spell_length_dfs = []
         for climate_data_key, climate_data_value in climate_data.items():
-            mask_threshold_condition = self._get_mask_threshold_condition(
-                climate_data_value
-            )
+            if isinstance(climate_data_value, (list, tuple)):
+                mask_threshold_condition = self._get_mask_threshold_condition(
+                    climate_data_value[0], time=climate_data_value[1]
+                )
+            else:
+                if self.threshold_scope in ["day", "month", "season"]:
+                    raise ValueError(
+                        "time information is required if threshold scope is one of ['day', 'month', 'season']. Please pass lists of structure [climate_data, time_information] as key words arguments."
+                    )
+                mask_threshold_condition = self._get_mask_threshold_condition(
+                    climate_data_value, time=None
+                )
 
             spell_length = []
-            for i, j in np.ndindex(climate_data_value.shape[1:]):
+            for i, j in np.ndindex(mask_threshold_condition.shape[1:]):
                 spell_length.append(
                     ThresholdMetric._calculate_spell_lengths_one_location(
                         mask_threshold_condition[:, i, j]
@@ -275,7 +603,7 @@ class ThresholdMetric:
         Parameters
         ----------
         **climate_data :
-            Keyword arguments, providing the input data to investigate.
+            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
 
         Returns
         -------
@@ -289,10 +617,19 @@ class ThresholdMetric:
 
         spatial_clusters_dfs = []
         for climate_data_key, climate_data_value in climate_data.items():
+            if isinstance(climate_data_value, (list, tuple)):
+                threshold_data = self.calculate_instances_of_threshold_exceedance(
+                    climate_data_value[0], time=climate_data_value[1]
+                )
+            else:
+                if self.threshold_scope in ["day", "month", "season"]:
+                    raise ValueError(
+                        "time information is required if threshold scope is one of ['day', 'month', 'season']. Please pass lists of structure [climate_data, time_information] as key words arguments."
+                    )
+                threshold_data = self.calculate_instances_of_threshold_exceedance(
+                    climate_data_value, time=None
+                )
 
-            threshold_data = self.calculate_instances_of_threshold_exceedance(
-                dataset=climate_data_value
-            )
             spatial_clusters = np.einsum("ijk -> i", threshold_data) / np.prod(
                 threshold_data.shape[1:]
             )
@@ -325,7 +662,7 @@ class ThresholdMetric:
         Parameters
         ----------
         climate_data :
-            Keyword arguments, providing the input data to investigate.
+            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
 
         Returns
         -------
@@ -339,10 +676,19 @@ class ThresholdMetric:
 
         spatiotemporal_clusters_dfs = []
         for climate_data_key, climate_data_value in climate_data.items():
+            if isinstance(climate_data_value, (list, tuple)):
+                threshold_data = self.calculate_instances_of_threshold_exceedance(
+                    climate_data_value[0], time=climate_data_value[1]
+                )
+            else:
+                if self.threshold_scope in ["day", "month", "season"]:
+                    raise ValueError(
+                        "time information is required if threshold scope is one of ['day', 'month', 'season']. Please pass lists of structure [climate_data, time_information] as key words arguments."
+                    )
+                threshold_data = self.calculate_instances_of_threshold_exceedance(
+                    climate_data_value, time=None
+                )
 
-            threshold_data = self.calculate_instances_of_threshold_exceedance(
-                dataset=climate_data_value
-            )
             threshold_data_lw, _ = measurements.label(threshold_data)
             area = measurements.sum(
                 threshold_data,
@@ -375,6 +721,9 @@ class ThresholdMetric:
         ----------
         minimum length : int
             Minimum spell length (in days) investigated for temporal extends.
+        climate_data :
+            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
+
         """
 
         temporal_data = self.calculate_spell_length(minimum_length, **climate_data)
@@ -424,7 +773,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
     """
 
     def calculate_percent_of_total_amount_beyond_threshold(
-        self, dataset: np.ndarray
+        self, dataset: np.ndarray, time=None
     ) -> np.ndarray:
 
         """
@@ -434,6 +783,8 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        time : np.ndarray = None
+            Time corresponding to each observation in dataset, required only for time sensitive thresholds (threshold_scope = ['day', 'month', 'year']).
 
         Returns
         -------
@@ -441,7 +792,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
             2d array with percentage of total amount above threshold at each location.
         """
 
-        eot_matrix = self.filter_threshold_exceedances(dataset)
+        eot_matrix = self.filter_threshold_exceedances(dataset, time)
 
         exceedance_percentage = (
             100 * np.einsum("ijk -> jk", eot_matrix) / np.einsum("ijk -> jk", dataset)
@@ -450,7 +801,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         return exceedance_percentage
 
     def calculate_annual_value_beyond_threshold(
-        self, dataset: np.ndarray, dates_array: np.ndarray, time_func=utils.year
+        self, dataset: np.ndarray, time: np.ndarray
     ) -> np.ndarray:
 
         """
@@ -460,10 +811,8 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projections to be analysed, numeric entries expected.
-        dates_array : np.ndarray
-            Array of dates matching time dimension of dataset. Has to be of form time_dictionary[time_specification] - for example: tas_dates_validate['time_obs']
-        time_func : functions
-            Points to utils function to either extract days or months.
+        time : np.ndarray
+            Time corresponding to each observation in dataset, required to calculate annual threshold occurrences.
 
         Returns
         -------
@@ -471,9 +820,9 @@ class AccumulativeThresholdMetric(ThresholdMetric):
             3d array - [years, lat, long]
         """
 
-        eot_matrix = self.filter_threshold_exceedances(dataset)
+        eot_matrix = self.filter_threshold_exceedances(dataset, time=time)
 
-        time_array = time_func(dates_array)
+        time_array = utils.year(time)
 
         years = np.unique(time_array)
 
@@ -490,7 +839,7 @@ class AccumulativeThresholdMetric(ThresholdMetric):
 
         return threshold_exceedances
 
-    def calculate_intensity_index(self, dataset):
+    def calculate_intensity_index(self, dataset, time=None):
         """
         Calculates the amount beyond a threshold divided by the number of instance the threshold is exceeded.
 
@@ -500,9 +849,11 @@ class AccumulativeThresholdMetric(ThresholdMetric):
         ----------
         dataset : np.ndarray
             Input data, either observations or climate projectionsdataset to be analysed, numeric entries expected.
+        time : np.ndarray = None
+            Time corresponding to each observation in dataset, required only for time sensitive thresholds (threshold_scope = ['day', 'month', 'year']).
         """
 
-        eot_value_matrix = self.filter_threshold_exceedances(dataset)
+        eot_value_matrix = self.filter_threshold_exceedances(dataset, time)
         eot_threshold_matrix = self.calculate_instances_of_threshold_exceedance(dataset)
         intensity_index = np.einsum("ijk -> jk", eot_value_matrix) / np.einsum(
             "ijk -> jk", eot_threshold_matrix

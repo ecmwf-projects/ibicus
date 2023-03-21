@@ -92,6 +92,26 @@ def month(x):
     return _month(x)
 
 
+def season(x):
+    seasons = np.array(["Spring", "Summer", "Autumn", "Winter"])
+    x = month(x)
+
+    def month_to_season(x):
+        if x in [3, 4, 5]:
+            return "Spring"
+        elif x in [6, 7, 8]:
+            return "Summer"
+        elif x in [9, 10, 11]:
+            return "Autumn"
+        elif x in [12, 1, 2]:
+            return "Winter"
+        else:
+            return None
+
+    month_to_season = np.vectorize(month_to_season)
+    return month_to_season(x)
+
+
 def _year(x):
     try:
         return x.year
