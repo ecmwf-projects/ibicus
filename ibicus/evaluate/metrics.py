@@ -52,7 +52,11 @@ class ThresholdMetric:
     Examples
     --------
 
-    >>> warm_days = ThresholdMetric(name = 'Mean warm days (K)', variable = 'tas', threshold_value = 295, threshold_type = 'higher')
+    >>> warm_days = ThresholdMetric(threshold_value = 295, threshold_type = "higher", name = "Mean warm days (K)", variable = "tas")
+    >>> warm_days_by_season = ThresholdMetric(threshold_value = {"Winter": 290, "Spring": 292, "Summer": 295, "Autumn": 292}, threshold_type = "higher", threshold_scope = "season", name = "Mean warm days (K)", variable = "tas")
+    >>> q_90 = ThresholdMetricfrom_quantile(obs, 0.9, threshold_type = "higher", name = "90th observational quantile", variable = "tas")
+    >>> q_10_season = ThresholdMetric.from_quantile(obs, 0.1, threshold_type = "lower", threshold_scope = "season", time = time_obs, name = "10th quantile by season", variable = "tas")
+    >>> outside_10_90_month_local = ThresholdMetric.from_quantile(obs, [0.1, 0.9], threshold_type = "outside", threshold_scope = "month", threshold_locality = "local", time = time_obs, name = "Outside 10th, 9th quantile by month", variable = "tas")
 
     """
 
@@ -273,6 +277,14 @@ class ThresholdMetric:
             Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: `"unknown"`.
         variable : str = "unknown"
             Unique variable that this threshold metric refers to. Example for frost days: tasmin. Default: `"unknown"`.
+
+        Examples
+        --------
+        >>> m1 = ThresholdMetric.from_quantile(obs, 0.8, threshold_type = "higher", name = "m1")
+        >>> m2 = ThresholdMetric.from_quantile(obs, 0.2, threshold_type = "lower", threshold_scope = "season", threshold_locality = "local", time = time_obs, name = "m2")
+        >>> m3 = ThresholdMetric.from_quantile(obs, [0.2, 0.8], threshold_type = "outside", threshold_scope="month", threshold_locality = "local", time=time_obs, name = "m3")
+
+
         """
         if threshold_type == "inside" or threshold_type == "outside":
             if not isinstance(q, (list, tuple, np.ndarray)):
