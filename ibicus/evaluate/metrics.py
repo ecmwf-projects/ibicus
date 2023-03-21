@@ -23,7 +23,6 @@ from ibicus import utils
 
 @attrs.define(eq=False)
 class ThresholdMetric:
-
     """
     Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold.
 
@@ -96,7 +95,7 @@ class ThresholdMetric:
             raise ValueError("threshold_scope needs to be 'local' or 'global'.")
 
     @staticmethod
-    def check_types_scope_and_locality(
+    def _check_types_scope_and_locality(
         threshold_value, threshold_scope, threshold_locality
     ):
         if threshold_scope in ["day", "month", "season"]:
@@ -118,7 +117,7 @@ class ThresholdMetric:
 
     def __attrs_post_init__(self):
         if self.threshold_type in ["higher", "lower"]:
-            ThresholdMetric.check_types_scope_and_locality(
+            ThresholdMetric._check_types_scope_and_locality(
                 self.threshold_value, self.threshold_scope, self.threshold_locality
             )
         elif self.threshold_type in ["between", "outside"]:
@@ -130,10 +129,10 @@ class ThresholdMetric:
                 raise ValueError(
                     "threshold_value should have (only) a lower and upper bound for threshold_type in ['between', 'outside']."
                 )
-            ThresholdMetric.check_types_scope_and_locality(
+            ThresholdMetric._check_types_scope_and_locality(
                 self.threshold_value[0], self.threshold_scope, self.threshold_locality
             )
-            ThresholdMetric.check_types_scope_and_locality(
+            ThresholdMetric._check_types_scope_and_locality(
                 self.threshold_value[1], self.threshold_scope, self.threshold_locality
             )
 
@@ -543,7 +542,7 @@ class ThresholdMetric:
         self, minimum_length: int, **climate_data
     ) -> pd.DataFrame:
         """
-        Returns a `py:class:`pd.DataFrame` of individual spell lengths of metrics occurrences (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
+        Returns a py:class:`pd.DataFrame` of individual spell lengths of metrics occurrences (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
 
         A spell length is defined as the number of days that a threshold is continuesly exceeded, underceeded or where values are continuously between or outside the threshold (depending on `self.threshold_type`).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser as specified in `**climate_data`, 'Metric' - name of the threshold metric, 'Spell length - individual spell length counts'.
@@ -607,7 +606,7 @@ class ThresholdMetric:
 
     def calculate_spatial_extent(self, **climate_data):
         """
-        Returns a `py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
+        Returns a py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
         The spatial extent is defined as the percentage of the area where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`), given that it is exceeded at one location.
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatial extent (% of area)'
@@ -666,7 +665,7 @@ class ThresholdMetric:
 
     def calculate_spatiotemporal_clusters(self, **climate_data):
         """
-        Returns a `py:class:`pd.DataFrame` of sizes of individual spatiotemporal clusters of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
+        Returns a py:class:`pd.DataFrame` of sizes of individual spatiotemporal clusters of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
         A spatiotemporal cluster is defined as a connected set (in time and/or space) where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatiotemporal cluster size'
@@ -777,7 +776,6 @@ class ThresholdMetric:
 
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
-
     """
     Class for climate metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
 
