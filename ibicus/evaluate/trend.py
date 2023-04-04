@@ -7,6 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 from logging import warning
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +39,24 @@ def _calculate_mean_trend_bias(
 
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
+
+def _calculate_mean_trend(
+    trend_type: str,
+    bc_validate: np.ndarray,
+    bc_future: np.ndarray,
+) -> np.ndarray:
+
+    if trend_type == "additive":
+        bc_trend = np.mean(bc_future, axis=0) - np.mean(bc_validate, axis=0)
+    elif trend_type == "multiplicative":
+        bc_trend = np.mean(bc_future, axis=0) / np.mean(bc_validate, axis=0)
+    else:
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
+
+    return bc_trend
+
 
 
 def _calculate_quantile_trend_bias(
@@ -75,6 +94,30 @@ def _calculate_quantile_trend_bias(
 
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
+
+def _calculate_quantile_trend(
+    trend_type: str,
+    quantile: float,
+    bc_validate: np.ndarray,
+    bc_future: np.ndarray,
+) -> np.ndarray:
+
+    if trend_type == "additive":
+        bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(
+            bc_validate, quantile, axis=0)
+
+    elif trend_type == "multiplicative":
+        if (q_bc_validate := np.quantile(bc_validate, quantile, axis=0) != 0):
+            bc_trend = np.quantile(bc_future, quantile, axis=0) / q_bc_validate
+        else:
+            raise ZeroDivisionError(
+                f"Selected quantile is zero either for the bias corrected or raw model in the validation period. Cannot analyse multiplicative trend in quantile: {str(quantile)}"
+            )
+    else:
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
+    return bc_trend
 
 
 def _calculate_metrics_trend_bias(
@@ -128,13 +171,51 @@ def _calculate_metrics_trend_bias(
     return trend_bias
 
 
+
+def _calculate_metrics_trend(
+    trend_type: str,
+    metric,
+    bc_validate: np.ndarray,
+    bc_future: np.ndarray,
+    time_validate: np.ndarray = None,
+    time_future: np.ndarray = None,
+) -> np.ndarray:
+    if trend_type == "additive":
+        bc_trend = metric.calculate_exceedance_probability(
+            bc_future, time=time_future
+        ) - metric.calculate_exceedance_probability(bc_validate, time=time_validate)
+
+
+    elif trend_type == "multiplicative":
+        if (
+            m_bc_validate := metric.calculate_exceedance_probability(
+                bc_validate, time=time_validate
+            )
+        )!= 0:
+
+            bc_trend = (
+                metric.calculate_exceedance_probability(bc_future, time=time_future)
+                / m_bc_validate
+            )
+
+        else:
+            raise ZeroDivisionError(
+                "Occurrence probability of selected metric is zero either for the bias corrected or raw model in the validation period."
+            )
+    else:
+        raise ValueError(
+            f"trend_type needs to be one of ['additive', 'multiplicative']. Was: {trend_type}."
+        )
+    return bc_trend
+
+
 def calculate_future_trend_bias(
     variable: str,
     raw_validate: np.ndarray,
     raw_future: np.ndarray,
-    metrics: list = [],
+    statistics: list = ["mean", [0.05, 0.95]],
     trend_type: str = "additive",
-    remove_outliers: bool = True,
+    metrics: list = [],
     time_validate: np.ndarray = None,
     time_future: np.ndarray = None,
     **debiased_cms,
@@ -147,7 +228,7 @@ def calculate_future_trend_bias(
     Trend can be specified as either additive or multiplicative.
 
     Function returns numpy array with three columns:
-    [Correction method: str, Metric: str, Relative change bias (%): List containing one 2d np.ndarray containing trend bias at each location]
+    [Correction method: str, Metric: str, Bias: List containing one 2d np.ndarray containing trend bias at each location]
 
     Parameters
     ----------
@@ -185,87 +266,56 @@ def calculate_future_trend_bias(
             )
 
         # calculate trend bias in descriptive statistics
+        
+        if "mean" in statistics:
 
-        mean_bias = _calculate_mean_trend_bias(
-            trend_type, raw_validate, raw_future, *debiased_cms_value
-        )
-
-        if np.any(np.isinf(mean_bias)):
-            warning(
-                "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
-                    debiased_cms_key
-                )
+            mean_bias = _calculate_mean_trend_bias(
+                trend_type, raw_validate, raw_future, *debiased_cms_value
             )
-        elif remove_outliers is True and np.any(abs(mean_bias) > 1000):
-            warning(
-                "{}: Trend bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
-                    debiased_cms_key
+    
+            if np.any(np.isinf(mean_bias)):
+                warning(
+                    "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
+                        debiased_cms_key
+                    )
                 )
-            )
+            else:
+                trend_bias_dfs.append(
+                    pd.DataFrame(
+                        data={
+                            "Correction Method": debiased_cms_key,
+                            "Metric": "Mean",
+                            "Bias": [mean_bias],
+                        }
+                    )
+                )
+                
+        if not statistics:
+            print("no quantiles calculated")
+        elif not (all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])):
+            warnings.warn(
+                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
+                    )
         else:
-            trend_bias_dfs.append(
-                pd.DataFrame(
-                    data={
-                        "Correction Method": debiased_cms_key,
-                        "Metric": "Mean",
-                        "Relative change bias (%)": [mean_bias],
-                    }
-                )
-            )
 
-        lowqn_bias = _calculate_quantile_trend_bias(
-            trend_type, 0.05, raw_validate, raw_future, *debiased_cms_value
-        )
+            for q in statistics[1]:
 
-        if np.any(np.isinf(lowqn_bias)):
-            warning(
-                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
-                    debiased_cms_key
-                )
-            )
-        elif remove_outliers is True and np.any(abs(mean_bias) > 1000):
-            warning(
-                "{}: Trend bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
-                    debiased_cms_key
-                )
-            )
-        else:
-            trend_bias_dfs.append(
-                pd.DataFrame(
-                    data={
-                        "Correction Method": debiased_cms_key,
-                        "Metric": "5% qn",
-                        "Relative change bias (%)": [lowqn_bias],
-                    }
-                )
-            )
+                qn_bias = _calculate_quantile_trend_bias(trend_type, q, raw_validate, raw_future, *debiased_cms_value)
 
-        highqn_bias = _calculate_quantile_trend_bias(
-            trend_type, 0.95, raw_validate, raw_future, *debiased_cms_value
-        )
-
-        if np.any(np.isinf(highqn_bias)):
-            warning(
-                "{}: Division by zero encountered in bias of high quantile calculation, not showing results for this debiaser.".format(
-                    debiased_cms_key
-                )
-            )
-        elif remove_outliers is True and np.any(abs(highqn_bias) > 1000):
-            warning(
-                "{}: Bias of high quantile > 1000% at on location at least. Because remove_outliers is set to True, the high quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
-                    debiased_cms_key
-                )
-            )
-        else:
-            trend_bias_dfs.append(
-                pd.DataFrame(
-                    data={
-                        "Correction Method": debiased_cms_key,
-                        "Metric": "95% qn",
-                        "Relative change bias (%)": [highqn_bias],
-                    }
-                )
-            )
+                if np.any(np.isinf(qn_bias)):
+                        warning(
+                                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                                        debiased_cms_key))
+                else:
+                    trend_bias_dfs.append(
+                        pd.DataFrame(
+                            data={
+                                "Correction Method": debiased_cms_key,
+                                "Metric": str(q) + " qn",
+                                "Bias": [qn_bias],
+                            }
+                        )
+                    )
 
         # calculate trend bias in metrics
 
@@ -287,10 +337,114 @@ def calculate_future_trend_bias(
                         debiased_cms_key, m
                     )
                 )
-            elif remove_outliers is True and np.any(abs(metric_bias) > 1000):
+            else:
+                trend_bias_dfs.append(
+                    pd.DataFrame(
+                        data={
+                            "Correction Method": debiased_cms_key,
+                            "Metric": m.name,
+                            "Bias": [metric_bias],
+                        }
+                    )
+                )
+
+    plot_data = pd.concat(trend_bias_dfs)
+
+    return plot_data
+
+
+
+def calculate_future_trend(
+    variable: str,
+    statistics: list = ["mean", [0.05, 0.95]],
+    trend_type: str = "additive",
+    metrics: list = [],
+    time_validate: np.ndarray = None,
+    time_future: np.ndarray = None,
+    **debiased_cms,
+) -> pd.DataFrame:
+
+    """
+
+    """
+
+    trend_bias_dfs = []
+
+    for debiased_cms_key, debiased_cms_value in debiased_cms.items():
+
+        if len(debiased_cms_value) != 2:
+            raise ValueError(
+                "Debiased climate datasets in ``*debiased_cms`` should have following form: ``debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]``. Input does not have the required length of two."
+            )
+
+        # calculate trend bias in descriptive statistics
+        
+        if "mean" in statistics:
+
+            mean_bias = _calculate_mean_trend(
+                trend_type, *debiased_cms_value
+            )
+    
+            if np.any(np.isinf(mean_bias)):
                 warning(
-                    "{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
-                        debiased_cms_key, m, m
+                    "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
+                        debiased_cms_key
+                    )
+                )
+            else:
+                trend_bias_dfs.append(
+                    pd.DataFrame(
+                        data={
+                            "Correction Method": debiased_cms_key,
+                            "Metric": "Mean",
+                            "Bias": [mean_bias],
+                        }
+                    )
+                )
+                
+        if not statistics:
+            print("no quantiles calculated")
+        elif not (all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])):
+            warnings.warn(
+                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
+                    )
+        else:
+
+            for q in statistics[1]:
+
+                qn_bias = _calculate_quantile_trend(trend_type, q, *debiased_cms_value)
+
+                if np.any(np.isinf(qn_bias)):
+                        warning(
+                                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                                        debiased_cms_key))
+                else:
+                    trend_bias_dfs.append(
+                        pd.DataFrame(
+                            data={
+                                "Correction Method": debiased_cms_key,
+                                "Metric": str(q) + " qn",
+                                "Bias": [qn_bias],
+                            }
+                        )
+                    )
+
+        # calculate trend bias in metrics
+
+        for m in metrics:
+
+            metric_bias = _calculate_metrics_trend(
+                trend_type,
+                m,
+                *debiased_cms_value,
+                time_validate,
+                time_future,
+            )
+
+            if np.any(np.isinf(metric_bias)):
+                warning(
+                    "{}: Division by zero encountered in bias of {} calculation, not showing results for this debiaser.".format(
+                        debiased_cms_key, m
                     )
                 )
             else:
@@ -299,7 +453,7 @@ def calculate_future_trend_bias(
                         data={
                             "Correction Method": debiased_cms_key,
                             "Metric": m.name,
-                            "Relative change bias (%)": [metric_bias],
+                            "Bias": [metric_bias],
                         }
                     )
                 )
@@ -310,7 +464,12 @@ def calculate_future_trend_bias(
 
 
 def plot_future_trend_bias_boxplot(
-    variable: str, bias_df: pd.DataFrame, manual_title: str = " "
+    variable: str, 
+    bias_df: pd.DataFrame, 
+    manual_title: str = " ",
+    remove_outliers: bool = False,
+    outlier_threshold: int = 100,
+    color_palette = 'tab10'
 ):
 
     """
@@ -324,43 +483,52 @@ def plot_future_trend_bias_boxplot(
         Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
+    remove_outliers: bool
+        If set to True, values above the threshold specified through the next argument are removed
+    outlier_threshold: int,
+            Threshold above which to remove values from the plot
     """
 
-    # unpack numpy arrays in column 'Relative change bias (%)'
+    # unpack numpy arrays in column 'Bias'
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
-        df=bias_df, numpy_column_name="Relative change bias (%)"
+        df=bias_df, numpy_column_name="Bias"
     )
+    
+    if remove_outliers == True:
+        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked["Bias"])<outlier_threshold]
 
     # create figure and plot
     fig = plt.figure(figsize=(10, 6))
     ax = seaborn.boxplot(
-        y="Relative change bias (%)",
+        y="Bias",
         x="Metric",
         data=bias_df_unpacked,
-        palette="colorblind",
+        palette=color_palette,
         hue="Correction Method",
     )
     [ax.axvline(x + 0.5, color="k") for x in ax.get_xticks()]
     [ax.axhline(linestyle="--", color="k")]
 
     # generate and set plot title
-    if variable in str_to_variable_class.keys():
+    if manual_title == " ":
         plot_title = "Bias in climate model trend between validation and future period \n {} ({})".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
-        )
     fig.suptitle(plot_title)
 
     return fig
 
 
 def plot_future_trend_bias_spatial(
-    variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "
+    variable: str, 
+    metric: str, 
+    bias_df: pd.DataFrame, 
+    manual_title: str = " ",
+    remove_outliers: bool = False,
+    outlier_threshold: int = 100
 ):
 
     """
@@ -403,6 +571,9 @@ def plot_future_trend_bias_spatial(
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
         df=bias_df_filtered, numpy_column_name="Percentage bias"
     )
+    if remove_outliers == True:
+        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked['Percentage bias'])<outlier_threshold]
+        
     axis_max = bias_df_unpacked["Percentage bias"].max()
     axis_min = -axis_max
 

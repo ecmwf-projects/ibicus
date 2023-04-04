@@ -38,22 +38,26 @@ def _marginal_metrics_absolute_bias(
     return bias
 
 
-def _marginal_mean_bias(obs_data: np.ndarray, cm_data: np.ndarray):
+def _marginal_mean_bias(obs_data: np.ndarray, cm_data: np.ndarray, bias_type):
 
     """
     Calculates location-wise percentage bias of mean
     """
-
-    mean_bias = (
-        100
-        * (np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0))
-        / np.mean(obs_data, axis=0)
-    )
+    if bias_type=='percentage':
+        mean_bias = (
+            100
+            * (np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0))
+            / np.mean(obs_data, axis=0)
+        )
+    if bias_type=='absolute':
+        mean_bias = (
+            np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0)
+        )
 
     return mean_bias
 
 
-def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray):
+def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray, bias_type):
 
     """
     Calculates location-wise percentage bias of specified quantile. If any value at chosen quantile is zero, function returns zero bias.
@@ -63,8 +67,11 @@ def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.n
         raise ValueError("quantile needs to be between 0 and 1")
 
     qn_obs = np.quantile(obs_data, quantile, axis=0)
-
-    qn_bias = 100 * (np.quantile(cm_data, quantile, axis=0) - qn_obs) / qn_obs
+    
+    if bias_type=='percentage':
+        qn_bias = 100 * (np.quantile(cm_data, quantile, axis=0) - qn_obs) / qn_obs
+    if bias_type=='absolute':
+        qn_bias = np.quantile(cm_data, quantile, axis=0) - qn_obs
 
     return qn_bias
 
@@ -92,7 +99,6 @@ def calculate_marginal_bias(
     statistics: list = ["mean", [0.05, 0.95]],
     metrics: list = [],
     percentage_or_absolute: str = "percentage",
-    remove_outliers: bool = True,
     **cm_data
 ) -> pd.DataFrame:
 
@@ -113,8 +119,6 @@ def calculate_marginal_bias(
     percentage_or_absolute: str
         Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias,
         meaning the difference in the mean days per year that this metric is exceeded.
-    remove_outliers: bool
-        If set to True, percentage biases beyond 1000% will be removed.
     **cm_data :
         Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: `QM = tas_val_debiased_QM`), covering all debiasers that are to be compared.
         If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) this needs to be a list of form lists of `[cm_data, time_cm_data]` where `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data`.
@@ -142,18 +146,11 @@ def calculate_marginal_bias(
 
         if "mean" in statistics:
 
-            mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data_value)
+            mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data_value, bias_type = percentage_or_absolute)
 
             if np.any(np.isinf(mean_bias)):
                 warnings.warn(
                     "{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(
-                        cm_data_key
-                    ),
-                    stacklevel=2,
-                )
-            elif remove_outliers is True and np.any(abs(mean_bias) > 1000):
-                warnings.warn(
-                    "{}: Bias of mean > 1000% at on location at least. Because remove_outliers is set to True, the mean bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                         cm_data_key
                     ),
                     stacklevel=2,
@@ -164,7 +161,7 @@ def calculate_marginal_bias(
                         data={
                             "Correction Method": cm_data_key,
                             "Metric": "Mean",
-                            "Type": "Percentage",
+                            "Type": percentage_or_absolute,
                             "Bias": [mean_bias],
                         }
                     )
@@ -183,19 +180,12 @@ def calculate_marginal_bias(
             for q in statistics[1]:
 
                 qn_bias = _marginal_quantile_bias(
-                    quantile=q, obs_data=obs_data, cm_data=cm_data_value
+                    quantile=q, obs_data=obs_data, cm_data=cm_data_value, bias_type = percentage_or_absolute
                 )
 
                 if np.any(np.isinf(qn_bias)):
                     warnings.warn(
                         "{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(
-                            cm_data_key
-                        ),
-                        stacklevel=2,
-                    )
-                elif remove_outliers is True and np.any(abs(qn_bias) > 1000):
-                    warnings.warn(
-                        "{}: Bias of low quantile > 1000% at on location at least. Because remove_outliers is set to True, the low quantile bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
                             cm_data_key
                         ),
                         stacklevel=2,
@@ -206,7 +196,7 @@ def calculate_marginal_bias(
                             data={
                                 "Correction Method": cm_data_key,
                                 "Metric": str(q) + " qn",
-                                "Type": "Percentage",
+                                "Type": percentage_or_absolute,
                                 "Bias": [qn_bias],
                             }
                         )
@@ -230,20 +220,13 @@ def calculate_marginal_bias(
                         ),
                         stacklevel=2,
                     )
-                elif remove_outliers is True and np.any(abs(metric_bias) > 1000):
-                    warnings.warn(
-                        "{}: Bias of {} > 1000% at on location at least. Because remove_outliers is set to True, the {} bias for this debiaser is not shown for the sake of readability. Set remove_outliers to False to include this debiaser.".format(
-                            cm_data_key, m, m
-                        ),
-                        stacklevel=2,
-                    )
                 else:
                     marginal_bias_dfs.append(
                         pd.DataFrame(
                             data={
                                 "Correction Method": cm_data_key,
                                 "Metric": m.name,
-                                "Type": "Percentage",
+                                "Type": percentage_or_absolute,
                                 "Bias": [metric_bias],
                             }
                         )
@@ -262,7 +245,7 @@ def calculate_marginal_bias(
                         data={
                             "Correction Method": cm_data_key,
                             "Metric": m.name,
-                            "Type": "Absolute",
+                            "Type": percentage_or_absolute,
                             "Bias": [metric_bias],
                         }
                     )
@@ -283,6 +266,12 @@ def plot_marginal_bias(
     bias_df: pd.DataFrame,
     statistics: list = ["Mean", "0.95 qn", "0.05 qn"],
     manual_title: str = " ",
+    remove_outliers: bool = False,
+    outlier_threshold_statistics: int = 100,
+    outlier_threshold_metrics: int = 100,
+    color_palette = 'tab10',
+    metrics_title: str = " ",
+    statistics_title:str = " ",
 ):
 
     """
@@ -300,6 +289,12 @@ def plot_marginal_bias(
         List of strings specifying summary statistics computed on the data. Strings have to be equal to entry in the 'Metric' column of bias_df.
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
+    remove_outliers: bool
+        If set to True, values above the threshold specified through the next argument are removed
+    outlier_threshold_statistics: int,
+        Threshold above which to remove values from the plot for bias statistics (mean, quantiles)
+    outlier_threshold_metrics: int
+        Threshold above which to remove values from the plot for bias in metrics (such as dry days, hot days, etc)
 
     Examples
     --------
@@ -313,51 +308,47 @@ def plot_marginal_bias(
     # split dataframe for two plots
     plot_data1 = bias_df_unpacked[bias_df_unpacked["Metric"].isin(statistics)]
     plot_data2 = bias_df_unpacked[~bias_df_unpacked["Metric"].isin(statistics)]
+    
+    if remove_outliers == True:
+        plot_data1 = plot_data1[abs(plot_data1['Bias'])<outlier_threshold_statistics]
+        plot_data2 = plot_data2[abs(plot_data2['Bias'])<outlier_threshold_metrics]
 
     # generate plots
     fig_width = 3 * bias_df_unpacked["Metric"].nunique() + 3
     fig, ax = plt.subplots(1, 2, figsize=(fig_width, 6))
+    
 
     seaborn.boxplot(
         ax=ax[0],
         y="Bias",
         x="Metric",
         data=plot_data1,
-        palette="colorblind",
+        palette=color_palette,
         hue="Correction Method",
-    ).set_title("Percentage Bias (%)")
+    ).set_title(statistics_title)
     [ax[0].axvline(x + 0.5, color="k") for x in ax[0].get_xticks()]
     [ax[0].axhline(linestyle="--", color="k")]
 
-    if plot_data2["Type"].iloc[0] == "Percentage":
-        y_metrics_addon = "(%)"
-    elif plot_data2["Type"].iloc[0] == "Absolute":
-        y_metrics_addon = "(days)"
-    else:
-        y_metrics_addon = ""
 
     seaborn.boxplot(
         ax=ax[1],
         y="Bias",
         x="Metric",
         data=plot_data2,
-        palette="colorblind",
+        palette=color_palette,
         hue="Correction Method",
-    ).set_title(plot_data2["Type"].iloc[0] + " bias " + y_metrics_addon)
+    ).set_title(metrics_title)
     [ax[1].axvline(x + 0.5, color="k") for x in ax[1].get_xticks()]
     [ax[1].axhline(linestyle="--", color="k")]
 
     # generate and set plot title
-    if variable in str_to_variable_class.keys():
+    if manual_title==" ":
         plot_title = "{} ({}) - Bias".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
         )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
-        )
 
     fig.suptitle(plot_title)
 
@@ -365,7 +356,12 @@ def plot_marginal_bias(
 
 
 def plot_bias_spatial(
-    variable: str, metric: str, bias_df: pd.DataFrame, manual_title: str = " "
+    variable: str, 
+    metric: str, 
+    bias_df: pd.DataFrame, 
+    remove_outliers: bool = False,
+    outlier_threshold: int = 100,
+    manual_title: str = " "
 ):
 
     """
@@ -379,6 +375,10 @@ def plot_bias_spatial(
         Specifies the metric analysed. Has to exactly match the name of this metric in the bias_df DataFrame.
     bias_df: pd.DataFrame
         :py:class:`pd.DataFrame` containing percentage bias for descriptive statistics and specified metrics. Output of :py:func:`calculate_marginal_bias`.
+    remove_outliers: bool
+            If set to True, values above the threshold specified through the next argument are removed.
+    outlier_threshold: int,
+            Threshold above which to remove values from the plot.
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
 
@@ -396,6 +396,7 @@ def plot_bias_spatial(
 
     # filter bias_df
     bias_df_filtered = bias_df[bias_df["Metric"] == metric]
+    
 
     # generate plot title
     if variable in str_to_variable_class.keys():
@@ -415,6 +416,9 @@ def plot_bias_spatial(
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
         df=bias_df_filtered, numpy_column_name="Bias"
     )
+    if remove_outliers == True:
+        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked['Bias'])<outlier_threshold]
+        
     axis_max = bias_df_unpacked["Bias"].max()
     axis_min = -axis_max
 
