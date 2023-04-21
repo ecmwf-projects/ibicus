@@ -61,7 +61,7 @@ def _day(x):
         return x.day
     except Exception:
         raise ValueError(
-            "Your datetime object needs to implement a .day attribute. In doubt please use standard python datetime or cftime"
+            "Your datetime object needs to implement a .day attribute. In doubt please use standard python datetime or cftime."
         )
 
 
@@ -69,8 +69,9 @@ _day = np.vectorize(_day)
 
 
 def day(x):
+    x = np.array(x)
     if np.issubdtype(x.dtype, np.datetime64):
-        x = x.astype(object)
+        x = x.astype("datetime64[D]").astype(object)
     return _day(x)
 
 
@@ -79,7 +80,7 @@ def _month(x):
         return x.month
     except Exception:
         raise ValueError(
-            "Your datetime object needs to implement a .month attribute. In doubt please use standard python datetime or cftime"
+            "Your datetime object needs to implement a .month attribute. In doubt please use standard python datetime or cftime."
         )
 
 
@@ -87,13 +88,13 @@ _month = np.vectorize(_month)
 
 
 def month(x):
+    x = np.array(x)
     if np.issubdtype(x.dtype, np.datetime64):
-        x = x.astype(object)
+        x = x.astype("datetime64[D]").astype(object)
     return _month(x)
 
 
 def season(x):
-    seasons = np.array(["Spring", "Summer", "Autumn", "Winter"])
     x = month(x)
 
     def month_to_season(x):
@@ -117,7 +118,7 @@ def _year(x):
         return x.year
     except Exception:
         raise ValueError(
-            "Your datetime object needs to implement a .year attribute. In doubt please use standard python datetime or cftime"
+            "Your datetime object needs to implement a .year attribute. In doubt please use standard python datetime or cftime."
         )
 
 
@@ -125,8 +126,9 @@ _year = np.vectorize(_year)
 
 
 def year(x):
+    x = np.array(x)
     if np.issubdtype(x.dtype, np.datetime64):
-        x = x.astype(object)
+        x = x.astype("datetime64[D]").astype(object)
     return _year(x)
 
 
@@ -148,8 +150,9 @@ _day_of_year = np.vectorize(_day_of_year)
 
 
 def day_of_year(x):
+    x = np.array(x)
     if np.issubdtype(x.dtype, np.datetime64):
-        x = x.astype(object)
+        x = x.astype("datetime64[D]").astype(object)
     return _day_of_year(x)
 
 
@@ -179,10 +182,10 @@ def infer_and_create_time_arrays_if_not_given(
         time_cm_future = create_array_of_consecutive_dates(cm_future.size)
 
     return time_obs, time_cm_hist, time_cm_future
-    
 
 
 # ----- Variables ----- #
+
 
 # ----- tas, tasmin, tasmax, tasrange and tasskew ----- #
 def _get_tasmax_from_tasmin_and_range(tasrange, tasmin):
@@ -455,7 +458,6 @@ def get_prsn(pr: np.ndarray, prsnratio: np.ndarray) -> np.ndarray:
 
 
 def _unpack_df_of_numpy_arrays(df, numpy_column_name):
-
     new_expanded_rows = []
     for _, row in df.iterrows():
         expanded_row = {}
@@ -478,6 +480,7 @@ def get_mask_for_unique_subarray(x):
     mask[indices] = True
     return mask
 
+
 def _check_if_list_of_two_and_unpack_else_none(x):
     if isinstance(x, (list, tuple)):
         if len(x) > 2:
@@ -485,6 +488,7 @@ def _check_if_list_of_two_and_unpack_else_none(x):
         return x[0], x[1]
     else:
         return x, None
+
 
 # ----- Logging functionality -----
 
