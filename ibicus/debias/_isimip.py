@@ -43,7 +43,7 @@ class ISIMIP(Debiaser):
     """
     |br| Implements the ISIMIP3b and ISIMIP3BASD bias adjustment methodology based on Lange 2019 and Lange 2021.
 
-    ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
+    ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several of the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
 
     `This notebook <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
 
@@ -427,7 +427,6 @@ class ISIMIP(Debiaser):
     # ----- Non public helpers: ISIMIP-steps ----- #
 
     def _step1_get_annual_cycle_of_upper_bounds(self, vals, days_of_year_vals):
-
         # Sort vals and days_of_year_vals by days of year
         argsort_days_of_year_vals = days_of_year_vals.argsort()
         vals = vals[argsort_days_of_year_vals]
@@ -481,7 +480,6 @@ class ISIMIP(Debiaser):
             # One of obs, cm_hist, cm_future has one or multiple days of year more
             debiased_annual_cycle = annual_cycle_cm_future.copy()
             for index, day_of_year_i in enumerate(unique_days_of_year_cm_future):
-
                 val_cm_future = annual_cycle_cm_future[index]
                 val_cm_hist = annual_cycle_cm_hist[
                     unique_days_of_year_cm_hist == day_of_year_i
@@ -532,7 +530,6 @@ class ISIMIP(Debiaser):
         return np.logical_or(np.isnan(x), np.isinf(x))
 
     def _step2_impute_values(self, x):
-
         mask_values_to_impute = self._step2_get_mask_for_values_to_impute(x)
         mask_valid_values = np.logical_not(mask_values_to_impute)
         valid_values = x[mask_valid_values]
@@ -575,7 +572,6 @@ class ISIMIP(Debiaser):
         return x
 
     def _step3_remove_trend(self, x, years):
-
         # Calculate annual trend
         unique_years, annual_means = get_years_and_yearly_means(x, years)
         regression = scipy.stats.linregress(unique_years, annual_means)
@@ -732,9 +728,7 @@ class ISIMIP(Debiaser):
         mask_for_values_beyond_threshold_cm_hist_sorted,
         mask_for_values_beyond_threshold_cm_future_sorted,
     ):
-
         if self.bias_correct_frequencies_of_values_beyond_thresholds:
-
             P_obs_hist = ISIMIP._step6_calculate_percent_values_beyond_threshold(
                 mask_for_values_beyond_threshold_obs_hist_sorted
             )
@@ -750,7 +744,6 @@ class ISIMIP(Debiaser):
             )
 
         else:
-
             P_obs_future = ISIMIP._step6_calculate_percent_values_beyond_threshold(
                 mask_for_values_beyond_threshold_obs_hist_sorted
             )
@@ -808,7 +801,6 @@ class ISIMIP(Debiaser):
         cm_future_sorted_entries_not_sent_to_bound,
         cm_future_sorted_entries_between_thresholds,
     ):
-
         logger = get_library_logger()
 
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
@@ -871,7 +863,6 @@ class ISIMIP(Debiaser):
 
         # If ks_test_for_goodness_of_fit = True then test for goodness of fit and do nonparametric qm if too bad
         if self.ks_test_for_goodness_of_cdf_fit:
-
             if not (
                 ISIMIP._step6_fit_good_enough(
                     cm_future_sorted_entries_between_thresholds,
@@ -980,7 +971,6 @@ class ISIMIP(Debiaser):
         """
         debiased_annual_cycle = None
         if self.scale_by_annual_cycle_of_upper_bounds:
-
             days_of_year_obs_hist = day_of_year(time_obs_hist)
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)
@@ -1260,7 +1250,6 @@ class ISIMIP(Debiaser):
         Scales debiased cm_future on [0, 1] back to the usual scale using the debiased annual cycle
         """
         if self.scale_by_annual_cycle_of_upper_bounds:
-
             days_of_year_cm_future = day_of_year(time_cm_future)
             cm_future = ISIMIP._step8_rescale_by_annual_cycle_of_upper_bounds(
                 cm_future,
@@ -1282,7 +1271,6 @@ class ISIMIP(Debiaser):
         years_cm_hist: np.ndarray = None,
         years_cm_future: np.ndarray = None,
     ) -> np.ndarray:
-
         # Apply all ISIMIP steps
         # Step 1 & 8 are outside the running window iteration
         obs_hist, cm_hist, cm_future = self.step2(obs_hist, cm_hist, cm_future)
@@ -1305,7 +1293,6 @@ class ISIMIP(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
             warnings.warn(
                 """ISIMIP runs without time-information for at least one of obs, cm_hist or cm_future.
@@ -1336,7 +1323,6 @@ class ISIMIP(Debiaser):
         )
 
         if self.running_window_mode:
-
             days_of_year_obs = day_of_year(time_obs)
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)
@@ -1347,7 +1333,6 @@ class ISIMIP(Debiaser):
             for window_center, indices_bias_corrected_values in self.running_window.use(
                 days_of_year_cm_future, years_cm_future
             ):
-
                 indices_window_obs = self.running_window.get_indices_vals_in_window(
                     days_of_year_obs, window_center
                 )

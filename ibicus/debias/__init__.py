@@ -8,9 +8,9 @@
 
 
 """
-:py:mod:`debias`-module: provides the necessary functionality to bias correct climate models.
+The :py:mod:`debias`-module provides the necessary functionality to bias correct climate models.
 
-The foundation of the module is the :py:class:`Debiaser` class from which every debiaser inherits and which provides a unified interface to instantiate and apply debiasers .
+The foundation of the module is the :py:class:`Debiaser` class from which every debiaser inherits and which provides a unified interface to instantiate and apply debiasers.
 
 The following bias correction methodologies are currently implemented in the package, each based on the respective publication cited.
 
@@ -27,10 +27,10 @@ The following bias correction methodologies are currently implemented in the pac
 
 **Methodology**
 
-For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the :doc:`'What is debiasing?' <getting_started/whatisdebiasing>` page.
+For a brief introduction to bias correction, and some issues to pay attention to when applying a bias correction method, have a look at the `'What is bias adjustment?' <../getting_started/whatisdebiasing.html>`_ page.
 
 The general idea behind bias correction is to calibrate an empirical transfer function between simulated and observed distributional parameters that bias adjust the climate model output.
-This can be done in a number of different ways. The following table provides an overview of the different methodological choices made by the bias correction methods implemented in this package.
+This can be done in a number of different ways. This table in `'Overview' <../getting_started/overview.html#what-is-ibicus>`_ provides an overview of the different methodological choices made by the bias correction methods implemented in the package.
 For a detailed description of their methodology, we refer you to the class descriptions and the cited publications.
 
 **Usage**
@@ -138,10 +138,16 @@ Some debiasers additionally provide a :py:func:`for_precipitation` classmethod t
 
 The documentation of the individual debiasers provides some information on this.
 
+Some debiasers eg. ISIMIP require date information to be applied in a running window. Dates should then be passed as 1d numpy arrays as keyword arguments:
 
-When applying the debiaser we can control the verbosity with:
+>>> debiaser = ISIMIP.from_variable("tas")
+>>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future, time_obs = time_obs, time_cm_hist = time_cm_hist, time_cm_future = time_cm_future)
 
->>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, verbosity = "ERRORS_ONLY")
+Whenever date information is needed this is indicated in the debiaser documentation.
+
+When applying the debiaser we can parallelise the execution by setting ``parallel = True`` and setting the ``nr_processes`` (default: 4). It is also possible to activate/deactive the progressbar using the ``progressbar`` argument and to activate a failsafe mode ``failsafe = True``, continuing execution when encoutnering errors:
+
+>>> debiased_cm_future1 = debiaser1.apply(obs, cm_hist, cm_future, parallel = True, failsafe = True)
 
 """
 

@@ -153,7 +153,7 @@ class Debiaser(ABC):
     @abstractmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         """
-        Instanciates the class from a variable: either a string referring to a standard variable name or a Variable object.
+        Instanciates the class from a variable: either a string referring to a standard variable name or a :py:class:`Variable` object.
 
         Parameters
         ----------
@@ -164,6 +164,7 @@ class Debiaser(ABC):
 
         Returns
         -------
+        Debiaser
             Instance of the class for the given variable.
         """
         raise NotImplementedError(
@@ -230,7 +231,6 @@ class Debiaser(ABC):
     # ----- Input checks ----- #
 
     def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
-
         # correct type
         if not Debiaser._is_correct_type(obs):
             raise TypeError("Wrong type for obs. Needs to be np.ndarray")
@@ -438,7 +438,6 @@ class Debiaser(ABC):
         failsafe=False,
         **kwargs,
     ):
-
         # compute results
         indices = [(i, j) for i in range(obs.shape[1]) for j in range(obs.shape[2])]
         with Pool(processes=nr_processes) as pool:
@@ -516,6 +515,8 @@ class Debiaser(ABC):
             Whether the debiasing shall be executed in parallel. No progressbar is shown in this case. Default: ``False``.
         nr_processes : int = 4
             Number of processes for parallel code execution. Default: 4.
+        failsafe : bool = False
+            Whether execution shall run in a failsafe mode. Debiasing then continues if it encounters an error at one location and returns ``np.nan`` at this location. Default: ``False``.
 
         Returns
         -------

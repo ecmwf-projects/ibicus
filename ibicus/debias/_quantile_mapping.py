@@ -50,7 +50,7 @@ class QuantileMapping(Debiaser):
     """
     |br| Implements (detrended) Quantile Mapping based on Cannon et al. 2015 and Maraun 2016.
 
-    (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving. Most methods build on quantile mapping.
+    (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving in the mean. Most methods build on quantile mapping.
 
 
     Let cm refer to climate model output, obs to observations and hist/future to whether the data was collected from the reference period or is part of future projections.
@@ -69,7 +69,7 @@ class QuantileMapping(Debiaser):
     Here :math:`\\bar x_{\\text{cm_fut}}` designs the mean of :math:`x_{\\text{cm_fut}}` and similar for :math:`x_{\\text{cm_hist}}`.
     Detrended Quantile Mapping accounts for changes in the projected values and is thus trend-preserving in the mean.
 
-    For precipitation a distribution or model is needed that accounts for mixed zero and positive value character. Default is a precipitation hurdle model (see :py:class:`ibicus.utils.gen_PrecipitationHurdleModel`). However, other models are also possible, :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
+    For precipitation a distribution or model is needed that accounts for the mixed zero and positive value character. Default is a precipitation hurdle model (see :py:class:`ibicus.utils.gen_PrecipitationHurdleModel`). However, other models are also possible, :py:func:`for_precipitation` helps with the initialisation of different precipitation methods.
 
     **References**:
 
@@ -106,7 +106,7 @@ class QuantileMapping(Debiaser):
     ----------
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
         Distribution or statistical model used to compute the CDFs F.
-        Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
+        Usually a distribution in :py:class:`scipy.stats.rv_continuous`, but can also be an empirical distribution as given by :py:class:`scipy.stats.rv_histogram` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     detrending : str
         One of ``["additive", "multiplicative", "no_detrending"]``. What kind of scaling is applied to the future climate model data before quantile mapping. Default: ``"no_detrending"``.
     cdf_threshold : float

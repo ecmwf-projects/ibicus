@@ -349,7 +349,6 @@ class QuantileDeltaMapping(Debiaser):
         fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
 
         if self.running_window_mode_over_years_of_cm_future:
-
             debiased_cm_future = np.empty_like(cm_future)
 
             # Iteration over years of cm_future to account for trends
@@ -357,7 +356,6 @@ class QuantileDeltaMapping(Debiaser):
                 years_to_debias,
                 years_in_window,
             ) in self.running_window_over_years_of_cm_future.use(years_cm_future):
-
                 mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
                     years_cm_future, years_in_window
                 )
@@ -429,7 +427,6 @@ class QuantileDeltaMapping(Debiaser):
             ) in self.running_window_within_year.use(
                 days_of_year_cm_future, years_cm_future
             ):
-
                 indices_window_obs = (
                     self.running_window_within_year.get_indices_vals_in_window(
                         days_of_year_obs, window_center
