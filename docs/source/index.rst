@@ -36,6 +36,8 @@ _____________
 - `01 Getting Started <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/01%20Getting%20Started.ipynb>`_
 - `02 Adjusting Debiasers <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/02%20Adjusting%20Debiasers.ipynb>`_
 - `03 Evaluation <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/03%20Evaluation.ipynb>`_
+- `04 Parallelization and Dask <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20Parallelization%20and%20Dask.ipynb>`_
+
 
 .. toctree::
    :maxdepth: 1
@@ -46,6 +48,7 @@ _____________
    01 Getting Started <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/01%20Getting%20Started.ipynb>
    02 Adjusting Debiasers <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/02%20Adjusting%20Debiasers.ipynb>
    03 Evaluation <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/03%20Evaluation.ipynb>
+   04 Parallelization and Dask <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20Parallelization%20and%20Dask.ipynb>
 
 **Documentation / API reference**
 
