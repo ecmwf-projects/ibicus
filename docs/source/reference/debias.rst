@@ -16,7 +16,7 @@ ibicus.debias module
    :members:
    :undoc-members:
    :show-inheritance:
-   
+
 ----
 
 ibicus.debias Debiaser abstract-class
@@ -25,7 +25,7 @@ ibicus.debias Debiaser abstract-class
 .. autoclass:: Debiaser
 	:members: from_variable, apply, apply_location
 
-   
+
 ibicus.debias LinearScaling class
 ----------------------------------------
 
@@ -65,8 +65,8 @@ ibicus.debias ECDFM class
 
 .. autoclass:: ECDFM
 	:members: from_variable, for_precipitation, apply
-	
-	
+
+
 ibicus.debias QuantileDeltaMapping class
 -----------------------------------------------
 
@@ -78,9 +78,3 @@ ibicus.debias ISIMIP class
 
 .. autoclass:: ISIMIP
 	:members: from_variable, apply, step1, step2, step3, step4, step5, step6, step7, step8
-
-
-
-
-
-

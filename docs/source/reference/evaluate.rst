@@ -16,9 +16,9 @@ ibicus.evaluate module
    :members:
    :undoc-members:
    :show-inheritance:
-  
 
-ibicus.evaluate.metrics 
+
+ibicus.evaluate.metrics
 ------------------------------
 
 .. automodule:: ibicus.evaluate.metrics
@@ -33,8 +33,8 @@ ibicus.evaluate.marginal
    :members:
    :undoc-members:
    :show-inheritance:
-   
-ibicus.evaluate.multivariate 
+
+ibicus.evaluate.multivariate
 -----------------------------------
 
 .. automodule:: ibicus.evaluate.multivariate
@@ -43,7 +43,7 @@ ibicus.evaluate.multivariate
    :show-inheritance:
 
 
-ibicus.evaluate.correlation 
+ibicus.evaluate.correlation
 ----------------------------------
 
 .. automodule:: ibicus.evaluate.correlation
@@ -61,14 +61,10 @@ ibicus.evaluate.trend
    :show-inheritance:
 
 
-ibicus.evaluate.assumptions 
+ibicus.evaluate.assumptions
 ----------------------------------
 
 .. automodule:: ibicus.evaluate.assumptions
    :members:
    :undoc-members:
    :show-inheritance:
-
-
-
-

@@ -53,7 +53,7 @@ ibicus.utils gen\_PrecipitationIgnoreZeroValuesModel-class
 
 .. autoclass:: gen_PrecipitationIgnoreZeroValuesModel
 	:members: fit, cdf, ppf
-   
+
 
 ibicus.debias gen\_PrecipitationHurdleModel-class
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -67,7 +67,7 @@ ibicus.utils gen\_PrecipitationGammaLeftCensoredModel-class
 
 .. autoclass:: gen_PrecipitationGammaLeftCensoredModel
 	:members: fit, cdf, ppf
-   
+
 
 ibicus.utils Mathematical helpers
 -----------------------------------------

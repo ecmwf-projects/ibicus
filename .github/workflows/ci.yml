@@ -11,7 +11,7 @@ on:
     - '**'
 
   # Trigger the workflow on all pull requests
-  pull_request: ~
+  pull_request:
 
   # Trigger the workflow on release creation
   release:
@@ -19,7 +19,7 @@ on:
     - created
 
   # Allow workflow to be dispatched on demand
-  workflow_dispatch: ~
+  workflow_dispatch:
 
 jobs:
 
