@@ -125,6 +125,7 @@ class DeltaChange(Debiaser):
         progressbar=True,
         parallel=False,
         nr_processes=4,
+        failsafe=False,
         **kwargs
     ):
         logger = get_library_logger()
@@ -142,6 +143,7 @@ class DeltaChange(Debiaser):
                 cm_hist=cm_hist,
                 cm_future=cm_future,
                 nr_processes=nr_processes,
+                failsafe=failsafe,
                 **kwargs,
             )
         else:
@@ -152,6 +154,7 @@ class DeltaChange(Debiaser):
                 cm_hist=cm_hist,
                 cm_future=cm_future,
                 progressbar=progressbar,
+                failsafe=failsafe,
                 **kwargs,
             )
 
