@@ -1,3 +1,17 @@
 numpy
 pytest[tests]
 pre-commit
+# DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
+numpydoc
+ipykernel
+nbsphinx
+sphinx_rtd_theme
+numpy>=1.22
+attrs>=21.3.0
+pandas
+matplotlib
+seaborn
+scipy
+statsmodels
+scikit-learn
+tqdm
