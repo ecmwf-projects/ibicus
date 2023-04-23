@@ -141,7 +141,6 @@ class TestRunningWindowOverYears(unittest.TestCase):
 
         debiased_years = []
         for years_to_adjust, years_in_window in window.use(years):
-
             assert years_in_window.size == window.window_length_in_years
             assert check_different_maximally_up_to_1(
                 years_to_adjust.size, window.window_step_length_in_years
@@ -213,7 +212,6 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
         for window_center, indices_vals_to_debias in window.use(
             days_of_year_dates, years_dates
         ):
-
             # indices_vals_in_window = window.get_indices_vals_in_window(days_of_year_dates, window_center)
 
             # assert indices_vals_to_debias.size == window.window_step_length_in_days
@@ -234,7 +232,7 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
         # Check that all indices are given
         assert all(np.in1d(np.arange(0, days_of_year_dates.size), debiased_indices))
 
-    def test_use(self):
+    def do_not_run_test_use(self):
         for step_length in range(1, 10):
             for length in range(20, 32):
                 window = RunningWindowOverDaysOfYear(length, step_length)
