@@ -1,43 +1,118 @@
-name: ci
+name: on-push
 
-# Controls when the workflow will run
 on:
-
-  # Trigger the workflow on all pushes
   push:
     branches:
-    - '**'
+    - main
     tags:
-    - '**'
-
-  # Trigger the workflow on all pull requests
+    - '*'
   pull_request:
+    branches:
+    - main
 
-  # Trigger the workflow on release creation
-  release:
-    types:
-    - created
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-  # Allow workflow to be dispatched on demand
-  workflow_dispatch:
+defaults:
+  run:
+    shell: bash -l {0}
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
+    - uses: pre-commit/action@v3.0.0
 
-  # Calls a reusable CI workflow to qa, test & deploy the current repository.
-  #   We skip jobs that will result in duplicate jobs, since the code does not depend on the compiler.
-  #   It will produce a code coverage report on success and upload it to the codecov service.
-  #   If all checks were successful and a new release tag created, the package will be published on PyPI.
-  ci:
-    name: ci
-    uses: ecmwf-actions/reusable-workflows/.github/workflows/ci-python.yml@v1
-    with:
-      # codecov_upload: true
-      skip_matrix_jobs: |
-        clang-12@ubuntu-20.04
-        clang-9@ubuntu-18.04
-        clang-12@macos-10.15
-      build_package_inputs: |
-        self_build: false
-    secrets:
-      pypi_username: ${{ secrets.PYPI_USERNAME }}
-      pypi_password: ${{ secrets.PYPI_PASSWORD }}
+  unit-tests:
+    name: unit-tests (3.10)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v14
+      with:
+        environment-file: environment.yml
+        environment-name: DEVELOP
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=3.10
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Run tests
+      run: |
+        make unit-tests COV_REPORT=xml
+
+  docs-build:
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v14
+      with:
+        environment-file: environment.yml
+        environment-name: DEVELOP
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=3.10
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Build documentation
+      run: |
+        make docs-build
+
+  integration-tests:
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+        - python-version: '3.10'
+          extra: -minver
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@v14
+      with:
+        environment-file: environment${{ matrix.extra }}.yml
+        environment-name: DEVELOP${{ matrix.extra }}
+        channels: conda-forge
+        cache-env: true
+        extra-specs: |
+          python=${{ matrix.python-version }}
+    - name: Install package
+      run: |
+        python -m pip install --no-deps -e .
+    - name: Run tests
+      run: |
+        make unit-tests COV_REPORT=xml
+
+  distribution:
+    runs-on: ubuntu-latest
+    needs: [integration-tests, docs-build]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build distributions
+      run: |
+        $CONDA/bin/python -m pip install build
+        $CONDA/bin/python -m build
+    - name: Publish a Python distribution to PyPI
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
