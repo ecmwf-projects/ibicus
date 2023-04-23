@@ -37,7 +37,7 @@ jobs:
     - name: Install Conda environment with Micromamba
       uses: mamba-org/provision-with-micromamba@v14
       with:
-        environment-file: requirements.txt
+        environment-file: environment.yml
         environment-name: DEVELOP
         channels: conda-forge
         cache-env: true
@@ -59,7 +59,7 @@ jobs:
     - name: Install Conda environment with Micromamba
       uses: mamba-org/provision-with-micromamba@v14
       with:
-        environment-file: requirements.txt
+        environment-file: environment.yml
         environment-name: DEVELOP
         channels: conda-forge
         cache-env: true
