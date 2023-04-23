@@ -22,7 +22,6 @@ repos:
   rev: 5.0.4
   hooks:
   - id: flake8
-    args: ["--ignore=E501,W503,E203", "--per-file-ignores=ibicus/debias/__init__.py:F401,F403 ibicus/debias/_isimip.py:E721"]
 - repo: https://github.com/executablebooks/mdformat
   rev: 0.7.16
   hooks:
