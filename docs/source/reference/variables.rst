@@ -19,10 +19,4 @@ ibicus.debias Variable-class
 --------------------------------------------
 
 .. autoclass:: Variable
-	:members: 
-
-   
-
-
-
-   
+	:members:

@@ -52,9 +52,9 @@ Similarly should you encounter bugs or issues using the package please `open an 
 
 .. |pypi_downloads| image:: https://img.shields.io/pypi/dm/ibicus
   :target: https://pypi.org/project/ibicus
-  
+
 .. |docs| image:: https://readthedocs.org/projects/ibicus/badge/?version=latest
-  :target: https://ibicus.readthedocs.io/en/latest/?badge=latest      
+  :target: https://ibicus.readthedocs.io/en/latest/?badge=latest
 
 .. |Maintenance yes| image:: https://img.shields.io/badge/Maintained%3F-yes-green.svg
    :target: https://github.com/ecmwf-projects/ibicus/graphs/commit-activity

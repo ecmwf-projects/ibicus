@@ -19,7 +19,7 @@ existing rst files to ensure a clean build:
      rm source/reference/*rst
      sphinx-apidoc -o source/reference -H "API reference" --tocfile api -f ../ibicus/
 
-#. Update the source/index.rst to reference the rst files create above. Depending on the contents of your package and the 
+#. Update the source/index.rst to reference the rst files create above. Depending on the contents of your package and the
 rst files produced you will need to add something like the following to the Reference section:
 
      * :doc:`modules`
@@ -32,13 +32,8 @@ rst files produced you will need to add something like the following to the Refe
         modules
 
 
-These steps will allow readthedocs to construct your documentation pages. It is possible to build the html pages locally 
+These steps will allow readthedocs to construct your documentation pages. It is possible to build the html pages locally
 for testing. From the `docs/source` directory execute the following:
 
      make html
      open build/html/index.html  # To open with your default html application
-
-
-
-    
-

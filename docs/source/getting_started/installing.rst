@@ -38,5 +38,3 @@ Python 3.8 or above is required
 
   ibicus requires Python 3.8 or above. Depending on your installation,
   you may need to substitute ``pip`` to ``pip3`` in the examples below.
-
-

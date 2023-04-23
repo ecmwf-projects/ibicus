@@ -6,8 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from logging import warning
 import warnings
+from logging import warning
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +25,6 @@ def _calculate_mean_trend_bias(
     bc_validate: np.ndarray,
     bc_future: np.ndarray,
 ) -> np.ndarray:
-
     if trend_type == "additive":
         bc_trend = np.mean(bc_future, axis=0) - np.mean(bc_validate, axis=0)
         raw_trend = np.mean(raw_future, axis=0) - np.mean(raw_validate, axis=0)
@@ -40,12 +39,12 @@ def _calculate_mean_trend_bias(
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
 
+
 def _calculate_mean_trend(
     trend_type: str,
     bc_validate: np.ndarray,
     bc_future: np.ndarray,
 ) -> np.ndarray:
-
     if trend_type == "additive":
         bc_trend = np.mean(bc_future, axis=0) - np.mean(bc_validate, axis=0)
     elif trend_type == "multiplicative":
@@ -58,7 +57,6 @@ def _calculate_mean_trend(
     return bc_trend
 
 
-
 def _calculate_quantile_trend_bias(
     trend_type: str,
     quantile: float,
@@ -67,7 +65,6 @@ def _calculate_quantile_trend_bias(
     bc_validate: np.ndarray,
     bc_future: np.ndarray,
 ) -> np.ndarray:
-
     if trend_type == "additive":
         bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(
             bc_validate, quantile, axis=0
@@ -95,19 +92,20 @@ def _calculate_quantile_trend_bias(
     bias = 100 * (bc_trend - raw_trend) / raw_trend
     return bias
 
+
 def _calculate_quantile_trend(
     trend_type: str,
     quantile: float,
     bc_validate: np.ndarray,
     bc_future: np.ndarray,
 ) -> np.ndarray:
-
     if trend_type == "additive":
         bc_trend = np.quantile(bc_future, quantile, axis=0) - np.quantile(
-            bc_validate, quantile, axis=0)
+            bc_validate, quantile, axis=0
+        )
 
     elif trend_type == "multiplicative":
-        if (q_bc_validate := np.quantile(bc_validate, quantile, axis=0) != 0):
+        if q_bc_validate := np.quantile(bc_validate, quantile, axis=0) != 0:
             bc_trend = np.quantile(bc_future, quantile, axis=0) / q_bc_validate
         else:
             raise ZeroDivisionError(
@@ -148,7 +146,6 @@ def _calculate_metrics_trend_bias(
                 bc_validate, time=time_validate
             )
         ) != 0:
-
             bc_trend = (
                 metric.calculate_exceedance_probability(bc_future, time=time_future)
                 / m_bc_validate
@@ -171,7 +168,6 @@ def _calculate_metrics_trend_bias(
     return trend_bias
 
 
-
 def _calculate_metrics_trend(
     trend_type: str,
     metric,
@@ -185,14 +181,12 @@ def _calculate_metrics_trend(
             bc_future, time=time_future
         ) - metric.calculate_exceedance_probability(bc_validate, time=time_validate)
 
-
     elif trend_type == "multiplicative":
         if (
             m_bc_validate := metric.calculate_exceedance_probability(
                 bc_validate, time=time_validate
             )
-        )!= 0:
-
+        ) != 0:
             bc_trend = (
                 metric.calculate_exceedance_probability(bc_future, time=time_future)
                 / m_bc_validate
@@ -220,7 +214,6 @@ def calculate_future_trend_bias(
     time_future: np.ndarray = None,
     **debiased_cms,
 ) -> pd.DataFrame:
-
     """
     For each location, calculates the bias in the trend of the bias corrected model compared to the raw climate model for the following metrics:
     mean, 5% and 95% quantile (default) as well as metrics passed as arguments to the function.
@@ -259,20 +252,18 @@ def calculate_future_trend_bias(
     trend_bias_dfs = []
 
     for debiased_cms_key, debiased_cms_value in debiased_cms.items():
-
         if len(debiased_cms_value) != 2:
             raise ValueError(
                 "Debiased climate datasets in ``*debiased_cms`` should have following form: ``debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]``. Input does not have the required length of two."
             )
 
         # calculate trend bias in descriptive statistics
-        
-        if "mean" in statistics:
 
+        if "mean" in statistics:
             mean_bias = _calculate_mean_trend_bias(
                 trend_type, raw_validate, raw_future, *debiased_cms_value
             )
-    
+
             if np.any(np.isinf(mean_bias)):
                 warning(
                     "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
@@ -289,23 +280,27 @@ def calculate_future_trend_bias(
                         }
                     )
                 )
-                
+
         if not statistics:
             print("no quantiles calculated")
-        elif not (all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])):
+        elif not (
+            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
+        ):
             warnings.warn(
-                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
-                    )
+                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
+            )
         else:
-
             for q in statistics[1]:
-
-                qn_bias = _calculate_quantile_trend_bias(trend_type, q, raw_validate, raw_future, *debiased_cms_value)
+                qn_bias = _calculate_quantile_trend_bias(
+                    trend_type, q, raw_validate, raw_future, *debiased_cms_value
+                )
 
                 if np.any(np.isinf(qn_bias)):
-                        warning(
-                                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
-                                        debiased_cms_key))
+                    warning(
+                        "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                            debiased_cms_key
+                        )
+                    )
                 else:
                     trend_bias_dfs.append(
                         pd.DataFrame(
@@ -320,7 +315,6 @@ def calculate_future_trend_bias(
         # calculate trend bias in metrics
 
         for m in metrics:
-
             metric_bias = _calculate_metrics_trend_bias(
                 trend_type,
                 m,
@@ -353,7 +347,6 @@ def calculate_future_trend_bias(
     return plot_data
 
 
-
 def calculate_future_trend(
     variable: str,
     statistics: list = ["mean", [0.05, 0.95]],
@@ -363,28 +356,21 @@ def calculate_future_trend(
     time_future: np.ndarray = None,
     **debiased_cms,
 ) -> pd.DataFrame:
-
-    """
-
-    """
+    """ """
 
     trend_bias_dfs = []
 
     for debiased_cms_key, debiased_cms_value in debiased_cms.items():
-
         if len(debiased_cms_value) != 2:
             raise ValueError(
                 "Debiased climate datasets in ``*debiased_cms`` should have following form: ``debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]``. Input does not have the required length of two."
             )
 
         # calculate trend bias in descriptive statistics
-        
-        if "mean" in statistics:
 
-            mean_bias = _calculate_mean_trend(
-                trend_type, *debiased_cms_value
-            )
-    
+        if "mean" in statistics:
+            mean_bias = _calculate_mean_trend(trend_type, *debiased_cms_value)
+
             if np.any(np.isinf(mean_bias)):
                 warning(
                     "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
@@ -401,23 +387,25 @@ def calculate_future_trend(
                         }
                     )
                 )
-                
+
         if not statistics:
             print("no quantiles calculated")
-        elif not (all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])):
+        elif not (
+            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
+        ):
             warnings.warn(
-                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
-                    )
+                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
+            )
         else:
-
             for q in statistics[1]:
-
                 qn_bias = _calculate_quantile_trend(trend_type, q, *debiased_cms_value)
 
                 if np.any(np.isinf(qn_bias)):
-                        warning(
-                                "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
-                                        debiased_cms_key))
+                    warning(
+                        "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                            debiased_cms_key
+                        )
+                    )
                 else:
                     trend_bias_dfs.append(
                         pd.DataFrame(
@@ -432,7 +420,6 @@ def calculate_future_trend(
         # calculate trend bias in metrics
 
         for m in metrics:
-
             metric_bias = _calculate_metrics_trend(
                 trend_type,
                 m,
@@ -464,14 +451,13 @@ def calculate_future_trend(
 
 
 def plot_future_trend_bias_boxplot(
-    variable: str, 
-    bias_df: pd.DataFrame, 
+    variable: str,
+    bias_df: pd.DataFrame,
     manual_title: str = " ",
     remove_outliers: bool = False,
     outlier_threshold: int = 100,
-    color_palette = 'tab10'
+    color_palette="tab10",
 ):
-
     """
     Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an overview boxplot of the bias in the trend of metrics.
 
@@ -490,12 +476,12 @@ def plot_future_trend_bias_boxplot(
     """
 
     # unpack numpy arrays in column 'Bias'
-    bias_df_unpacked = _unpack_df_of_numpy_arrays(
-        df=bias_df, numpy_column_name="Bias"
-    )
-    
-    if remove_outliers == True:
-        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked["Bias"])<outlier_threshold]
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(df=bias_df, numpy_column_name="Bias")
+
+    if remove_outliers:
+        bias_df_unpacked = bias_df_unpacked[
+            abs(bias_df_unpacked["Bias"]) < outlier_threshold
+        ]
 
     # create figure and plot
     fig = plt.figure(figsize=(10, 6))
@@ -523,14 +509,13 @@ def plot_future_trend_bias_boxplot(
 
 
 def plot_future_trend_bias_spatial(
-    variable: str, 
-    metric: str, 
-    bias_df: pd.DataFrame, 
+    variable: str,
+    metric: str,
+    bias_df: pd.DataFrame,
     manual_title: str = " ",
     remove_outliers: bool = False,
-    outlier_threshold: int = 100
+    outlier_threshold: int = 100,
 ):
-
     """
     Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an spatial plot of trend bias for one chosen metric.
 
@@ -571,9 +556,11 @@ def plot_future_trend_bias_spatial(
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
         df=bias_df_filtered, numpy_column_name="Percentage bias"
     )
-    if remove_outliers == True:
-        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked['Percentage bias'])<outlier_threshold]
-        
+    if remove_outliers:
+        bias_df_unpacked = bias_df_unpacked[
+            abs(bias_df_unpacked["Percentage bias"]) < outlier_threshold
+        ]
+
     axis_max = bias_df_unpacked["Percentage bias"].max()
     axis_min = -axis_max
 
@@ -584,7 +571,6 @@ def plot_future_trend_bias_spatial(
 
     i = 0
     for index, row_array in bias_df_filtered.iterrows():
-
         plot_title = row_array.values[0]
         plot_data = row_array.values[2]
 

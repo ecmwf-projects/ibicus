@@ -24,7 +24,7 @@ What is bias adjustment?
 ------------------------
 
 The bias adjustment or bias correction of climate models is a tricky business: although climate models have gained impressive skill over the recent years, they are still prone to biases. By ‘bias’, we here mean a systematic discrepancy between the simulated climate statistic and the corresponding real-world statistic over a historical period. These biases could be due to unresolved topography, processes such as convection occurring below grid-cell level, or the misplacement of large-scale atmospheric patterns. Bias adjustment cannot fundamentally address these issues. What bias adjustment can do is calibrate an empirical transfer function between simulated and observed distributional parameters in order to improve (“bias adjust”) the climate model.
- 
+
 Because experiments with the climate are not possible, and climate models are our only way of finding out what the implications of different scenarios of climatic change are, bias adjustment not only is a useful and necessary step but has de-facto become a standard in climate impact studies.
 
 For more info have a look at: `What is bias adjustment? <whatisdebiasing.html>`_
@@ -48,27 +48,27 @@ The methods currently implemented in ibicus include:
    :widths: 25 25 50
    :header-rows: 1
 
-   * -  
+   * -
      - References
      - Brief description
    * - :py:class:`ISIMIP`
-     - * Lange 2019 |brr| 
+     - * Lange 2019 |brr|
        * Lange 2021
      - ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for each of the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
    * - :py:class:`LinearScaling`
      - * Maraun 2016
      - Linear scaling corrects a climate model by the difference in the mean of observations and the mean of the climate model on the reference period, either additively or multiplicatively.
    * - :py:class:`QuantileMapping`
-     - * Cannon et al. 2015 |brr| 
+     - * Cannon et al. 2015 |brr|
        * Maraun 2016
      - (Parametric) quantile mapping maps every quantile of the climate model distribution to the corresponding quantile in observations during the reference period. Optionally, additive or multiplicative detrending of the mean can be applied to make the method trend preserving. Most bias adjustment methods build on quantile mapping.
    * - :py:class:`ScaledDistributionMapping`
      - * Switanek et al. 2017
      - SDM is conceptually similar to QDM, and in the same ‘family’ as CDFt and ECDFM. It is a parametric quantile mapping approach that also attempts to be trend preserving in all quantiles. In addition to the quantile mapping the method also contains an event likelihood adjustment.
    * - :py:class:`CDFt`
-     - * Michelangeli et al. 2009 |brr| 
-       * Vrac et al. 2012 |brr| 
-       * Famien et al. 2018 |brr| 
+     - * Michelangeli et al. 2009 |brr|
+       * Vrac et al. 2012 |brr|
+       * Famien et al. 2018 |brr|
        * Vrac et al. 2016
      - CDFt is a non-parametric quantile mapping method that attempts to be trend-preserving in all quantiles. CDFt applies a concatenation between a quantile mapping of future and historical climate model data and a quantile mapping of the future climate model with historical observations. It also includes a running window over the future period to account for changes in the simulated trend.
    * - :py:class:`ECDFM`
@@ -94,12 +94,12 @@ ibicus includes a framework that enables the user to conduct this evaluation as 
 
 - Assumptions testing: this component helps the user check some assumptions underlying the use of different bias adjustment methods to choose the most appropriate method and refine its parameters.
 
-- Evaluation of the method on a validation period: This component enables the user to compare the bias corrected model to the ‘raw’ model and observations / reanalysis data, all on a chosen validation period. Both statistical properties as well as threshold based climate indices (threshold metrics) such as dry days, hot days, etc. that are often used for calculating climate impacts can be compared. The following table summarises the types of analysis that can be conducted in this component: 
+- Evaluation of the method on a validation period: This component enables the user to compare the bias corrected model to the ‘raw’ model and observations / reanalysis data, all on a chosen validation period. Both statistical properties as well as threshold based climate indices (threshold metrics) such as dry days, hot days, etc. that are often used for calculating climate impacts can be compared. The following table summarises the types of analysis that can be conducted in this component:
 
 +----------------+------------------------+-----------------------+
-|                | Statistical properties | Threshold metrics     | 
+|                | Statistical properties | Threshold metrics     |
 +================+========================+=======================+
-| Marginal       | x                      |  x                    | 
+| Marginal       | x                      |  x                    |
 +----------------+------------------------+-----------------------+
 | Temporal       |                        |  x (spell length)     |
 +----------------+------------------------+-----------------------+

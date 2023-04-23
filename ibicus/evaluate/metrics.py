@@ -8,8 +8,8 @@
 
 """Metrics module - Standard metric definitions"""
 
-from typing import Union
 import warnings
+from typing import Union
 
 import attrs
 import matplotlib.pyplot as plt

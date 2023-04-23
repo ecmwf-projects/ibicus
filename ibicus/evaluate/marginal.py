@@ -14,8 +14,8 @@ import pandas as pd
 import seaborn
 
 from ..utils._utils import (
-    _unpack_df_of_numpy_arrays,
     _check_if_list_of_two_and_unpack_else_none,
+    _unpack_df_of_numpy_arrays,
     year,
 )
 from ..variables import map_variable_str_to_variable_class, str_to_variable_class
@@ -39,26 +39,24 @@ def _marginal_metrics_absolute_bias(
 
 
 def _marginal_mean_bias(obs_data: np.ndarray, cm_data: np.ndarray, bias_type):
-
     """
     Calculates location-wise percentage bias of mean
     """
-    if bias_type=='percentage':
+    if bias_type == "percentage":
         mean_bias = (
             100
             * (np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0))
             / np.mean(obs_data, axis=0)
         )
-    if bias_type=='absolute':
-        mean_bias = (
-            np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0)
-        )
+    if bias_type == "absolute":
+        mean_bias = np.mean(cm_data, axis=0) - np.mean(obs_data, axis=0)
 
     return mean_bias
 
 
-def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.ndarray, bias_type):
-
+def _marginal_quantile_bias(
+    quantile: float, obs_data: np.ndarray, cm_data: np.ndarray, bias_type
+):
     """
     Calculates location-wise percentage bias of specified quantile. If any value at chosen quantile is zero, function returns zero bias.
     """
@@ -67,10 +65,10 @@ def _marginal_quantile_bias(quantile: float, obs_data: np.ndarray, cm_data: np.n
         raise ValueError("quantile needs to be between 0 and 1")
 
     qn_obs = np.quantile(obs_data, quantile, axis=0)
-    
-    if bias_type=='percentage':
+
+    if bias_type == "percentage":
         qn_bias = 100 * (np.quantile(cm_data, quantile, axis=0) - qn_obs) / qn_obs
-    if bias_type=='absolute':
+    if bias_type == "absolute":
         qn_bias = np.quantile(cm_data, quantile, axis=0) - qn_obs
 
     return qn_bias
@@ -101,7 +99,6 @@ def calculate_marginal_bias(
     percentage_or_absolute: str = "percentage",
     **cm_data
 ) -> pd.DataFrame:
-
     """
     Returns a :py:class:`pd.DataFrame` containing location-wise percentage bias of different metrics: mean, 5th and 95th percentile, as well as metrics specific in `metrics`,
     comparing observations to climate model output during a validation period. Output dataframes contains three columns: 'Correction Method' (str) correspond to the cm_data keys,
@@ -139,14 +136,16 @@ def calculate_marginal_bias(
     obs_data, time_obs_data = _check_if_list_of_two_and_unpack_else_none(obs)
 
     for cm_data_key, cm_data_value in cm_data.items():
-
         cm_data_value, time_cm_data_value = _check_if_list_of_two_and_unpack_else_none(
             cm_data_value
         )
 
         if "mean" in statistics:
-
-            mean_bias = _marginal_mean_bias(obs_data=obs_data, cm_data=cm_data_value, bias_type = percentage_or_absolute)
+            mean_bias = _marginal_mean_bias(
+                obs_data=obs_data,
+                cm_data=cm_data_value,
+                bias_type=percentage_or_absolute,
+            )
 
             if np.any(np.isinf(mean_bias)):
                 warnings.warn(
@@ -176,11 +175,12 @@ def calculate_marginal_bias(
                 "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
             )
         else:
-
             for q in statistics[1]:
-
                 qn_bias = _marginal_quantile_bias(
-                    quantile=q, obs_data=obs_data, cm_data=cm_data_value, bias_type = percentage_or_absolute
+                    quantile=q,
+                    obs_data=obs_data,
+                    cm_data=cm_data_value,
+                    bias_type=percentage_or_absolute,
                 )
 
                 if np.any(np.isinf(qn_bias)):
@@ -203,7 +203,6 @@ def calculate_marginal_bias(
                     )
 
         for m in metrics:
-
             if percentage_or_absolute == "percentage":
                 metric_bias = _marginal_metrics_bias(
                     m,
@@ -269,11 +268,10 @@ def plot_marginal_bias(
     remove_outliers: bool = False,
     outlier_threshold_statistics: int = 100,
     outlier_threshold_metrics: int = 100,
-    color_palette = 'tab10',
+    color_palette="tab10",
     metrics_title: str = " ",
-    statistics_title:str = " ",
+    statistics_title: str = " ",
 ):
-
     """
     Returns boxplots showing distribution of the percentage bias over locations of different metrics, based on calculation performed in :py:func:`calculate_marginal_bias`.
 
@@ -308,15 +306,14 @@ def plot_marginal_bias(
     # split dataframe for two plots
     plot_data1 = bias_df_unpacked[bias_df_unpacked["Metric"].isin(statistics)]
     plot_data2 = bias_df_unpacked[~bias_df_unpacked["Metric"].isin(statistics)]
-    
-    if remove_outliers == True:
-        plot_data1 = plot_data1[abs(plot_data1['Bias'])<outlier_threshold_statistics]
-        plot_data2 = plot_data2[abs(plot_data2['Bias'])<outlier_threshold_metrics]
+
+    if remove_outliers:
+        plot_data1 = plot_data1[abs(plot_data1["Bias"]) < outlier_threshold_statistics]
+        plot_data2 = plot_data2[abs(plot_data2["Bias"]) < outlier_threshold_metrics]
 
     # generate plots
     fig_width = 3 * bias_df_unpacked["Metric"].nunique() + 3
     fig, ax = plt.subplots(1, 2, figsize=(fig_width, 6))
-    
 
     seaborn.boxplot(
         ax=ax[0],
@@ -328,7 +325,6 @@ def plot_marginal_bias(
     ).set_title(statistics_title)
     [ax[0].axvline(x + 0.5, color="k") for x in ax[0].get_xticks()]
     [ax[0].axhline(linestyle="--", color="k")]
-
 
     seaborn.boxplot(
         ax=ax[1],
@@ -342,7 +338,7 @@ def plot_marginal_bias(
     [ax[1].axhline(linestyle="--", color="k")]
 
     # generate and set plot title
-    if manual_title==" ":
+    if manual_title == " ":
         plot_title = "{} ({}) - Bias".format(
             map_variable_str_to_variable_class(variable).name,
             map_variable_str_to_variable_class(variable).unit,
@@ -356,14 +352,13 @@ def plot_marginal_bias(
 
 
 def plot_bias_spatial(
-    variable: str, 
-    metric: str, 
-    bias_df: pd.DataFrame, 
+    variable: str,
+    metric: str,
+    bias_df: pd.DataFrame,
     remove_outliers: bool = False,
     outlier_threshold: int = 100,
-    manual_title: str = " "
+    manual_title: str = " ",
 ):
-
     """
     Spatial plot of bias at each location with respect to one specified metric.
 
@@ -396,7 +391,6 @@ def plot_bias_spatial(
 
     # filter bias_df
     bias_df_filtered = bias_df[bias_df["Metric"] == metric]
-    
 
     # generate plot title
     if variable in str_to_variable_class.keys():
@@ -416,9 +410,11 @@ def plot_bias_spatial(
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
         df=bias_df_filtered, numpy_column_name="Bias"
     )
-    if remove_outliers == True:
-        bias_df_unpacked = bias_df_unpacked[abs(bias_df_unpacked['Bias'])<outlier_threshold]
-        
+    if remove_outliers:
+        bias_df_unpacked = bias_df_unpacked[
+            abs(bias_df_unpacked["Bias"]) < outlier_threshold
+        ]
+
     axis_max = bias_df_unpacked["Bias"].max()
     axis_min = -axis_max
 
@@ -429,7 +425,6 @@ def plot_bias_spatial(
 
     i = 0
     for _, row_array in bias_df_filtered.iterrows():
-
         plot_title = row_array.values[0]
         plot_data = row_array.values[3]
 
@@ -442,7 +437,6 @@ def plot_bias_spatial(
 
 
 def _yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
-
     threshold_matrix = metric.calculate_instances_of_threshold_exceedance(
         dataset, time=time
     )
@@ -466,7 +460,6 @@ def _yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
 
 
 def _mean_yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
-
     yearly_threshold_exceedances = _yearly_exceedances(metric, dataset, time)
 
     mean_yearly_threshold_exceedances = np.mean(yearly_threshold_exceedances, axis=0)
@@ -477,7 +470,6 @@ def _mean_yearly_exceedances(metric, dataset: np.ndarray, time: np.ndarray):
 def calculate_bias_days_metrics(
     obs_data: np.ndarray, metrics: list = [], **cm_data
 ) -> pd.DataFrame:
-
     """
     Returns a :py:class:`pd.DataFrame` containing location-wise mean number of yearly threshold exceedances
     Output dataframes contains five columns: 'Correction Method' (str) correspond to the cm_data keys,
@@ -518,7 +510,6 @@ def calculate_bias_days_metrics(
         )
 
     for cm_data_key, cm_data_value in cm_data.items():
-
         if not isinstance(cm_data_value, (list, tuple)):
             raise ValueError(
                 "Each cm_data keyword needs to be a list of two of the form [cm_data, time_cm_data]."
@@ -529,7 +520,6 @@ def calculate_bias_days_metrics(
             )
 
         for m in metrics:
-
             # calculate days per year that this metric is exceeded
 
             cm_mean = _mean_yearly_exceedances(
@@ -564,7 +554,6 @@ def plot_histogram(
     manual_title: str = " ",
     **cm_data
 ):
-
     """
     Plots histogram over entire are or at single location. Expects a one-dimensional array as input.
 
@@ -607,7 +596,6 @@ def plot_histogram(
     # generate plots
     i = 0
     for k, cm_data in cm_data.items():
-
         ax[i].hist(data_obs, bins=bin_number, alpha=0.5, label="Observed")
         ax[i].hist(cm_data, bins=bin_number, alpha=0.5, label="Climate model")
         ax[i].set_title(k)
