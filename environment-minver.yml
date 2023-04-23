@@ -1,0 +1,17 @@
+channels:
+- conda-forge
+- nodefaults
+dependencies:
+- make
+- pytest
+- pytest-cov
+# DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW
+- numpy>=1.22
+- attrs>=21.3.0
+- pandas
+- matplotlib
+- seaborn
+- scipy
+- statsmodels
+- scikit-learn
+- tqdm

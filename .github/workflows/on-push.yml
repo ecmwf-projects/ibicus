@@ -59,7 +59,7 @@ jobs:
     - name: Install Conda environment with Micromamba
       uses: mamba-org/provision-with-micromamba@v14
       with:
-        environment-file: environment.yml
+        environment-file: docs/requirements.txt
         environment-name: DEVELOP
         channels: conda-forge
         cache-env: true
@@ -79,7 +79,7 @@ jobs:
     strategy:
       matrix:
         include:
-        - python-version: '3.10'
+        - python-version: '3.7'
           extra: -minver
 
     steps:
