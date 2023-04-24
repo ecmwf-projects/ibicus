@@ -146,6 +146,65 @@ def plot_conditional_joint_threshold_exceedance(
     return fig
 
 
+def plot_conditional_probability_spatial(
+    bias_df: pd.DataFrame,
+    remove_outliers: bool = False,
+    outlier_threshold: int = 100,
+    plot_title: str = " ",
+):
+    """
+    Spatial plot of bias at each location with respect to one specified metric.
+
+    Parameters
+    ----------
+    bias_df: pd.DataFrame
+        :py:class:`pd.DataFrame` containing conditional exceedance probability, expects output of :py:func:`calculate_conditional_joint_threshold_exceedance`.
+    remove_outliers: bool
+            If set to True, values above the threshold specified through the next argument are removed.
+    outlier_threshold: int,
+            Threshold above which to remove values from the plot.
+    plot_title : str
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.
+
+    Examples
+    --------
+    >>> warm_wet_vis = plot_conditional_probability_spatial(bias_df=warm_wet, plot_title ="Conditional probability of warm days (>20°C) given wet days (>1mm)")
+
+    """
+
+    # find maximum value to set axis bounds
+    bias_df_unpacked = _unpack_df_of_numpy_arrays(
+        df=bias_df, numpy_column_name="Conditional exceedance probability"
+    )
+    if remove_outliers:
+        bias_df_unpacked = bias_df_unpacked[
+            abs(bias_df_unpacked["Conditional exceedance probability"])
+            < outlier_threshold
+        ]
+
+    axis_max = bias_df_unpacked["Conditional exceedance probability"].max()
+    axis_min = 0
+
+    # create figure and plot
+    fig_width = 6 * bias_df.shape[0]
+    fig, ax = plt.subplots(1, bias_df.shape[0], figsize=(fig_width, 5))
+    fig.suptitle(plot_title)
+
+    i = 0
+    for _, row_array in bias_df.iterrows():
+        plot_title = row_array.values[0]
+        plot_data = row_array.values[2]
+
+        plot = ax[i].imshow(
+            plot_data, cmap=plt.get_cmap("Reds"), vmin=axis_min, vmax=axis_max
+        )
+        ax[i].set_title(plot_title)
+        fig.colorbar(plot, ax=ax[i])
+        i = i + 1
+
+    return fig
+
+
 def calculate_and_spatialplot_multivariate_correlation(
     variables: list, manual_title: str = " ", **kwargs
 ):
