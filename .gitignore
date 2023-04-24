@@ -1,3 +1,6 @@
+# CMake
+cmake-build-*/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -70,12 +73,14 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_api/
 
 # PyBuilder
 target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*/.ipynb_checkpoints/*
 
 # IPython
 profile_default/
@@ -131,6 +136,9 @@ dmypy.json
 # Vscode
 .vscode
 .DS_Store
+
+# Local History for Visual Studio Code
+.history/
 
 # Notebooks
 # Output of ISIMIP consistency notebook
