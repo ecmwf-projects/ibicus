@@ -76,6 +76,9 @@ autodoc_preserve_defaults = False
 # Google Search Console authentication as extra file to copy into the build directory
 html_extra_path = ["google0b2594d760cfdda3.html"]
 
+# Sort by order specified and not alphabetically
+autodoc_member_order = "bysource"
+
 """numpydoc_attributes_as_param_list = True
 numpydoc_show_class_members = True
 """

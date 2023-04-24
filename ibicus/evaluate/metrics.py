@@ -6,7 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""Metrics module - Standard metric definitions"""
+"""
+Metrics module - Provides the possiblity to define threshold sensitive climate metrics that can be analysed themselves and used in :py:mod:`ibicus.marginal`, :py:mod:`ibicus.multivariate` and :py:mod:`ibicus.trend`.
+"""
 
 import warnings
 from typing import Union
@@ -24,26 +26,26 @@ from ibicus import utils
 @attrs.define(eq=False)
 class ThresholdMetric:
     """
-    Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold.
+    Generic climate metric defined by exceedance or underceedance of threshold; or values between an upper and lower threshold. This is determined by ``threshold_type``. These metrics can be defined either overall or daily, monthly, seasonally (``threshold_scope``) and either globally or location-wise (``threshold_locality``).
 
-    Organises the definition and functionalities of such metrics. Enables to implement a subsection of the `Climdex climate extreme indices <https://www.climdex.org/learn/indices/>`_.
+    Organises the definition and functionalities of such metrics. This enables among others to implement the `ETCCDI <http://etccdi.pacificclimate.org/index.shtml>`_ / `Climdex climate extreme indices <https://www.climdex.org/learn/indices/>`_.
 
     Attributes
     ----------
     threshold_value : Union[np.array, float, list, dict]
         Threshold value(s) for the variable (in the correct unit).
 
-        - If `threshold_type = "higher"` or `threshold_type = "lower"`, this is just a single `float` value and the metric is defined as exceedance or underceedance of that value (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
-        - If `threshold_type = "between"` or `threshold_type = "outside"`, then this needs to be a list in the form: `[lower_bound, upper_bound]` and the metric is defined as falling in between, or falling outside these values (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
+        - If ``threshold_type = "higher"`` or ``threshold_type = "lower"``, this is just a single float value and the metric is defined as exceedance or underceedance of that value (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
+        - If ``threshold_type = "between"`` or ``threshold_type = "outside"``, then this needs to be a list in the form: `[lower_bound, upper_bound]` and the metric is defined as falling in between, or falling outside these values (if `threshold_scope = 'overall'` and `threshold_locality = 'global'`).
 
-        - If `threshold_locality = "local"` then instead of a single element (within a list, depending on `threshold_type`) a `np.ndarray` is stored here for locally defined threshold.
-        - If `threshold_scope` is one of `["day", "month", "season"]` then instead of a (list of) single element(s) or a `np.ndarray` a dict is stored whose keys are the times (for example the seasons) and values contain the thresholds (either locally or globally).
+        - If ``threshold_locality = "local"`` then instead of a single element (within a list, depending on `threshold_type`) a :py:class:`np.ndarray` is stored here for locally defined threshold.
+        - If ``threshold_scope`` is one of ``["day", "month", "season"]`` then instead of a (list of) single element(s) or a :py:class:`np.ndarray` a dict is stored whose keys are the times (for example the seasons) and values contain the thresholds (either locally or globally).
     threshold_type : str
-        One of `["higher", "lower", "between", "outside"]`. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, not strict including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
+        One of ``["higher", "lower", "between", "outside"]``. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, not strict including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
     threshold_scope : str = "overall"
-        One of `["day", "month", "season", "overall"]`. Indicates wether thresholds are irrespective of time or defined on a daily, monthly or seasonal basis.
+        One of ``["day", "month", "season", "overall"]``. Indicates wether thresholds are irrespective of time or defined on a daily, monthly or seasonal basis.
     threshold_locality : str = "global"
-        One of `["global", "local"]`. Indicates wether thresholds are defined globally or locationwise.
+        One of ``["global", "local"]``. Indicates wether thresholds are defined globally or locationwise.
     name : str = "unknown"
         Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : `Frost days \\n  (tasmin < 0°C)`. Default: `"unknown"`.
     variable : str = "unknown"
@@ -227,7 +229,6 @@ class ThresholdMetric:
     def _get_threshold_from_quantile(
         x, q, time=None, threshold_scope="overall", threshold_locality="global"
     ):
-
         time = ThresholdMetric._get_time_group_by_scope(time, threshold_scope)
 
         thresholds = ThresholdMetric._get_quantile_by_locality(
@@ -266,13 +267,13 @@ class ThresholdMetric:
         q : Union[int, float, list]
             Quantile (or list of lower and upper quantile if ``threshold_type`` in ``["higher", "lower"]``) as which the threshold is instantiated.
         threshold_type : str
-            One of `["higher", "lower", "between", "outside"]`. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, strict, not including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
+            One of ``["higher", "lower", "between", "outside"]``. Indicates whether we are either interested in values above the threshold value (`"higher"`, strict `>`), values below the threshold value (`"lower"`, strict `<`), values between the threshold values (`"between"`, strict, not including the bounds) or outside the threshold values (`"outside"`, strict not including the bounds).
         threshold_scope : str = "overall"
-            One of `["day", "month", "season", "overall"]`. Indicates wether thresholds (and the quantiles calculated) are irrespective of time or defined on a daily, monthly or seasonal basis.
+            One of ``["day", "month", "season", "overall"]``. Indicates wether thresholds (and the quantiles calculated) are irrespective of time or defined on a daily, monthly or seasonal basis.
         threshold_locality : str = "global"
-            One of `["global", "local"]`. Indicates wether thresholds (and the quantiles calculated) are defined globally or locationwise.
+            One of ``["global", "local"]``. Indicates wether thresholds (and the quantiles calculated) are defined globally or locationwise.
         time: Optional[np.ndarray] = None
-            If  the threshold is time-sensitive (`threshold_scope` in ["day", "month", "season"]) then time information corresponding to `x` is required. Should be a numpy 1d array of times.
+            If  the threshold is time-sensitive (``threshold_scope`` in ["day", "month", "season"]) then time information corresponding to `x` is required. Should be a numpy 1d array of times.
         name : str = "unknown"
             Metric name. Will be used in dataframes, plots etc. Recommended to include threshold value and units. Example : 'Frost days \n  (tasmin < 0°C)'. Default: `"unknown"`.
         variable : str = "unknown"
@@ -336,7 +337,6 @@ class ThresholdMetric:
         )
 
     def _get_mask_higher_or_lower(self, x, threshold_value, higher_or_lower, time=None):
-
         if self.threshold_scope == "overall":
             thresholds = threshold_value
 
@@ -344,7 +344,6 @@ class ThresholdMetric:
             if self.threshold_locality == "local":
                 thresholds = thresholds[None, :, :]
         elif self.threshold_scope in ["day", "month", "season"]:
-
             if time is None:
                 raise ValueError(
                     "For ThresholdMetrics with scope ['day', 'month', 'season'] time information is required to calculate the score"
@@ -391,7 +390,6 @@ class ThresholdMetric:
             raise ValueError("higher_or_lower needs to be one of ['higher', 'lower'].")
 
     def _get_mask_threshold_condition(self, x, time=None):
-
         if self.threshold_type == "higher":
             return self._get_mask_higher_or_lower(
                 x, self.threshold_value, "higher", time
@@ -518,7 +516,6 @@ class ThresholdMetric:
 
         for j in range(eot_matrix.shape[1]):
             for k in range(eot_matrix.shape[2]):
-
                 threshold_exceedances[:, j, k] = [
                     (eot_matrix[time_array == i, j, k].sum()) for i in years
                 ]
@@ -546,7 +543,7 @@ class ThresholdMetric:
         """
         Returns a :py:class:`pd.DataFrame` of individual spell lengths of metrics occurrences (threshold exceedance/underceedance or inside/outside range), counted across locations, for each climate dataset specified in `**climate_data`.
 
-        A spell length is defined as the number of days that a threshold is continuesly exceeded, underceeded or where values are continuously between or outside the threshold (depending on `self.threshold_type`).
+        A spell length is defined as the number of days that a threshold is continuesly exceeded, underceeded or where values are continuously between or outside the threshold (depending on ``self.threshold_type``).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser as specified in `**climate_data`, 'Metric' - name of the threshold metric, 'Spell length - individual spell length counts'.
 
         Parameters
@@ -554,7 +551,7 @@ class ThresholdMetric:
         minimum length : int
             Minimum spell length (in days) investigated.
         climate_data :
-            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
+            Keyword arguments, providing the input data to investigate. Should be :py:class:`np.ndarrays` of observations or if the threshold is time sensitive (``threshold_scope = ['day', 'month', 'year']``) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
 
         Returns
         -------
@@ -609,9 +606,9 @@ class ThresholdMetric:
 
     def calculate_spatial_extent(self, **climate_data):
         """
-        Returns a py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
+        Returns a :py:class:`pd.DataFrame` of spatial extends of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
-        The spatial extent is defined as the percentage of the area where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`), given that it is exceeded at one location.
+        The spatial extent is defined as the percentage of the area where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on ``self.threshold_type``), given that it is exceeded at one location.
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatial extent (% of area)'
 
         Parameters
@@ -670,7 +667,7 @@ class ThresholdMetric:
         """
         Returns a py:class:`pd.DataFrame` of sizes of individual spatiotemporal clusters of metrics occurrences (threshold exceedance/underceedance or inside/outside range), for each climate dataset specified in `**climate_data`.
 
-        A spatiotemporal cluster is defined as a connected set (in time and/or space) where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on `self.threshold_type`).
+        A spatiotemporal cluster is defined as a connected set (in time and/or space) where the threshold is exceeded/underceeded or values are between or outside the bounds (depending on ``self.threshold_type``).
         The output dataframe has three columns: 'Correction Method' - obs/raw or name of debiaser, 'Metric' - name of the threshold metric, 'Spatiotemporal cluster size'
 
         Parameters
@@ -780,15 +777,18 @@ class ThresholdMetric:
 @attrs.define
 class AccumulativeThresholdMetric(ThresholdMetric):
     """
-    Class for climate metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
+    Climate for metrics that are defined by thresholds (child class of :py:class:`ThresholdMetric`), but are accumulative. This mainly concerns precipitation metrics.
 
-    An example of such a metric is total precipitation by very wet days (days > 10mm precipitation).
+    An example of such a metric is "total precipitation by very wet days (days > 10mm precipitation)".
+
+    Examples
+    --------
+    >>> R10mm = AccumulativeThresholdMetric(name="Very wet days (> 10 mm/day)", variable="pr", threshold_value=10 / 86400,threshold_type="higher")
     """
 
     def calculate_percent_of_total_amount_beyond_threshold(
         self, dataset: np.ndarray, time=None
     ) -> np.ndarray:
-
         """
         Calculates percentage of total amount beyond threshold for each location over all timesteps.
 
@@ -816,7 +816,6 @@ class AccumulativeThresholdMetric(ThresholdMetric):
     def calculate_annual_value_beyond_threshold(
         self, dataset: np.ndarray, time: np.ndarray
     ) -> np.ndarray:
-
         """
         Calculates amount beyond threshold for each year in the dataset.
 
@@ -845,7 +844,6 @@ class AccumulativeThresholdMetric(ThresholdMetric):
 
         for j in range(eot_matrix.shape[1]):
             for k in range(eot_matrix.shape[2]):
-
                 threshold_exceedances[:, j, k] = [
                     (eot_matrix[time_array == i, j, k].sum()) for i in years
                 ]
