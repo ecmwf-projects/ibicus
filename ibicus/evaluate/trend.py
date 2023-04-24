@@ -207,7 +207,7 @@ def calculate_future_trend_bias(
     variable: str,
     raw_validate: np.ndarray,
     raw_future: np.ndarray,
-    statistics: list = ["mean", [0.05, 0.95]],
+    statistics: list = ["mean", 0.05, 0.95],
     trend_type: str = "additive",
     metrics: list = [],
     time_validate: np.ndarray = None,
@@ -216,11 +216,11 @@ def calculate_future_trend_bias(
 ) -> pd.DataFrame:
     """
     For each location, calculates the bias in the trend of the bias corrected model compared to the raw climate model for the following metrics:
-    mean, 5% and 95% quantile (default) as well as metrics passed as arguments to the function.
+    mean, 5% and 95% quantile (default) as well as metrics of class :py:class:`ThresholdMetric` (from ``ibicus.evaluate.metrics``) passed as arguments to the function.
 
-    Trend can be specified as either additive or multiplicative.
+    The trend can be specified as either additive or multiplicative by setting ``trend_type`` (default: additive).
 
-    Function returns numpy array with three columns:
+    The function returns numpy array with three columns:
     [Correction method: str, Metric: str, Bias: List containing one 2d np.ndarray containing trend bias at each location]
 
     Parameters
@@ -231,22 +231,23 @@ def calculate_future_trend_bias(
         Raw climate data set in validation period.
     raw_future: np.ndarray
         Raw climate data set in future period.
-    metrics : np.ndarray
-        1d numpy array of strings containing the keys of the metrics to be analysed. Example: `metrics = ['dry', 'wet']`.
+    statistics : list
+        List containing float values as well as "mean" specifying for which distributional aspects the trend bias shall be calculated.
     trend_type : str
-        Determines whether additive or multiplicative trend is analysed. Has to be one of ['additive', 'multiplicative'].
+        Determines the type of trend that is analysed. Has to be one of ['additive', 'multiplicative'].
+    metrics : list
+        List of :py:class:`ThresholdMetric` metrics whose trend bias shall be calculated. Example: ``metrics = [ibicus.metrics.dry_days', 'ibicus.metrics.wet_days']``.
     time_validate : np.ndarray
-        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_validate` and the first entry of each `debiased_cms` keyword arguments correspond.
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_validate` and the first entry of each `debiased_cms` keyword arguments correspond.
     time_future : np.ndarray
-        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_future` and the second entry of each `debiased_cms` keyword arguments correspond.
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the values in `raw_future` and the second entry of each `debiased_cms` keyword arguments correspond.
     debiased_cms : np.ndarray
-        Keyword arguments given in format `debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`.
-        Example: `QM = [tas_val_debiased_QM, tas_future_debiased_QM]`.
+        Keyword arguments given in format ``debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`` specifying the climate models to be analysed for trends in biases.
+        Example: ``QM = [tas_val_debiased_QM, tas_future_debiased_QM]``.
 
     Examples
     --------
-    >>> tas_trend_bias_data = trend.calculate_future_trend_bias(variable = 'tas', raw_validate = tas_cm_validate, raw_future = tas_cm_future, metrics = [warm_days, cold_days], trend_type = "additive", QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
-
+    >>> tas_trend_bias_data = trend.calculate_future_trend_bias(variable = 'tas', raw_validate = tas_cm_validate, raw_future = tas_cm_future, metrics = [ibicus.metrics.warm_days, ibicus.metrics.cold_days], trend_type = "additive", QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
     """
 
     trend_bias_dfs = []
@@ -259,45 +260,15 @@ def calculate_future_trend_bias(
 
         # calculate trend bias in descriptive statistics
 
-        if "mean" in statistics:
-            mean_bias = _calculate_mean_trend_bias(
-                trend_type, raw_validate, raw_future, *debiased_cms_value
-            )
-
-            if np.any(np.isinf(mean_bias)):
-                warning(
-                    "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
-                        debiased_cms_key
-                    )
-                )
-            else:
-                trend_bias_dfs.append(
-                    pd.DataFrame(
-                        data={
-                            "Correction Method": debiased_cms_key,
-                            "Metric": "Mean",
-                            "Bias": [mean_bias],
-                        }
-                    )
+        for q in statistics:
+            if q == "mean":
+                mean_bias = _calculate_mean_trend_bias(
+                    trend_type, raw_validate, raw_future, *debiased_cms_value
                 )
 
-        if not statistics:
-            print("no quantiles calculated")
-        elif not (
-            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
-        ):
-            warnings.warn(
-                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
-            )
-        else:
-            for q in statistics[1]:
-                qn_bias = _calculate_quantile_trend_bias(
-                    trend_type, q, raw_validate, raw_future, *debiased_cms_value
-                )
-
-                if np.any(np.isinf(qn_bias)):
+                if np.any(np.isinf(mean_bias)):
                     warning(
-                        "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                        "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
                             debiased_cms_key
                         )
                     )
@@ -306,10 +277,36 @@ def calculate_future_trend_bias(
                         pd.DataFrame(
                             data={
                                 "Correction Method": debiased_cms_key,
-                                "Metric": str(q) + " qn",
-                                "Bias": [qn_bias],
+                                "Metric": "Mean",
+                                "Bias": [mean_bias],
                             }
                         )
+                    )
+            else:
+                if q <= 1 and q >= 0:
+                    qn_bias = _calculate_quantile_trend_bias(
+                        trend_type, q, raw_validate, raw_future, *debiased_cms_value
+                    )
+
+                    if np.any(np.isinf(qn_bias)):
+                        warning(
+                            "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                                debiased_cms_key
+                            )
+                        )
+                    else:
+                        trend_bias_dfs.append(
+                            pd.DataFrame(
+                                data={
+                                    "Correction Method": debiased_cms_key,
+                                    "Metric": str(q) + " qn",
+                                    "Bias": [qn_bias],
+                                }
+                            )
+                        )
+                else:
+                    warnings.warn(
+                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
                     )
 
         # calculate trend bias in metrics
@@ -349,14 +346,44 @@ def calculate_future_trend_bias(
 
 def calculate_future_trend(
     variable: str,
-    statistics: list = ["mean", [0.05, 0.95]],
+    statistics: list = ["mean", 0.05, 0.95],
     trend_type: str = "additive",
     metrics: list = [],
     time_validate: np.ndarray = None,
     time_future: np.ndarray = None,
     **debiased_cms,
 ) -> pd.DataFrame:
-    """ """
+    """
+    For each location, calculates the trend of the bias corrected model compared to the raw climate model for the following metrics:
+    mean, 5% and 95% quantile (default) as well as metrics of class :py:class:`ThresholdMetric` (from ``ibicus.evaluate.metrics``) passed as arguments to the function.
+
+    The trend can be specified as either additive or multiplicative by setting ``trend_type`` (default: additive).
+
+    The function returns numpy array with three columns:
+    [Correction method: str, Metric: str, Bias: List containing one 2d np.ndarray containing trend bias at each location]
+
+    Parameters
+    ----------
+    variable : str
+        Variable name, has to be given in standard form following CMIP convention.
+    statistics : list
+        List containing float values as well as "mean" specifying for which distributional aspects the trend bias shall be calculated.
+    trend_type : str
+        Determines the type of trend that is analysed. Has to be one of ['additive', 'multiplicative'].
+    metrics : list
+        List of :py:class:`ThresholdMetric` metrics whose trend bias shall be calculated. Example: ``metrics = [ibicus.metrics.dry_days', 'ibicus.metrics.wet_days']``.
+    time_validate : np.ndarray
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the first entry of each `debiased_cms` keyword arguments correspond.
+    time_future : np.ndarray
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) time information needs to be passed to calculate it. This is a 1d numpy arrays of times to which the second entry of each `debiased_cms` keyword arguments correspond.
+    debiased_cms : np.ndarray
+        Keyword arguments given in format ``debiaser_name = [debiased_dataset_validation_period, debiased_dataset_future_period]`` specifying the climate models to be analysed for trends in biases.
+        Example: ``QM = [tas_val_debiased_QM, tas_future_debiased_QM]``.
+
+    Examples
+    --------
+    >>> tas_trend_bias_data = trend.calculate_future_trend(variable = 'tas', metrics = [ibicus.metrics.warm_days, ibicus.metrics.cold_days], trend_type = "additive", QDM = [tas_val_debiased_QDM, tas_fut_debiased_QDM], CDFT = [tas_val_debiased_CDFT, tas_fut_debiased_CDFT])
+    """
 
     trend_bias_dfs = []
 
@@ -368,41 +395,13 @@ def calculate_future_trend(
 
         # calculate trend bias in descriptive statistics
 
-        if "mean" in statistics:
-            mean_bias = _calculate_mean_trend(trend_type, *debiased_cms_value)
+        for q in statistics:
+            if q == "mean":
+                mean_bias = _calculate_mean_trend(trend_type, *debiased_cms_value)
 
-            if np.any(np.isinf(mean_bias)):
-                warning(
-                    "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
-                        debiased_cms_key
-                    )
-                )
-            else:
-                trend_bias_dfs.append(
-                    pd.DataFrame(
-                        data={
-                            "Correction Method": debiased_cms_key,
-                            "Metric": "Mean",
-                            "Bias": [mean_bias],
-                        }
-                    )
-                )
-
-        if not statistics:
-            print("no quantiles calculated")
-        elif not (
-            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
-        ):
-            warnings.warn(
-                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
-            )
-        else:
-            for q in statistics[1]:
-                qn_bias = _calculate_quantile_trend(trend_type, q, *debiased_cms_value)
-
-                if np.any(np.isinf(qn_bias)):
+                if np.any(np.isinf(mean_bias)):
                     warning(
-                        "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                        "{}: Division by zero encountered in trend bias of mean calculation, not showing results for this debiaser.".format(
                             debiased_cms_key
                         )
                     )
@@ -411,10 +410,36 @@ def calculate_future_trend(
                         pd.DataFrame(
                             data={
                                 "Correction Method": debiased_cms_key,
-                                "Metric": str(q) + " qn",
-                                "Bias": [qn_bias],
+                                "Metric": "Mean",
+                                "Bias": [mean_bias],
                             }
                         )
+                    )
+            else:
+                if q <= 1 and q >= 0:
+                    qn_bias = _calculate_quantile_trend(
+                        trend_type, q, *debiased_cms_value
+                    )
+
+                    if np.any(np.isinf(qn_bias)):
+                        warning(
+                            "{}: Division by zero encountered in trend bias of low quantile calculation, not showing results for this debiaser.".format(
+                                debiased_cms_key
+                            )
+                        )
+                    else:
+                        trend_bias_dfs.append(
+                            pd.DataFrame(
+                                data={
+                                    "Correction Method": debiased_cms_key,
+                                    "Metric": str(q) + " qn",
+                                    "Bias": [qn_bias],
+                                }
+                            )
+                        )
+                else:
+                    warnings.warn(
+                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
                     )
 
         # calculate trend bias in metrics
@@ -459,20 +484,22 @@ def plot_future_trend_bias_boxplot(
     color_palette="tab10",
 ):
     """
-    Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an overview boxplot of the bias in the trend of metrics.
+    Accepts ouput given by :py:func:`calculate_future_trend_bias` and creates an overview boxplot of the bias in the trend of different metrics.
 
     Parameters
     ----------
-    variable: str
+    variable : str
         Variable name, has to be given in standard form specified in documentation.
-    bias_df: pd.DataFrame
-        Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]
+    bias_df : pd.DataFrame
+        Numpy array with three columns: [Bias correction method, Metric, Bias value at certain location]. Output from :py:func:`calculate_future_trend_bias`.
     manual_title : str
-        Optional argument present in all plot functions: manual_title will be used as title of the plot.
-    remove_outliers: bool
-        If set to True, values above the threshold specified through the next argument are removed
+        Manual title to replace the automatically generated one.
+    remove_outliers : bool
+        If set to ``True``, values above the threshold specified through the next argument are removed
     outlier_threshold: int,
-            Threshold above which to remove values from the plot
+        Threshold above which to remove values from the plot
+    color_palette : str
+        Seaborn color palette to use for the boxplot.
     """
 
     # unpack numpy arrays in column 'Bias'
@@ -526,7 +553,7 @@ def plot_future_trend_bias_spatial(
     metric : str
         Metric in `bias_df` to plot.
     bias_df: pd.DataFrame
-        Dataframe with three columns: [Bias correction method, Metric, Bias value at certain location].
+        Dataframe with three columns: [Bias correction method, Metric, Bias value at certain location].  Output from :py:func:`calculate_future_trend_bias`.
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
     """
