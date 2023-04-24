@@ -204,7 +204,6 @@ def _calculate_metrics_trend(
 
 
 def calculate_future_trend_bias(
-    variable: str,
     raw_validate: np.ndarray,
     raw_future: np.ndarray,
     statistics: list = ["mean", 0.05, 0.95],
@@ -225,8 +224,6 @@ def calculate_future_trend_bias(
 
     Parameters
     ----------
-    variable : str
-        Variable name, has to be given in standard form following CMIP convention.
     raw_validate : np.ndarray
         Raw climate data set in validation period.
     raw_future: np.ndarray
@@ -345,7 +342,6 @@ def calculate_future_trend_bias(
 
 
 def calculate_future_trend(
-    variable: str,
     statistics: list = ["mean", 0.05, 0.95],
     trend_type: str = "additive",
     metrics: list = [],
@@ -364,8 +360,6 @@ def calculate_future_trend(
 
     Parameters
     ----------
-    variable : str
-        Variable name, has to be given in standard form following CMIP convention.
     statistics : list
         List containing float values as well as "mean" specifying for which distributional aspects the trend bias shall be calculated.
     trend_type : str
