@@ -71,6 +71,8 @@ ibicus.evaluate.marginal
    :undoc-members:
    :show-inheritance:
 
+----
+
 ibicus.evaluate.multivariate
 -----------------------------------
 
@@ -79,6 +81,7 @@ ibicus.evaluate.multivariate
    :undoc-members:
    :show-inheritance:
 
+----
 
 ibicus.evaluate.correlation
 ----------------------------------
@@ -88,6 +91,7 @@ ibicus.evaluate.correlation
    :undoc-members:
    :show-inheritance:
 
+----
 
 ibicus.evaluate.trend
 ----------------------------
@@ -97,6 +101,7 @@ ibicus.evaluate.trend
    :undoc-members:
    :show-inheritance:
 
+----
 
 ibicus.evaluate.assumptions
 ----------------------------------

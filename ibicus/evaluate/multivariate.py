@@ -6,6 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Multivariate module - Provides the possiblity to make a multivariate analysis of bias adjusted data over a validation period to check for modifications of the structure.
+"""
 
 from itertools import chain
 

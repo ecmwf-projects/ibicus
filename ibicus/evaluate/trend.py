@@ -6,6 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Trend module - Provides the possiblity to analyse (changes in) climate trends in bias adjusted data. This is possible for both statistical properties of a variable (mean, quantiles), as well as climate metrics (:py:class:`ThresholdMetric`). Trends are defined here between a validation and future period.
+"""
+
 import warnings
 from logging import warning
 
