@@ -6,6 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Marginal module - Provides the possiblity to make a marginal analysis of bias adjusted data over a validation period to check for remaining biases. This is possible for both statistical properties of a variable, as well as climate metrics (:py:class:`ThresholdMetric`)
+"""
+
 import warnings
 
 import matplotlib.pyplot as plt
@@ -94,31 +98,32 @@ def _marginal_metrics_bias(
 
 def calculate_marginal_bias(
     obs: np.ndarray,
-    statistics: list = ["mean", [0.05, 0.95]],
+    statistics: list = ["mean", 0.05, 0.95],
     metrics: list = [],
     percentage_or_absolute: str = "percentage",
     **cm_data
 ) -> pd.DataFrame:
     """
-    Returns a :py:class:`pd.DataFrame` containing location-wise percentage bias of different metrics: mean, 5th and 95th percentile, as well as metrics specific in `metrics`,
-    comparing observations to climate model output during a validation period. Output dataframes contains three columns: 'Correction Method' (str) correspond to the cm_data keys,
-    'Metric', which is in ['Mean', '5% qn', '95% qn', metrics_names], and 'Percentage Bias' which contains a np.ndarray which in turn contains the output values at each location.
+    Returns a :py:class:`pd.DataFrame` containing location-wise percentage bias of different metrics: mean, 5th and 95th percentile, as well as metrics specific in `metrics`, comparing observations to climate model output during a validation period.
+
+    Output dataframes contains three columns: 'Correction Method' (str) correspond to the cm_data keys, 'Metric', which is in ['Mean', '5% qn', '95% qn', metrics_names], and 'Percentage Bias' which contains a np.ndarray which in turn contains the output values at each location.
+
+    The output can be plotted using :py:func:`plot_marginal_bias` or :py:func:`plot_bias_spatial` or manually be analyzed further.
 
     Parameters
     ----------
     obs : np.ndarray
         observational dataset in validation period.
-        If one of the metrics is time sensitive (defined daily, monthly, seasonally) this needs to be a list of form `[obs_data, time_obs_data]` where `time_obs_data` is a 1d numpy arrays of times corresponding the the values in `obs_data`.
-    statistics: list
-        List of summary statistics. Format should be ['mean', list_of_quantiles], whereby the list of quantile should be of the form [0.5, 0.25, 0.95].
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally) this needs to be a list of form ``[obs_data, time_obs_data]`` where `time_obs_data` is a 1d numpy arrays of times corresponding the the values in `obs_data`.
+    statistics : list
+        List containing float values as well as "mean" specifying for which distributional aspects the trend bias shall be calculated. Default: ``["mean", 0.05, 0.95]``.
     metrics : list
-        Array of strings containing the metrics that are to be assessed.
-    percentage_or_absolute: str
-        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias,
-        meaning the difference in the mean days per year that this metric is exceeded.
+        List of :py:class:`ThresholdMetric` metrics whose trend bias shall be calculated. Example: ``metrics = [ibicus.metrics.dry_days', 'ibicus.metrics.wet_days']``.
+    percentage_or_absolute : str
+        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias,meaning the difference in the mean days per year that this metric is exceeded.
     **cm_data :
-        Keyword arguments of type debiaser_name = debiased_dataset in validation period (example: `QM = tas_val_debiased_QM`), covering all debiasers that are to be compared.
-        If one of the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) this needs to be a list of form lists of `[cm_data, time_cm_data]` where `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data`.
+        Keyword arguments of type ``debiaser_name = debiased_dataset`` in validation period (example: ``QM = tas_val_debiased_QM``), covering all debiasers that are to be compared.
+        If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) this needs to be a list of form lists of ``[cm_data, time_cm_data]`` where `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data`.
 
     Returns
     -------
@@ -140,52 +145,17 @@ def calculate_marginal_bias(
             cm_data_value
         )
 
-        if "mean" in statistics:
-            mean_bias = _marginal_mean_bias(
-                obs_data=obs_data,
-                cm_data=cm_data_value,
-                bias_type=percentage_or_absolute,
-            )
-
-            if np.any(np.isinf(mean_bias)):
-                warnings.warn(
-                    "{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(
-                        cm_data_key
-                    ),
-                    stacklevel=2,
-                )
-            else:
-                marginal_bias_dfs.append(
-                    pd.DataFrame(
-                        data={
-                            "Correction Method": cm_data_key,
-                            "Metric": "Mean",
-                            "Type": percentage_or_absolute,
-                            "Bias": [mean_bias],
-                        }
-                    )
-                )
-
-        if not statistics:
-            print("no quantiles calculated")
-        elif not (
-            all(i <= 1 for i in statistics[1]) and all(i >= 0 for i in statistics[1])
-        ):
-            warnings.warn(
-                "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
-            )
-        else:
-            for q in statistics[1]:
-                qn_bias = _marginal_quantile_bias(
-                    quantile=q,
+        for q in statistics:
+            if q == "mean":
+                mean_bias = _marginal_mean_bias(
                     obs_data=obs_data,
                     cm_data=cm_data_value,
                     bias_type=percentage_or_absolute,
                 )
 
-                if np.any(np.isinf(qn_bias)):
+                if np.any(np.isinf(mean_bias)):
                     warnings.warn(
-                        "{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(
+                        "{}: Division by zero encountered in bias of mean calculation, not showing results for this debiaser.".format(
                             cm_data_key
                         ),
                         stacklevel=2,
@@ -195,11 +165,42 @@ def calculate_marginal_bias(
                         pd.DataFrame(
                             data={
                                 "Correction Method": cm_data_key,
-                                "Metric": str(q) + " qn",
+                                "Metric": "Mean",
                                 "Type": percentage_or_absolute,
-                                "Bias": [qn_bias],
+                                "Bias": [mean_bias],
                             }
                         )
+                    )
+            else:
+                if q <= 1 and q >= 0:
+                    qn_bias = _marginal_quantile_bias(
+                        quantile=q,
+                        obs_data=obs_data,
+                        cm_data=cm_data_value,
+                        bias_type=percentage_or_absolute,
+                    )
+
+                    if np.any(np.isinf(qn_bias)):
+                        warnings.warn(
+                            "{}: Division by zero encountered in bias of low quantile calculation, not showing results for this debiaser.".format(
+                                cm_data_key
+                            ),
+                            stacklevel=2,
+                        )
+                    else:
+                        marginal_bias_dfs.append(
+                            pd.DataFrame(
+                                data={
+                                    "Correction Method": cm_data_key,
+                                    "Metric": str(q) + " qn",
+                                    "Type": percentage_or_absolute,
+                                    "Bias": [qn_bias],
+                                }
+                            )
+                        )
+                else:
+                    warnings.warn(
+                        "Quantile values below 0 or above 1 encountered. No quantiles are calculated."
                     )
 
         for m in metrics:
@@ -287,12 +288,14 @@ def plot_marginal_bias(
         List of strings specifying summary statistics computed on the data. Strings have to be equal to entry in the 'Metric' column of bias_df.
     manual_title : str
         Optional argument present in all plot functions: manual_title will be used as title of the plot.
-    remove_outliers: bool
+    remove_outliers : bool
         If set to True, values above the threshold specified through the next argument are removed
-    outlier_threshold_statistics: int,
+    outlier_threshold_statistics : int,
         Threshold above which to remove values from the plot for bias statistics (mean, quantiles)
-    outlier_threshold_metrics: int
+    outlier_threshold_metrics : int
         Threshold above which to remove values from the plot for bias in metrics (such as dry days, hot days, etc)
+    color_palette : str
+        Seaborn color palette to use for the boxplot.
 
     Examples
     --------
@@ -360,7 +363,7 @@ def plot_bias_spatial(
     manual_title: str = " ",
 ):
     """
-    Spatial plot of bias at each location with respect to one specified metric.
+    Returns spatial plots of bias at each location with respect to one specified metric, based on calculation performed in :py:func:`calculate_marginal_bias`.
 
     Parameters
     ----------
@@ -471,8 +474,9 @@ def calculate_bias_days_metrics(
     obs_data: np.ndarray, metrics: list = [], **cm_data
 ) -> pd.DataFrame:
     """
-    Returns a :py:class:`pd.DataFrame` containing location-wise mean number of yearly threshold exceedances
-    Output dataframes contains five columns: 'Correction Method' (str) correspond to the cm_data keys,
+    Returns a :py:class:`pd.DataFrame` containing location-wise mean number of yearly threshold exceedances.
+
+    The output dataframes contains five columns: 'Correction Method' (str) correspond to the cm_data keys,
     'Metric', which is in [metrics_names], 'CM' which contains the mean number of days of threshold exceedance in the climate
     models, 'Obs' which which contains the mean number of days of threshold exceedance in the observations,
     and 'Bias' which contains the difference (CM-Obs) between the mean number of threshold exceedance days in the climate
@@ -481,11 +485,11 @@ def calculate_bias_days_metrics(
     Parameters
     ----------
     obs_data : np.ndarray
-        List of observational dataset in validation period and corresponding time information: `[obs_data, time_obs_data]`. Here `time_obs_data` is a 1d numpy arrays of times corresponding to the values in `obs_data`.
+        List of observational dataset in validation period and corresponding time information: ``[obs_data, time_obs_data]``. Here `time_obs_data` is a 1d numpy arrays of times corresponding to the values in `obs_data`.
     metrics : list
         Array of strings containing the names of the metrics that are to be assessed.
     **cm_data :
-        Keyword arguments of type `debiaser_name = [cm_data, time_cm_data]` covering all debiasers to be compared. Here `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data` and `cm_data` refers to a debiased dataset in a validation period. Example: `QM = [tas_val_debiased_QM, time_val]`
+        Keyword arguments of type ``debiaser_name = [cm_data, time_cm_data]`` covering all debiasers to be compared. Here `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data` and `cm_data` refers to a debiased dataset in a validation period. Example: ``QM = [tas_val_debiased_QM, time_val]``.
 
     Returns
     -------
@@ -556,7 +560,6 @@ def plot_spatiotemporal(
     ],
     xlims=[30, 30, 1],
 ):
-
     figure_number = len(data)
 
     fig, axes = plt.subplots(
@@ -564,7 +567,6 @@ def plot_spatiotemporal(
     )
 
     for i in range(len(data)):
-
         seaborn.ecdfplot(
             ax=axes[i], data=data[i], hue="Correction Method", x=column_names[i]
         )  # , stat='count')
