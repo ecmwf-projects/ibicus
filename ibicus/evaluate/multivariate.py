@@ -20,7 +20,6 @@ from ..variables import map_variable_str_to_variable_class, str_to_variable_clas
 
 
 def _calculate_chi(metric1, metric2, dataset1, dataset2, time=None):
-
     metric1_instances = metric1.calculate_instances_of_threshold_exceedance(
         dataset1, time=time
     )
@@ -45,29 +44,29 @@ def _calculate_chi(metric1, metric2, dataset1, dataset2, time=None):
 
 
 def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate_data):
-
     """
-    Returns a :py:class:`pd.DataFrame` containing location-wise conditional exceedance probability.
-
-    Calculates:
+    Returns a :py:class:`pd.DataFrame` containing location-wise conditional exceedance probability. Calculates:
 
     .. math:: p (\\text{Metric1} | \\text{Metric2}) = p (\\text{Metric1} , \\text{Metric2}) / p(\\text{Metric2})
 
     Output is a pd.DataFrame with 3 columns:
-    - Correction Method: Type of climate data - obs, raw, bias_correction_name. Given through key of climate_data
-    - Compound metric: str reading 'Metric1.name given Metric2.name'
-    - Conditional exceedance probability: 2d numpy array with conditional exceedance probability at each location
+
+    - Correction Method: Type of climate data - obs, raw, bias_correction_name. Given through keys of climate_data.
+    - Compound metric: str reading ``Metric1.name given Metric2.name``.
+    - Conditional exceedance probability: 2d numpy array with conditional exceedance probability at each location.
 
     Parameters
     ----------
     metric1 : ThresholdMetric
         Metric 1 whose exceedance conditional on metric 2 shall be assessed.
     metric2 : ThresholdMetric
-        Metric 2 on which metric 1 is contioned upon..
+        Metric 2 on which metric 1 is contioned upon.
     **climate_data :
-        Keyword arguments of type `key = [variable1_debiased_dataset, variable2_debiased_dataset]`. Here the exceedance of metric 1 is calculated on the first dataset (`variable1_debiased_dataset`) and the exceedance of metric 2 on the second one (`variable2_debiased_dataset`) to calculate the conditional exceedance. Example: 'obs = [pr_obs_validate, tasmin_obs_validate]', or 'ISIMIP = [pr_val_debiased_ISIMIP, tasmin_val_debiased_ISIMIP]').
-        If one the metrics is time sensitive (defined daily, monthly, seasonally: `metric.threshold_scope = ['day', 'month', 'year']`) a third list element needs to be passed: a 1D `np.ndarray` containing the time information corresponding to the entries in the variable1 and variable2 datasets. Example: 'obs = [pr_obs_validate, tasmin_obs_validate, time_obs_validate]'.
-        ..warning:: datasets for variable1 and variable2 need to be during the same time period and the entries need to happen at the same dates.
+        Keyword arguments of type ``key = [variable1_debiased_dataset, variable2_debiased_dataset]``. Here the exceedance of metric 1 is calculated on the first dataset (`variable1_debiased_dataset`) and the exceedance of metric 2 on the second one (`variable2_debiased_dataset`) to calculate the conditional exceedance. Example: ``obs = [pr_obs_validate, tasmin_obs_validate]``, or ``ISIMIP = [pr_val_debiased_ISIMIP, tasmin_val_debiased_ISIMIP]``).
+
+        If one the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) a third list element needs to be passed: a 1D :py:class:`np.ndarray` containing the time information corresponding to the entries in the variable1 and variable2 datasets. Example: ``obs = [pr_obs_validate, tasmin_obs_validate, time_obs_validate]``.
+
+        .. warning:: Datasets for variable1 and variable2 need to be during the same time period and the entries need to happen at the same dates.
 
     Returns
     -------
@@ -84,7 +83,6 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
     compound_metric_name = "{} given {}".format(metric1.name, metric2.name)
 
     for climate_data_key, climate_data_value in climate_data.items():
-
         chi = (
             _calculate_chi(
                 metric1,
@@ -114,14 +112,13 @@ def calculate_conditional_joint_threshold_exceedance(metric1, metric2, **climate
 def plot_conditional_joint_threshold_exceedance(
     conditional_exceedance_df: pd.DataFrame,
 ):
-
     """
     Accepts ouput given by :py:func:`calculate_conditional_joint_threshold_exceedance` and creates an overview boxplot of the conditional exceedance probability across locations in the chosen datasets.
 
     Parameters
     ----------
     bias_array: np.ndarray
-        Output of :py:func:`calculate_conditional_joint_threshold_exceedance`
+        Output of :py:func:`calculate_conditional_joint_threshold_exceedance`. py:class:`pd.DataFrame` containing location-wise conditional exceedance probability.
     """
 
     # unpack dataframe
@@ -152,7 +149,6 @@ def plot_conditional_joint_threshold_exceedance(
 def calculate_and_spatialplot_multivariate_correlation(
     variables: list, manual_title: str = " ", **kwargs
 ):
-
     """
     Calculates correlation between the two variables specified in keyword arguments (such as tas and pr) at each location and outputs spatial plot.
 
@@ -174,7 +170,6 @@ def calculate_and_spatialplot_multivariate_correlation(
     correlation_matrix = {}
 
     for k in kwargs.keys():
-
         variable1 = kwargs[k][0]
         variable2 = kwargs[k][1]
 
@@ -206,7 +201,6 @@ def calculate_and_spatialplot_multivariate_correlation(
 
     i = 0
     for k in kwargs.keys():
-
         plot = ax[i].imshow(
             correlation_matrix[k],
             cmap=plt.get_cmap("coolwarm"),
@@ -238,9 +232,8 @@ def calculate_and_spatialplot_multivariate_correlation(
 def create_multivariate_dataframes(
     variables: list, datasets_obs: list, datasets_bc: list, gridpoint=(0, 0)
 ) -> pd.DataFrame:
-
     """
-    Helper function creating two joint pd.Dataframe of two variables specified, for observational dataset as well as one bias corrected dataset at one datapoint.
+    Helper function creating a joint :py:class:`pd.Dataframe` of two variables specified, for observational dataset as well as one bias corrected dataset at one datapoint.
 
     Parameters
     ----------
@@ -251,12 +244,12 @@ def create_multivariate_dataframes(
     datasets_bc : list
         List of two bias corrected datasets during same period for the two variables.
     gridpoint : tupel
-        Tupel that specifies location from which data will be extracted
+        Tuple that specifies location from which data will be extracted
 
     Examples
     --------
 
-    >>> tas_pr_obs, tas_pr_isimip = _create_multivariate_dataframes(variables = ['tas', 'pr'], datasets_obs = [tas_obs_validate, pr_obs_validate], datasets_bc = [tas_val_debiased_ISIMIP, pr_val_debiased_ISIMIP], gridpoint = (1,1))
+    >>> tas_pr_obs, tas_pr_isimip = create_multivariate_dataframes(variables = ['tas', 'pr'], datasets_obs = [tas_obs_validate, pr_obs_validate], datasets_bc = [tas_val_debiased_ISIMIP, pr_val_debiased_ISIMIP], gridpoint = (1,1))
 
     """
 
@@ -310,11 +303,9 @@ def plot_correlation_single_location(
 
 
 def _calculate_bootstrap_correlation_replicates(data: pd.DataFrame, size: int):
-
     correlation_replicates = np.empty(size)
 
     for i in range(size):
-
         bs_sample = data.sample(n=data.shape[0], replace=True)
 
         correlation_replicates[i] = bs_sample["pr"].corr(bs_sample["tas"])
@@ -325,7 +316,6 @@ def _calculate_bootstrap_correlation_replicates(data: pd.DataFrame, size: int):
 def plot_bootstrap_correlation_replicates(
     obs_df: pd.DataFrame, bc_df: pd.DataFrame, bc_name: str, size: int
 ):
-
     """
     Plots histograms of correlation between variables in input dataframes estimated via bootstrap using :py:func:`_calculate_bootstrap_correlation_replicates`.
 
