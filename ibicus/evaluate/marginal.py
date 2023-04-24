@@ -547,6 +547,34 @@ def calculate_bias_days_metrics(
     return pd.concat(marginal_bias_dfs)
 
 
+def plot_spatiotemporal(
+    data=[],
+    column_names=[
+        "Spell length (days)",
+        "Spatiotemporal cluster size",
+        "Spatial extent (% of area)",
+    ],
+    xlims=[30, 30, 1],
+):
+
+    figure_number = len(data)
+
+    fig, axes = plt.subplots(
+        1, figure_number, figsize=(figure_number * 5, 5), sharey=False
+    )
+
+    for i in range(len(data)):
+
+        seaborn.ecdfplot(
+            ax=axes[i], data=data[i], hue="Correction Method", x=column_names[i]
+        )  # , stat='count')
+        axes[i].set_xlim([0, xlims[i]])
+        axes[i].set_title(column_names[i])
+
+    plt.tight_layout()
+    return fig
+
+
 def plot_histogram(
     variable: str,
     data_obs: np.ndarray,
