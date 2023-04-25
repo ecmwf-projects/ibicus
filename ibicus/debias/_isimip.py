@@ -45,7 +45,7 @@ class ISIMIP(Debiaser):
 
     ISIMIP is a semi-parametric quantile mapping method that attempts to be trend-preserving in all quantiles by generating ‘pseudo future observations’ and executing the quantile mapping between the future climate model and the pseudo future observations. ISIMIP includes special cases for several of the variables, and for a complete description of the methodology we refer to the ISIMIP documentation.
 
-    `This notebook <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/05%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
+    `This notebook <https://nbviewer.org/github/ecmwf-projects/ibicus/blob/main/notebooks/04%20ISIMIP%20Consistency.ipynb>`_ demonstrates that the results obtained with this implementation of ISIMIP are consistent with the reference implementation.
 
     ISIMIP covers the following variables::
 
