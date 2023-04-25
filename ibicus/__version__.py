@@ -6,11 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-"""Container for ibicus metadata."""
+"""Container for ibicus version."""
 
-__name__ = "ibicus"
 __version__ = "0.1.dev3"
-__author__ = "Fiona Spuler, Jakob Wessel & European Centre for Medium-Range Weather Forecasts (ECMWF)"
-__author_email__ = "ibicus.py@gmail.com"
-__license__ = "Apache License Version 2.0"
-__description__ = "Ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation."
