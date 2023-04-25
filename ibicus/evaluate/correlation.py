@@ -6,6 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Correlation module - Calculate and plot the RMSE between spatial correlation matrices at each location.
+"""
+
 import math
 
 import matplotlib.pyplot as plt
@@ -112,16 +116,20 @@ def rmse_spatial_correlation_boxplot(
     )
 
     # set plot title
-    if variable in str_to_variable_class.keys():
-        plot_title = "{} ({}) \n RMSE of spatial correlation matrices".format(
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-        )
+    if manual_title == " ":
+        if variable in str_to_variable_class.keys():
+            plot_title = "{} ({}) \n RMSE of spatial correlation matrices".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+            )
+        else:
+            plot_title = manual_title
+            raise Warning(
+                "Variable not recognized, using manual_title to generate plot_title"
+            )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
-        )
+
     fig.suptitle(plot_title)
 
     return fig

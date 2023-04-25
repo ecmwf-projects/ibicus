@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 """
-Multivariate module - Provides the possiblity to make a multivariate analysis of bias adjusted data over a validation period to check for modifications of the structure.
+Multivariate module - calculate and plot conditional threshold exceedances, and analyse and plot the correlation between two variables at each location before and after bias adjustment to check for changes in the multivariate structure.
 """
 
 from itertools import chain
@@ -167,7 +167,7 @@ def plot_conditional_probability_spatial(
     outlier_threshold: int,
             Threshold above which to remove values from the plot.
     plot_title : str
-        Optional argument present in all plot functions: manual_title will be used as title of the plot.
+        No default plot title set within the function, plot_title will be used as title of the plot.
 
     Examples
     --------

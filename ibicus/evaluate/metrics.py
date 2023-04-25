@@ -7,17 +7,15 @@
 # nor does it submit to any jurisdiction.
 
 """
-Metrics module - Provides the possiblity to define threshold sensitive climate metrics that can be analysed themselves and used in :py:mod:`ibicus.marginal`, :py:mod:`ibicus.multivariate` and :py:mod:`ibicus.trend`.
+Metrics module - Provides the possiblity to define threshold sensitive climate metrics that are analysed here and used further in :py:mod:`ibicus.marginal`, :py:mod:`ibicus.multivariate` and :py:mod:`ibicus.trend`.
 """
 
 import warnings
 from typing import Union
 
 import attrs
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn
 from scipy.ndimage import measurements
 
 from ibicus import utils
@@ -723,55 +721,6 @@ class ThresholdMetric:
         )
 
         return plot_data
-
-    def violinplots_clusters(self, minimum_length, **climate_data):
-        """
-        Returns three violinplots with distributions of temporal, spatial and spatiotemporal extends of metric occurrences, comparing all climate dataset specified in `**climate_data`.
-
-        Parameters
-        ----------
-        minimum length : int
-            Minimum spell length (in days) investigated for temporal extends.
-        climate_data :
-            Keyword arguments, providing the input data to investigate. Should be `np.ndarrays` of observations or if the threshold is time sensitive (threshold_scope = ['day', 'month', 'year']) lists of `[cm_data, time_cm_data]` where `time_cm_data` are 1d numpy arrays of times corresponding the the values in `cm_data`.
-
-        """
-
-        temporal_data = self.calculate_spell_length(minimum_length, **climate_data)
-        spatial_data = self.calculate_spatial_extent(**climate_data)
-        spatiotemporal_data = self.calculate_spatiotemporal_clusters(**climate_data)
-
-        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
-
-        seaborn.violinplot(
-            ax=ax[0],
-            data=temporal_data,
-            x="Metric",
-            y="Spell length (days)",
-            palette="colorblind",
-            hue="Correction Method",
-        )
-        ax[0].set_title("Spell length (days)")
-
-        seaborn.violinplot(
-            ax=ax[1],
-            data=spatial_data,
-            x="Metric",
-            y="Spatial extent (% of area)",
-            palette="colorblind",
-            hue="Correction Method",
-        )
-        ax[1].set_title("Spatial extent (% of area)")
-
-        seaborn.violinplot(
-            ax=ax[2],
-            data=spatiotemporal_data,
-            x="Metric",
-            y="Spatiotemporal cluster size",
-            palette="colorblind",
-            hue="Correction Method",
-        )
-        ax[2].set_title("Spatiotemporal cluster size")
 
 
 @attrs.define

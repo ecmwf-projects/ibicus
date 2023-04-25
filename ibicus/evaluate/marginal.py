@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 """
-Marginal module - Provides the possiblity to make a marginal analysis of bias adjusted data over a validation period to check for remaining biases. This is possible for both statistical properties of a variable, as well as climate metrics (:py:class:`ThresholdMetric`)
+Marginal module - Calculate and plot the location-wise bias of the climate model before and after applying different bias adjustment methods. Provides the possiblity to calculate either the absolute or percentage bias at each location, for both statistical properties of the variable and specified threshold metrics, and plot either a boxplot across locations, or a spatial heatmap.
 """
 
 import warnings
@@ -106,7 +106,8 @@ def calculate_marginal_bias(
     """
     Returns a :py:class:`pd.DataFrame` containing location-wise percentage bias of different metrics: mean, 5th and 95th percentile, as well as metrics specific in `metrics`, comparing observations to climate model output during a validation period.
 
-    Output dataframes contains three columns: 'Correction Method' (str) correspond to the cm_data keys, 'Metric', which is in ['Mean', '5% qn', '95% qn', metrics_names], and 'Percentage Bias' which contains a np.ndarray which in turn contains the output values at each location.
+    Output dataframes contains four columns: 'Correction Method' (str) correspond to the cm_data keys, 'Metric', which shows the name of the threshold metric or statistic calculated, 'Type' which specifies whether the absolute or percentage bias is calculated,
+    and 'Bias' which contains a np.ndarray which in turn contains the output values at each location.
 
     The output can be plotted using :py:func:`plot_marginal_bias` or :py:func:`plot_bias_spatial` or manually be analyzed further.
 
@@ -120,7 +121,8 @@ def calculate_marginal_bias(
     metrics : list
         List of :py:class:`ThresholdMetric` metrics whose trend bias shall be calculated. Example: ``metrics = [ibicus.metrics.dry_days', 'ibicus.metrics.wet_days']``.
     percentage_or_absolute : str
-        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias,meaning the difference in the mean days per year that this metric is exceeded.
+        Specifies whether for the climate threshold metrics the percentage bias (p(cm)-p(obs))/p(obs) is computed, or the absolute bias. For threshold metrics, the absolute bias is difference in the mean days per year that this metric is exceeded
+        and for statistics it is the absolute difference in [physical units] of the two statistics.
     **cm_data :
         Keyword arguments of type ``debiaser_name = debiased_dataset`` in validation period (example: ``QM = tas_val_debiased_QM``), covering all debiasers that are to be compared.
         If one of the metrics is time sensitive (defined daily, monthly, seasonally: ``metric.threshold_scope = ['day', 'month', 'year']``) this needs to be a list of form lists of ``[cm_data, time_cm_data]`` where `time_cm_data` is a 1d numpy arrays of times corresponding the the values in `cm_data`.
@@ -132,7 +134,7 @@ def calculate_marginal_bias(
 
     Examples
     --------
-    >>> tas_marginal_bias_df = marginal.calculate_marginal_bias(obs_data = tas_obs_validate, metrics = tas_metrics, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
+    >>> tas_marginal_bias_df = marginal.calculate_marginal_bias(obs = tas_obs_validate, metrics = tas_metrics, raw = tas_cm_validate, ISIMIP = tas_val_debiased_ISIMIP)
 
     """
 
@@ -276,7 +278,7 @@ def plot_marginal_bias(
     """
     Returns boxplots showing distribution of the percentage bias over locations of different metrics, based on calculation performed in :py:func:`calculate_marginal_bias`.
 
-    Two boxplots are created: one for default descriptive statistics (mean, 5th and 95th quantile) and one for additional metrics present in the bias_df dataframe.
+    Two boxplots are created: one for the descriptive statistics and one for threshold metrics present in the bias_df dataframe.
 
     Parameters
     ----------
@@ -342,10 +344,13 @@ def plot_marginal_bias(
 
     # generate and set plot title
     if manual_title == " ":
-        plot_title = "{} ({}) - Bias".format(
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-        )
+        if variable in str_to_variable_class.keys():
+            plot_title = "{} ({}) - Bias".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+            )
+        else:
+            plot_title = manual_title
     else:
         plot_title = manual_title
 
@@ -396,18 +401,21 @@ def plot_bias_spatial(
     bias_df_filtered = bias_df[bias_df["Metric"] == metric]
 
     # generate plot title
-    if variable in str_to_variable_class.keys():
-        plot_title = "{} ({}) \n {} bias of mean".format(
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-            bias_df_filtered["Type"].iloc[0],
-        )
+    if manual_title == " ":
+        if variable in str_to_variable_class.keys():
+            plot_title = "{} ({}) \n {} bias of mean".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+                bias_df_filtered["Type"].iloc[0],
+            )
+        else:
+            plot_title = manual_title
+            warnings.warn(
+                "Variable not recognized, using manual_title to generate plot_title",
+                stacklevel=2,
+            )
     else:
         plot_title = manual_title
-        warnings.warn(
-            "Variable not recognized, using manual_title to generate plot_title",
-            stacklevel=2,
-        )
 
     # find maximum value to set axis bounds
     bias_df_unpacked = _unpack_df_of_numpy_arrays(
@@ -560,6 +568,24 @@ def plot_spatiotemporal(
     ],
     xlims=[30, 30, 1],
 ):
+
+    """
+    Plots empirical CDFs of spatiotemporal clustersizes over entire area.
+
+    Parameters
+    ----------
+    data : list = []
+        List of dataframes, output of the type produced by metrics.calculate_spell_length, metrics.calculate_spatial_extent, metrics.calculate_spatiotemporal_clusters expected as elements of the list
+    column_names : list = ["Spell length (days)", "Spatiotemporal cluster size", "Spatial extent (% of area)",]
+        Names of the columns containing spatiotemporal cluster sizes corresponding to the dataframes given to the argument data.
+    xlims : list = [30, 30, 1]
+        xlim for each of the plots, corresponding to the dataframes given to the argument data.
+
+    Examples
+    --------
+    >>> spatiotemporal_figure = marginal.plot_spatiotemporal(data = [spelllength_dry, spatiotemporal_dry, spatial_dry])
+
+    """
     figure_number = len(data)
 
     fig, axes = plt.subplots(
@@ -585,7 +611,7 @@ def plot_histogram(
     **cm_data
 ):
     """
-    Plots histogram over entire are or at single location. Expects a one-dimensional array as input.
+    Plots histogram over entire area or at single location. Expects a one-dimensional array as input.
 
     Parameters
     ----------
@@ -611,16 +637,20 @@ def plot_histogram(
     fig, ax = plt.subplots(1, plot_number, figsize=(figure_length, 5), squeeze=True)
 
     # generate plot title
-    if variable in str_to_variable_class.keys():
-        plot_title = "Distribution {} ({}) over entire area".format(
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-        )
+    if manual_title == " ":
+        if variable in str_to_variable_class.keys():
+            plot_title = "Distribution {} ({}) over entire area".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+            )
+        else:
+            plot_title = manual_title
+            raise Warning(
+                "Variable not recognized, using manual_title to generate plot_title"
+            )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
-        )
+
     fig.suptitle(plot_title)
 
     # generate plots

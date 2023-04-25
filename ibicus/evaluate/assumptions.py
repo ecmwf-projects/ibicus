@@ -6,6 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+"""
+Assumptions module - test assumptions of bias adjustment methods. Currently allows to fit different distributions to the data, calculate and plot the Akaike Information Criterion to compare distributions and plot timeseries and autocorrelation function of quantile residuals, as well as a QQ-plot of normalized quantile residuals at one location.
+"""
 
 from typing import Optional, Union
 
@@ -124,6 +127,8 @@ def plot_fit_worst_aic(
         Number of bins used for the histogram. Either :py:class:int` or `"auto"` (default).
     aic_values : Optional[pd.DataFrame] = None
         Pandas dataframe of type output by calculate_aic_goodness_of_fit. If `None` then they are recalculated;
+    manual_title: str = " "
+        Optional argument present in all plot functions: manual_title will be used as title of the plot.
     """
     if aic_values is None:
         aic_values = calculate_aic(variable, dataset, distribution)
@@ -142,20 +147,23 @@ def plot_fit_worst_aic(
     x = np.linspace(xmin, xmax, 100)
     p = distribution.pdf(x, *fit)
 
-    if variable in str_to_variable_class.keys():
-        plot_title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
-            data_type,
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-            distribution.name,
-            x_location,
-            y_location,
-        )
+    if manual_title == " ":
+        if variable in str_to_variable_class.keys():
+            plot_title = "{} {} ({}), distribution = {} \n Location = ({}, {})".format(
+                data_type,
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+                distribution.name,
+                x_location,
+                y_location,
+            )
+        else:
+            plot_title = manual_title
+            raise Warning(
+                "Variable not recognized, using manual_title to generate plot_title"
+            )
     else:
         plot_title = manual_title
-        raise Warning(
-            "Variable not recognized, using manual_title to generate plot_title"
-        )
 
     plt.plot(x, p, "k", linewidth=2)
     plt.title(plot_title)
@@ -183,6 +191,8 @@ def plot_quantile_residuals(
         Name of the distribution analysed, used for title only.
     data_type: str
         Data type analysed - can be observational data or raw / debiased climate model data. Used to generate title only.
+    manual_title: str = " "
+        Allows to set plot title manually.
 
     Examples
     --------
@@ -197,13 +207,16 @@ def plot_quantile_residuals(
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 5))
 
-    if variable in str_to_variable_class.keys():
-        plot_title = "{} ({}) - {}. Distribution = {}".format(
-            map_variable_str_to_variable_class(variable).name,
-            map_variable_str_to_variable_class(variable).unit,
-            data_type,
-            distribution.name,
-        )
+    if manual_title == " ":
+        if variable in str_to_variable_class.keys():
+            plot_title = "{} ({}) - {}. Distribution = {}".format(
+                map_variable_str_to_variable_class(variable).name,
+                map_variable_str_to_variable_class(variable).unit,
+                data_type,
+                distribution.name,
+            )
+        else:
+            plot_title = manual_title
     else:
         plot_title = manual_title
 
