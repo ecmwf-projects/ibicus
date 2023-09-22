@@ -821,15 +821,19 @@ class ISIMIP(Debiaser):
 
         if (
             self.nonparametric_qm
-            or cm_future_sorted_entries_between_thresholds.size == 0
+            or cm_future_sorted_entries_between_thresholds.size <= 1
+            or obs_future_sorted_entries_between_thresholds.size <= 1
         ):
-            if (
-                not self.nonparametric_qm
-                and cm_future_sorted_entries_between_thresholds.size == 0
-            ):
-                logger.info(
-                    "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between threshold."
-                )
+            if not self.nonparametric_qm:
+                if cm_future_sorted_entries_between_thresholds.size == 0:
+                    logger.info(
+                        "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between thresholds."
+                    )
+                else:
+                    logger.info(
+                        "ISIMIP step 6: There are too few values between thresholds in cm_future or the pseudo-future observations for a parametric CDF fit. Instead using nonparametric quantile mapping, between the values in cm_future and the pseudo future observations to calculate the values between threshold."
+                    )
+
             return quantile_map_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
                 y=obs_future_sorted_entries_between_thresholds,
