@@ -88,12 +88,12 @@ Daily mean near-surface relative humidity, unit: %
 """
 
 pr = Variable(
-    name="Daily mean precipitation",
+    name="Daily mean precipitation flux",
     unit="kg m-2 s-1",
     reasonable_physical_range=[0, 0.01],
 )
 """
-Daily mean precipitation, unit: kg m-2 s-1
+Daily mean precipitation flux, unit: kg m-2 s-1
 """
 
 prsn = Variable(
@@ -105,9 +105,11 @@ prsn = Variable(
 Daily mean snowfall flux, unit: kg m-2 s-1
 """
 
-prsnratio = Variable("Daily mean snowfall flux / Daily mean precipitation", unit="1")
+prsnratio = Variable(
+    "Daily mean snowfall flux / Daily mean precipitation flux", unit="1"
+)
 """
-Daily mean snowfall flux / Daily mean precipitation, unit: 1
+Daily mean snowfall flux / Daily mean precipitation flux, unit: 1
 """
 
 psl = Variable(
