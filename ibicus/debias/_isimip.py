@@ -803,12 +803,18 @@ class ISIMIP(Debiaser):
     ):
         logger = get_library_logger()
 
+        # Check if nonparametric quantile mapping is necessary.
+        if self.nonparametric_qm:
+            return quantile_map_non_parametically(
+                x=cm_future_sorted_entries_not_sent_to_bound,
+                y=obs_future_sorted_entries_between_thresholds,
+                vals=cm_future_sorted_entries_not_sent_to_bound,
+                ecdf_method=self.ecdf_method,
+                iecdf_method=self.iecdf_method,
+            )
+
         # ISIMIP v2.5: entries between bounds are mapped non-parametically on entries between thresholds (previous to bound adjustment)
-        if (
-            self.has_threshold
-            and not self.nonparametric_qm
-            and cm_future_sorted_entries_between_thresholds.size > 0
-        ):
+        if self.has_threshold and cm_future_sorted_entries_between_thresholds.size > 0:
             cm_future_sorted_entries_not_sent_to_bound = (
                 quantile_map_x_on_y_non_parametically(
                     x=cm_future_sorted_entries_not_sent_to_bound,
@@ -819,20 +825,26 @@ class ISIMIP(Debiaser):
                 )
             )
 
+        # Check if there are enough values for a parametric CDF fit, otherwise apply nonparametric quantile mapping.
+        if cm_future_sorted_entries_between_thresholds.size == 0:
+            logger.info(
+                "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between thresholds."
+            )
+
+            return quantile_map_non_parametically(
+                x=cm_future_sorted_entries_not_sent_to_bound,
+                y=obs_future_sorted_entries_between_thresholds,
+                vals=cm_future_sorted_entries_not_sent_to_bound,
+                ecdf_method=self.ecdf_method,
+                iecdf_method=self.iecdf_method,
+            )
         if (
-            self.nonparametric_qm
-            or cm_future_sorted_entries_between_thresholds.size <= 1
+            cm_future_sorted_entries_between_thresholds.size == 1
             or obs_future_sorted_entries_between_thresholds.size <= 1
         ):
-            if not self.nonparametric_qm:
-                if cm_future_sorted_entries_between_thresholds.size == 0:
-                    logger.info(
-                        "ISIMIP step 6: There are no values between thresholds in cm_future, but there should be some after bias adjustment. Using nonparametric quantile mapping (instead of parametric one) between the values in cm_future and the pseudo future observations to calculate the values between thresholds."
-                    )
-                else:
-                    logger.info(
-                        "ISIMIP step 6: There are too few values between thresholds in cm_future or the pseudo-future observations for a parametric CDF fit. Instead using nonparametric quantile mapping, between the values in cm_future and the pseudo future observations to calculate the values between threshold."
-                    )
+            logger.warning(
+                "ISIMIP step 6: There are too few values between thresholds in cm_future or the pseudo-future observations for a parametric CDF fit. Instead using nonparametric quantile mapping, between the values in cm_future and the pseudo future observations to calculate the values between threshold."
+            )
 
             return quantile_map_non_parametically(
                 x=cm_future_sorted_entries_not_sent_to_bound,
@@ -857,13 +869,35 @@ class ISIMIP(Debiaser):
         else:
             fixed_args = {"floc": floc, "fscale": fscale}
 
-        # Calculate cdf-fits
-        fit_cm_future = self.distribution.fit(
-            cm_future_sorted_entries_between_thresholds, **fixed_args
-        )
-        fit_obs_future = self.distribution.fit(
-            obs_future_sorted_entries_between_thresholds, **fixed_args
-        )
+        try:
+            # Calculate cdf-fits
+            fit_cm_future = self.distribution.fit(
+                cm_future_sorted_entries_between_thresholds, **fixed_args
+            )
+            fit_obs_future = self.distribution.fit(
+                obs_future_sorted_entries_between_thresholds, **fixed_args
+            )
+
+            # For scipy <= 1.11.0 in certain cases when a fit failed not error was raised, but instead a np.nan returned.
+            if np.nan in fit_cm_future or np.nan in fit_obs_future:
+                raise ValueError(
+                    "ISIMIP step 6: Parametric CDF fit failed to cm_future between threshold or the pseudo future observations between threshold."
+                )
+
+        except Exception as e:
+            # If cdf-fits fail quantile map parametrically instead
+            logger.warning(
+                "ISIMIP step 6: Parametric CDF fit to the cm_future values between thresholds or the pseudo future observations between thresholds failed. This might be due to too few datapoints in each category or numerical optimization issues. Applying nonparametric quantile mapping instead. Error: %s"
+                % e
+            )
+
+            return quantile_map_non_parametically(
+                x=cm_future_sorted_entries_not_sent_to_bound,
+                y=obs_future_sorted_entries_between_thresholds,
+                vals=cm_future_sorted_entries_not_sent_to_bound,
+                ecdf_method=self.ecdf_method,
+                iecdf_method=self.iecdf_method,
+            )
 
         # If ks_test_for_goodness_of_fit = True then test for goodness of fit and do nonparametric qm if too bad
         if self.ks_test_for_goodness_of_cdf_fit:
