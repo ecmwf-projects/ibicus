@@ -842,7 +842,7 @@ class ISIMIP(Debiaser):
             cm_future_sorted_entries_between_thresholds.size == 1
             or obs_future_sorted_entries_between_thresholds.size <= 1
         ):
-            logger.warning(
+            logger.info(
                 "ISIMIP step 6: There are too few values between thresholds in cm_future or the pseudo-future observations for a parametric CDF fit. Instead using nonparametric quantile mapping, between the values in cm_future and the pseudo future observations to calculate the values between threshold."
             )
 
@@ -886,7 +886,7 @@ class ISIMIP(Debiaser):
 
         except Exception as e:
             # If cdf-fits fail quantile map parametrically instead
-            logger.warning(
+            logger.info(
                 "ISIMIP step 6: Parametric CDF fit to the cm_future values between thresholds or the pseudo future observations between thresholds failed. This might be due to too few datapoints in each category or numerical optimization issues. Applying nonparametric quantile mapping instead. Error: %s"
                 % e
             )
@@ -1264,8 +1264,9 @@ class ISIMIP(Debiaser):
                     self._get_values_between_thresholds(cm_future_sorted),
                 )
             else:
-                warnings.warn(
-                    """ISIMIP step6: no pseudo-future observations between thresholds to quantile map to. Leaving %s values unadjusted."""
+                logger = get_library_logger()
+                logger.warning(
+                    """ISIMIP step 6: no pseudo-future observations between thresholds to quantile map to. Leaving %s values unadjusted."""
                     % mask_for_entries_not_set_to_either_bound.sum(),
                     stacklevel=2,
                 )

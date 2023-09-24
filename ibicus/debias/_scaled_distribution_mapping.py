@@ -6,7 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import warnings
 from typing import Union
 
 import attrs
@@ -16,6 +15,7 @@ from scipy.signal import detrend
 
 from ..utils import (
     StatisticalModel,
+    get_library_logger,
     interp_sorted_cdf_vals_on_given_length,
     threshold_cdf_vals,
 )
@@ -190,7 +190,6 @@ class ScaledDistributionMapping(Debiaser):
         return cls.from_variable("pr", pr_lower_threshold=pr_lower_threshold, **kwargs)
 
     def apply_location_relative_sdm(self, obs, cm_hist, cm_future):
-
         # Preparation: sort arrays
         obs = np.sort(obs)
         cm_hist = np.sort(cm_hist)
@@ -231,7 +230,8 @@ class ScaledDistributionMapping(Debiaser):
         )
 
         if expected_nr_rainy_days_cm_future > mask_rainy_days_cm_future.sum():
-            warnings.warn(
+            logger = get_library_logger()
+            logger.warning(
                 """The relative ScaledDistributionMapping does not currently support adjusting the number of rainy days upwards: so to transform dry days into rainy ones in cm_future.
                 The number of dry and rainy days is left unadjusted.""",
                 stacklevel=2,
@@ -320,7 +320,6 @@ class ScaledDistributionMapping(Debiaser):
         return cm_future[reverse_sorting_idx]
 
     def apply_location_absolute_sdm(self, obs, cm_hist, cm_future):
-
         # Step 1
         obs_detrended = detrend(obs, type="constant")
         cm_hist_detrended = detrend(cm_hist, type="constant")
