@@ -92,7 +92,7 @@ class TestLinearScaling(unittest.TestCase):
         assert pr_1 == pr_2
 
     def test_apply_location_additive(self):
-        tas = LinearScaling.from_variable("tas")
+        tas = LinearScaling.from_variable("tas", running_window_mode=False)
 
         # Test: perfect match between obs and cm_hist
         obs = np.random.normal(size=1000)
@@ -121,7 +121,7 @@ class TestLinearScaling(unittest.TestCase):
         )
 
     def test_apply_location_multiplicative(self):
-        pr = LinearScaling.from_variable("pr")
+        pr = LinearScaling.from_variable("pr", running_window_mode=False)
 
         # Test: perfect match between obs and cm_hist
         obs = np.random.uniform(size=1000)
@@ -148,3 +148,13 @@ class TestLinearScaling(unittest.TestCase):
             np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
             < 0.3
         )
+
+    def test_apply_running_window(self):
+        tas = LinearScaling.from_variable("tas")
+
+        # Test: corrects mean difference when inferring running window values
+        obs = np.random.normal(size=16000).reshape((1000, 4, 4))
+        cm_hist = np.random.normal(size=16000).reshape((1000, 4, 4)) + 5
+        cm_future = np.random.normal(size=16000).reshape((1000, 4, 4)) + 5
+
+        assert np.abs(np.mean(tas.apply(obs, cm_hist, cm_future)) - np.mean(obs)) < 0.3

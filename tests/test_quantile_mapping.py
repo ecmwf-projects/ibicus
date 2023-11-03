@@ -83,3 +83,32 @@ class TestQuantileMapping(unittest.TestCase):
         tasmax = QuantileMapping.from_variable("tasmax")
         assert tasmax.distribution == scipy.stats.beta
         assert tasmax.detrending == "additive"
+
+    def test_apply(self):
+        # Test mapping of means
+
+        obs = np.random.normal(size=16000).reshape((1000, 4, 4))
+        cm_hist = np.random.normal(size=16000).reshape((1000, 4, 4)) + 5
+        cm_future = np.random.normal(size=16000).reshape((1000, 4, 4)) + 5
+
+        tas = QuantileMapping.from_variable("tas", running_window_mode=False)
+        debiased = tas.apply(obs, cm_hist, cm_future)
+        assert np.abs(debiased.mean() - obs.mean()) < 0.5
+
+        tas = QuantileMapping.from_variable("tas", running_window_mode=True)
+        debiased = tas.apply(obs, cm_hist, cm_future)
+        assert np.abs(debiased.mean() - obs.mean()) < 0.5
+
+        # Test mapping of variances
+
+        obs = np.random.normal(size=16000).reshape((1000, 4, 4))
+        cm_hist = np.random.normal(size=16000).reshape((1000, 4, 4)) * 2
+        cm_future = np.random.normal(size=16000).reshape((1000, 4, 4)) * 2
+
+        tas = QuantileMapping.from_variable("tas", running_window_mode=False)
+        debiased = tas.apply(obs, cm_hist, cm_future)
+        assert scipy.stats.kstest(debiased.flatten(), obs.flatten())[0] <= 0.5
+
+        tas = QuantileMapping.from_variable("tas", running_window_mode=True)
+        debiased = tas.apply(obs, cm_hist, cm_future)
+        assert scipy.stats.kstest(debiased.flatten(), obs.flatten())[0] <= 0.5
