@@ -6,12 +6,24 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from typing import Union
+import warnings
+from typing import Optional, Union
 
 import attrs
+import numpy as np
 import scipy.stats
 
-from ..utils import PrecipitationHurdleModelGamma, StatisticalModel, threshold_cdf_vals
+from ..utils import (
+    PrecipitationHurdleModelGamma,
+    RunningWindowOverDaysOfYear,
+    StatisticalModel,
+    check_time_information_and_raise_error,
+    day_of_year,
+    get_mask_for_unique_subarray,
+    infer_and_create_time_arrays_if_not_given,
+    threshold_cdf_vals,
+    year,
+)
 from ..variables import (
     Variable,
     hurs,
@@ -105,6 +117,12 @@ class ECDFM(Debiaser):
         Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     cdf_threshold : float
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+    running_window_mode : bool
+        Iteration: Whether QuantileMapping is used in running window mode to account for seasonalities. If ``running_window_mode = False`` then QuantileMapping is applied on the whole period. Default: ``True``.
+    running_window_length : int
+        Iteration: Length of the running window in days: how many values are used to the debiased climate model values. Only relevant if ``running_window_mode = True``. Default: ``31``.
+    running_window_step_length : int
+        Iteration: Step length of the running window in days: how many values are debiased inside the running window. Only relevant if ``running_window_mode = True``. Default: ``1``.
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
@@ -127,6 +145,26 @@ class ECDFM(Debiaser):
     cdf_threshold: float = attrs.field(
         default=1e-10, validator=attrs.validators.instance_of(float)
     )
+
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    def __attrs_post_init__(self):
+        if self.running_window_mode:
+            self.running_window = RunningWindowOverDaysOfYear(
+                window_length_in_days=self.running_window_length,
+                window_step_length_in_days=self.running_window_step_length,
+            )
 
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
@@ -175,7 +213,7 @@ class ECDFM(Debiaser):
         parameters = {"distribution": method, "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
-    def apply_location(self, obs, cm_hist, cm_future):
+    def _apply_on_within_year_window(self, obs, cm_hist, cm_future):
         fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)
@@ -189,3 +227,76 @@ class ECDFM(Debiaser):
             + self.distribution.ppf(quantile_cm_future, *fit_obs)
             - self.distribution.ppf(quantile_cm_future, *fit_cm_hist)
         )
+
+    def apply_location(
+        self,
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        time_obs: Optional[np.ndarray] = None,
+        time_cm_hist: Optional[np.ndarray] = None,
+        time_cm_future: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        if self.running_window_mode:
+            if time_obs is None or time_cm_hist is None or time_cm_future is None:
+                warnings.warn(
+                    """QuantileMapping runs without time-information for at least one of obs, cm_hist or cm_future.
+                        This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
+                        This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.""",
+                    stacklevel=2,
+                )
+
+                (
+                    time_obs,
+                    time_cm_hist,
+                    time_cm_future,
+                ) = infer_and_create_time_arrays_if_not_given(
+                    obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+                )
+
+            check_time_information_and_raise_error(
+                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+            )
+
+            years_cm_future = year(time_cm_future)
+
+            days_of_year_obs = day_of_year(time_obs)
+            days_of_year_cm_hist = day_of_year(time_cm_hist)
+            days_of_year_cm_future = day_of_year(time_cm_future)
+
+            debiased_cm_future = np.empty_like(cm_future)
+
+            # Iteration over year to account for seasonality
+            for (
+                window_center,
+                indices_bias_corrected_values,
+            ) in self.running_window.use(days_of_year_cm_future, years_cm_future):
+                indices_window_obs = self.running_window.get_indices_vals_in_window(
+                    days_of_year_obs, window_center
+                )
+                indices_window_cm_hist = self.running_window.get_indices_vals_in_window(
+                    days_of_year_cm_hist, window_center
+                )
+                indices_window_cm_future = (
+                    self.running_window.get_indices_vals_in_window(
+                        days_of_year_cm_future, window_center
+                    )
+                )
+
+                debiased_cm_future[
+                    indices_bias_corrected_values
+                ] = self._apply_on_within_year_window(
+                    obs=obs[indices_window_obs],
+                    cm_hist=cm_hist[indices_window_cm_hist],
+                    cm_future=cm_future[indices_window_cm_future],
+                )[
+                    np.logical_and(
+                        np.in1d(
+                            indices_window_cm_future, indices_bias_corrected_values
+                        ),
+                        get_mask_for_unique_subarray(indices_window_cm_future),
+                    )
+                ]
+            return debiased_cm_future
+        else:
+            return self._apply_on_within_year_window(obs, cm_hist, cm_future)
