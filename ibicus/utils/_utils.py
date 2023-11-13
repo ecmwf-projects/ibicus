@@ -461,9 +461,9 @@ def _unpack_df_of_numpy_arrays(df, numpy_column_name):
     new_expanded_rows = []
     for _, row in df.iterrows():
         expanded_row = {}
-        for index, value in row.iteritems():
+        for index, value in row.items():
             if index == numpy_column_name:
-                expanded_row[index] = value[0].flatten()
+                expanded_row[index] = value.flatten()
             else:
                 expanded_row[index] = value
         new_expanded_rows.append(pd.DataFrame(data=expanded_row))
