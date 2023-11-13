@@ -12,6 +12,8 @@ ibicus implements a variety of methods for bias correction (8 currently) publish
 
 On the following pages you can find information on the usage of ibicus. Have a look at the `Overview <getting_started/overview.html>`_ the `What is debiasing? <getting_started/whatisdebiasing.html>`_ and the `API reference <reference/api.html>`_ for both the `debias <reference/debias.html>`_ and `evaluate <reference/evaluate.html>`_ module.
 
+How to cite: Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
+
 Documentation
 _____________
 

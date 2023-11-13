@@ -27,10 +27,3 @@ repos:
   hooks:
   - id: mdformat
     exclude: cruft-update-template.md
-- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.4.0
-  hooks:
-  - id: pretty-format-yaml
-    args: [--autofix, --preserve-quotes]
-  - id: pretty-format-toml
-    args: [--autofix]
