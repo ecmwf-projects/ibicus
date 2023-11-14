@@ -225,7 +225,6 @@ class CDFt(Debiaser):
     # ----- Helpers: CDFt application -----#
 
     def _apply_CDFt_mapping(self, obs, cm_hist, cm_future):
-
         if self.delta_shift == "additive":
             shift = np.mean(obs) - np.mean(cm_hist)
             cm_hist = cm_hist + shift
@@ -293,7 +292,6 @@ class CDFt(Debiaser):
     def _apply_on_month_and_window(
         self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
     ):
-
         # Precipitation
         if self.SSR:
             (
@@ -320,7 +318,6 @@ class CDFt(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ):
-
         if self.apply_by_month:
             debiased_cm_future = np.empty_like(cm_future)
             for i_month in range(1, 13):
@@ -350,7 +347,6 @@ class CDFt(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ):
-
         if time_obs is None or time_cm_hist is None or time_cm_future is None:
             warnings.warn(
                 """CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
@@ -372,13 +368,15 @@ class CDFt(Debiaser):
         )
 
         if self.running_window_mode:
+            if not hasattr(self, "running_window"):
+                self.__attrs_post_init__()
+
             years_cm_future = year(time_cm_future)
 
             debiased_cm_future = np.empty_like(cm_future)
             for years_to_debias, years_in_window in self.running_window.use(
                 years_cm_future
             ):
-
                 mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
                     years_cm_future, years_in_window
                 )

@@ -162,6 +162,9 @@ class LinearScaling(Debiaser):
         time_cm_future: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         if self.running_window_mode:
+            if not hasattr(self, "running_window"):
+                self.__attrs_post_init__()
+
             if time_obs is None or time_cm_hist is None or time_cm_future is None:
                 warnings.warn(
                     """LinearScaling runs without time-information for at least one of obs, cm_hist or cm_future.
