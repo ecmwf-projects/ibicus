@@ -524,6 +524,8 @@ class Debiaser(ABC):
             3-dimensional numpy array containing the debiased climate model values for the future run (cm_future). Has the spatial dimensions as obs, cm_hist, cm_future.
         """
 
+        self.__attrs_post_init__()
+
         logger = get_library_logger()
         logger.info("----- Running debiasing for variable: %s -----" % self.variable)
 

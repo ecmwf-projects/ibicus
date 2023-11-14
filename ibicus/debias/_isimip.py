@@ -1349,9 +1349,6 @@ class ISIMIP(Debiaser):
         )
 
         if self.running_window_mode:
-            if not hasattr(self, "running_window"):
-                self.__attrs_post_init__()
-
             days_of_year_obs = day_of_year(time_obs)
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)

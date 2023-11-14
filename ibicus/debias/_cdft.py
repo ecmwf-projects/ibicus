@@ -368,9 +368,6 @@ class CDFt(Debiaser):
         )
 
         if self.running_window_mode:
-            if not hasattr(self, "running_window"):
-                self.__attrs_post_init__()
-
             years_cm_future = year(time_cm_future)
 
             debiased_cm_future = np.empty_like(cm_future)
