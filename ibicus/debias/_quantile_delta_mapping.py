@@ -17,6 +17,7 @@ from ..utils import (
     RunningWindowOverDaysOfYear,
     RunningWindowOverYears,
     StatisticalModel,
+    check_time_information_and_raise_error,
     day_of_year,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
@@ -280,23 +281,6 @@ class QuantileDeltaMapping(Debiaser):
             **kwargs,
         )
 
-    # ----- Helpers ----- #
-    @staticmethod
-    def _check_time_information_and_raise_error(
-        obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-    ):
-        if (
-            obs.size != time_obs.size
-            or cm_hist.size != time_cm_hist.size
-            or cm_future.size != time_cm_future.size
-        ):
-            raise ValueError(
-                """
-                Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
-                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays.
-                """
-            )
-
     # ----- Main application functions ----- #
 
     def _apply_debiasing_steps(
@@ -406,7 +390,7 @@ class QuantileDeltaMapping(Debiaser):
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
-        QuantileDeltaMapping._check_time_information_and_raise_error(
+        check_time_information_and_raise_error(
             obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
         )
 
@@ -417,8 +401,7 @@ class QuantileDeltaMapping(Debiaser):
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)
 
-            debiased_cm_future = np.zeros_like(cm_future)  # TODO: replace by empty_like
-            # Problem: not all cm_future values are filled!!!!
+            debiased_cm_future = np.zeros_like(cm_future)
 
             # Iteration over year to account for seasonality
             for (
