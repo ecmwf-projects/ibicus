@@ -450,11 +450,16 @@ class CDFt(Debiaser):
                     ]
 
                 return debiased_cm_future
-
+            else:
+                return self._apply_on_within_year_window(
+                    obs=obs,
+                    cm_hist=cm_hist,
+                    cm_future=cm_future,
+                    years_cm_future=years_cm_future,
+                )
         else:
             return self._apply_debiasing_steps(
                 obs=obs,
                 cm_hist=cm_hist,
                 cm_future=cm_future,
-                years_cm_future=years_cm_future,
             )
