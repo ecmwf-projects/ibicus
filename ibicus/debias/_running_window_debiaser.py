@@ -1,0 +1,120 @@
+import warnings
+from abc import abstractmethod
+from typing import Optional
+
+import attrs
+import numpy as np
+
+from ..utils import (
+    RunningWindowOverDaysOfYear,
+    check_time_information_and_raise_error,
+    day_of_year,
+    infer_and_create_time_arrays_if_not_given,
+    year,
+)
+from ._debiaser import Debiaser
+
+
+@attrs.define(slots=False, kw_only=True)
+class RunningWindowDebiaser(Debiaser):
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    def __attrs_post_init__(self):
+        if self.running_window_mode:
+            self.running_window = RunningWindowOverDaysOfYear(
+                window_length_in_days=self.running_window_length,
+                window_step_length_in_days=self.running_window_step_length,
+            )
+
+    @abstractmethod
+    def apply_on_window(obs, cm_hist, cm_future, **kwargs):
+        pass
+
+    def apply_location(
+        self,
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        time_obs: Optional[np.ndarray] = None,
+        time_cm_hist: Optional[np.ndarray] = None,
+        time_cm_future: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        if self.running_window_mode:
+            if time_obs is None or time_cm_hist is None or time_cm_future is None:
+                warnings.warn(
+                    """Debiaser runs without time-information for at least one of obs, cm_hist or cm_future.
+                        This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
+                        This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.""",
+                    stacklevel=2,
+                )
+
+                (
+                    time_obs,
+                    time_cm_hist,
+                    time_cm_future,
+                ) = infer_and_create_time_arrays_if_not_given(
+                    obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+                )
+
+            check_time_information_and_raise_error(
+                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
+            )
+
+            years_cm_future = year(time_cm_future)
+
+            days_of_year_obs = day_of_year(time_obs)
+            days_of_year_cm_hist = day_of_year(time_cm_hist)
+            days_of_year_cm_future = day_of_year(time_cm_future)
+
+            debiased_cm_future = np.empty_like(cm_future)
+
+            # Iteration over year to account for seasonality
+            for (
+                window_center,
+                indices_bias_corrected_values,
+            ) in self.running_window.use(days_of_year_cm_future, years_cm_future):
+                indices_window_obs = self.running_window.get_indices_vals_in_window(
+                    days_of_year_obs, window_center
+                )
+                indices_window_cm_hist = self.running_window.get_indices_vals_in_window(
+                    days_of_year_cm_hist, window_center
+                )
+                indices_window_cm_future = (
+                    self.running_window.get_indices_vals_in_window(
+                        days_of_year_cm_future, window_center
+                    )
+                )
+
+                mask_vals_to_adjust_in_window = (
+                    RunningWindowOverDaysOfYear.get_mask_vals_to_adjust_in_window(
+                        indices_window_cm_future, indices_bias_corrected_values
+                    )
+                )
+
+                debiased_cm_future[
+                    indices_bias_corrected_values
+                ] = self.apply_on_window(
+                    obs=obs[indices_window_obs],
+                    cm_hist=cm_hist[indices_window_cm_hist],
+                    cm_future=cm_future[indices_window_cm_future],
+                    time_obs=time_obs[indices_window_obs],
+                    time_cm_hist=time_cm_hist[indices_window_cm_hist],
+                    time_cm_future=time_cm_future[indices_window_cm_future],
+                )[
+                    mask_vals_to_adjust_in_window
+                ]
+            return debiased_cm_future
+
+        else:
+            return self.apply_on_window(obs, cm_hist, cm_future)

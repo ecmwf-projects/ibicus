@@ -17,12 +17,8 @@ from ..utils import (
     RunningWindowOverDaysOfYear,
     RunningWindowOverYears,
     StatisticalModel,
-    check_time_information_and_raise_error,
-    day_of_year,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
-    get_mask_for_unique_subarray,
-    infer_and_create_time_arrays_if_not_given,
     threshold_cdf_vals,
     year,
 )
@@ -323,13 +319,17 @@ class QuantileDeltaMapping(Debiaser):
 
         return fit_obs, fit_cm_hist
 
-    def _apply_on_within_year_window(
+    def apply_on_window(
         self,
         obs: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        years_cm_future: np.ndarray,
+        time_obs: np.ndarray,
+        time_cm_hist: np.ndarray,
+        time_cm_future: np.ndarray,
     ):
+        years_cm_future = year(time_cm_future)
+
         fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
 
         if self.running_window_mode_over_years_of_cm_future:
@@ -363,101 +363,4 @@ class QuantileDeltaMapping(Debiaser):
         else:
             return self._apply_debiasing_steps(
                 cm_future=cm_future, fit_obs=fit_obs, fit_cm_hist=fit_cm_hist
-            )
-
-    def apply_location(
-        self,
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: Optional[np.ndarray] = None,
-        time_cm_hist: Optional[np.ndarray] = None,
-        time_cm_future: Optional[np.ndarray] = None,
-    ):
-        if (
-            self.running_window_mode_within_year
-            or self.running_window_mode_over_years_of_cm_future
-        ):
-            if time_obs is None or time_cm_hist is None or time_cm_future is None:
-                warning(
-                    """
-                    QuantileDeltaMapping runs without time-information for at least one of obs, cm_hist or cm_future.
-                    This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
-                    This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.
-                    """
-                )
-                (
-                    time_obs,
-                    time_cm_hist,
-                    time_cm_future,
-                ) = infer_and_create_time_arrays_if_not_given(
-                    obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-                )
-
-            check_time_information_and_raise_error(
-                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-            )
-
-            years_cm_future = year(time_cm_future)
-
-            if self.running_window_mode_within_year:
-                days_of_year_obs = day_of_year(time_obs)
-                days_of_year_cm_hist = day_of_year(time_cm_hist)
-                days_of_year_cm_future = day_of_year(time_cm_future)
-
-                debiased_cm_future = np.zeros_like(cm_future)
-
-                # Iteration over year to account for seasonality
-                for (
-                    window_center,
-                    indices_bias_corrected_values,
-                ) in self.running_window_within_year.use(
-                    days_of_year_cm_future, years_cm_future
-                ):
-                    indices_window_obs = (
-                        self.running_window_within_year.get_indices_vals_in_window(
-                            days_of_year_obs, window_center
-                        )
-                    )
-                    indices_window_cm_hist = (
-                        self.running_window_within_year.get_indices_vals_in_window(
-                            days_of_year_cm_hist, window_center
-                        )
-                    )
-                    indices_window_cm_future = (
-                        self.running_window_within_year.get_indices_vals_in_window(
-                            days_of_year_cm_future, window_center
-                        )
-                    )
-
-                    debiased_cm_future[
-                        indices_bias_corrected_values
-                    ] = self._apply_on_within_year_window(
-                        obs=obs[indices_window_obs],
-                        cm_hist=cm_hist[indices_window_cm_hist],
-                        cm_future=cm_future[indices_window_cm_future],
-                        years_cm_future=years_cm_future[indices_window_cm_future],
-                    )[
-                        np.logical_and(
-                            np.in1d(
-                                indices_window_cm_future, indices_bias_corrected_values
-                            ),
-                            get_mask_for_unique_subarray(indices_window_cm_future),
-                        )
-                    ]
-
-                return debiased_cm_future
-            else:
-                return self._apply_on_within_year_window(
-                    obs=obs,
-                    cm_hist=cm_hist,
-                    cm_future=cm_future,
-                    years_cm_future=years_cm_future,
-                )
-
-        else:
-            return self._apply_debiasing_steps(
-                obs=obs,
-                cm_hist=cm_hist,
-                cm_future=cm_future,
             )

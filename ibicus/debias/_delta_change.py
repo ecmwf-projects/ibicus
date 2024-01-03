@@ -17,7 +17,6 @@ from ..utils import (
     check_time_information_and_raise_error,
     day_of_year,
     get_library_logger,
-    get_mask_for_unique_subarray,
     infer_and_create_time_arrays_if_not_given,
     year,
 )
@@ -209,6 +208,12 @@ class DeltaChange(Debiaser):
                     )
                 )
 
+                mask_vals_to_adjust_in_window = (
+                    RunningWindowOverDaysOfYear.get_mask_vals_to_adjust_in_window(
+                        indices_window_obs, indices_bias_corrected_values
+                    )
+                )
+
                 debiased_cm_future[
                     indices_bias_corrected_values
                 ] = self._apply_on_within_year_window(
@@ -216,10 +221,7 @@ class DeltaChange(Debiaser):
                     cm_hist=cm_hist[indices_window_cm_hist],
                     cm_future=cm_future[indices_window_cm_future],
                 )[
-                    np.logical_and(
-                        np.in1d(indices_window_obs, indices_bias_corrected_values),
-                        get_mask_for_unique_subarray(indices_window_obs),
-                    )
+                    mask_vals_to_adjust_in_window
                 ]
             return debiased_cm_future
         else:
