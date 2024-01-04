@@ -17,6 +17,35 @@ from ._debiaser import Debiaser
 
 @attrs.define(slots=False, kw_only=True)
 class RunningWindowDebiaser(Debiaser):
+    """
+    A generic debiaser meant for subclassing which applies methods in a running window over the year to account for seasonality. Provides functionality for individual debiasers and a unified interface to apply bias adjustment.
+
+    Have a look at the :py:class:`Debiaser` parent class for the general structure. In order to subclass the :py:class:`RunningWindowDebiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_window` functions:
+
+    - :py:func:`apply_on_window`: this applies an initialised debiaser at one location and in one window. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future) as well as time-information ``time_obs``, ``time_cm_hist`` and ``time_cm_future``) as 1d-numpy arrays corresponding to ``obs``, ``cm_hist`` ``and cm_future``. Additionally time a``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
+
+    - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as members and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
+
+    The :py:func:`apply` function, maps the debiaser's :py:func:`apply_window` function over windows and locations. This allows to always initialise and apply debiasers follows:
+
+    >>> debiaser = LinearScaling.from_variable("tas", running_window_mode = True) # LinearScaling is a child-class of Debiaser
+    >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future, time_obs = time_obs, time_cm_hist = time_cm_hist, time_cm_future = time_cm_future)
+
+    Attributes
+    ----------
+    variable : str
+        Variable that is meant to be debiased, by an initialisation of the debiaser. Default: ``"unknown"``.
+    reasonable_physical_range : Optional[list]
+        Reasonable physical range of the variable to debias in the form ``[lower_bound, upper_bound]``. It is checked against and warnings are raise if values fall outside the range. Default: ``None``.
+
+    running_window_mode : bool
+        Whether the bias adjustment method is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then the method is applied on the whole period. Default: ``False``.
+    running_window_length : int
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
+    running_window_step_length : int
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+    """
+
     # Running window mode
     running_window_mode: bool = attrs.field(
         default=False, validator=attrs.validators.instance_of(bool)
@@ -26,7 +55,7 @@ class RunningWindowDebiaser(Debiaser):
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_step_length: int = attrs.field(
-        default=31,
+        default=1,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 

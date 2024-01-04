@@ -23,7 +23,7 @@ from ..variables import Variable, map_variable_str_to_variable_class
 @attrs.define(slots=False, kw_only=True)
 class Debiaser(ABC):
     """
-    A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply debiasing.
+    A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply bias adjustment.
 
     The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. In order to subclass the :py:class:`debiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
 
