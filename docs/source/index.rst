@@ -6,11 +6,13 @@
 Welcome to ibicus's documentation!
 ========================================
 
-**ibicus provides a flexible and user-friendly toolkit for the bias correction of climate models and associated evaluation.**
+**ibicus provides a flexible and user-friendly toolkit bias adjustment of climate models and associated evaluation.**
 
-ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009) and provides a unified interface for their usage. The package enables the user to modify and refine their behavior with settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
+ibicus implements eight peer-reviewed bias adjustment methods in a common framework, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009) and provides a unified interface for their application. The package enables the user to modify and refine the bias adjustment methods through settings and parameters. The evaluation framework introduced in ibicus allows the user to analyse changes to the marginal, spatiotemporal and inter-variable structure of user-defined climate indices and distributional properties, as well as any alteration of the climate change trend simulated in the model. ibicus operates on a numerical level and can therefore be integrated with any existing pre-processing pipeline and easily parallelized and integrated into high performance computing environments.
 
-On the following pages you can find information on the usage of ibicus. Have a look at the `Overview <getting_started/overview.html>`_ the `What is debiasing? <getting_started/whatisdebiasing.html>`_ and the `API reference <reference/api.html>`_ for both the `debias <reference/debias.html>`_ and `evaluate <reference/evaluate.html>`_ module.
+The ibicus documentation presented here provides a detailed overview of the different methods implemented, their default settings and possible modifications in parameters under `Documentation - ibicus.debias <reference/debias.html>`_, as well as a detailed description of the evaluation framework under `Documentation - ibicus.evaluate <reference/debias.html>`_ For a hands-on introduction to the package see our tutorial notebooks.
+
+The documentation also provides a brief introduction to bias adjustment and possible issues with the approach under `Getting started <getting_started>`_. For a more detailed introduction to bias adjustment, as well as an overview of relevant literature on existing methods and issues, we refer to our paper recently published in Geoscientific Model Development:
 
 How to cite: Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
 
