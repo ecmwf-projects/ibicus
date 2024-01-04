@@ -29,7 +29,9 @@ from ..variables import (
 from ._running_window_debiaser import RunningWindowDebiaser
 
 default_settings = {
-    tas: {"delta_shift": "additive"},
+    tas: {
+        "delta_shift": "additive",
+    },
     pr: {"delta_shift": "additive", "SSR": True},
     tasmin: {"delta_shift": "additive"},
     tasmax: {"delta_shift": "additive"},
@@ -125,19 +127,19 @@ class CDFt(RunningWindowDebiaser):
     delta_shift : str
         One of ``["additive", "multiplicative", "no_shift"]``. Type of shift applied to the data prior to fitting empirical distributions.
 
+    running_window_mode : bool
+        Controls whether CDF-t is applied in a running window over the year to account for seasonality. Default: ``True``.
+    running_window_length : int
+        Length of the running window over the year in days (default: 31 days): the amount of days used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``.
+    running_window_step_length : int
+        Step length of the running window over the year in days (default 31 days): the amount of days that are bias adjusted/how far the running window is moved. Only relevant if ``running_window_mode = True``. |brr|
+
     running_window_mode_over_years_of_cm_future : bool
         Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities. Default: ``True``.
     running_window_over_years_of_cm_future_length : int
         Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``17``.
     running_window_over_years_of_cm_future_step_length : int
-        Step length of the running window in years: how many values are debiased inside the running window. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``9``.
-
-    running_window_mode_within_year : bool
-        Controls whether CDF-t is applied in a running window over the year. Default: ``True``.
-    running_window_within_year_length : int
-        Length of the running window over the year in days (default: 91 days). Only relevant if ``running_window_over_year = True``.
-    running_window_within_year_step_length : int
-        Step length of the running window over the year in days (default 31 days). Only relevant if ``running_window_over_year = True``. |brr|
+        Step length of the running window in years: how many values are bias adjusted inside the running window. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``9``.
 
     apply_by_month : bool
         Whether CDF-t is applied month by month (default) to account for seasonality. This is equivalent to a running window within the year with length 31 and step length 31. Default: ``Faöse``.
@@ -162,7 +164,20 @@ class CDFt(RunningWindowDebiaser):
         default=True, validator=attrs.validators.instance_of(bool)
     )
 
-    # Running window over years
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    # Running window mode over years
     running_window_mode_over_years_of_cm_future: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )

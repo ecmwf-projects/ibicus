@@ -105,12 +105,14 @@ class ECDFM(RunningWindowDebiaser):
         Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     cdf_threshold : float
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+
     running_window_mode : bool
-        Iteration: Whether QuantileMapping is used in running window mode to account for seasonalities. If ``running_window_mode = False`` then QuantileMapping is applied on the whole period. Default: ``True``.
+        Whether DeltaChange is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then DeltaChange is applied on the whole period. Default: ``False``.
     running_window_length : int
-        Iteration: Length of the running window in days: how many values are used to the debiased climate model values. Only relevant if ``running_window_mode = True``. Default: ``31``.
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
-        Iteration: Step length of the running window in days: how many values are debiased inside the running window. Only relevant if ``running_window_mode = True``. Default: ``1``.
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
