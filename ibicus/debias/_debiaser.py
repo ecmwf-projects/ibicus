@@ -25,11 +25,11 @@ class Debiaser(ABC):
     """
     A generic debiaser meant for subclassing. Provides functionality for individual debiasers and a unified interface to apply bias adjustment.
 
-    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. In order to subclass the :py:class:`debiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
+    The debiaser abstract class provides a unified interface to call the debiaser, as well as a vaeriety of setup tasks and input-checks. In order to subclass the :py:class:`Debiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_location` functions:
 
     - :py:func:`apply_location`: applies an initialised debiaser at one location. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future). Additionally ``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
-    - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as members and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
+    - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as keys and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
 
      The :py:func:`apply` function, maps the debiaser :py:func:`apply_location` over locations. This allows to always initialise and apply debiasers follows:
 

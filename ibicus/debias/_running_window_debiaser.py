@@ -24,7 +24,7 @@ class RunningWindowDebiaser(Debiaser):
 
     - :py:func:`apply_on_window`: this applies an initialised debiaser at one location and in one window. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future) as well as time-information ``time_obs``, ``time_cm_hist`` and ``time_cm_future``) as 1d-numpy arrays corresponding to ``obs``, ``cm_hist`` ``and cm_future``. Additionally time a``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
-    - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as members and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
+    - :py:func:`from_variable`: initialises a debiaser with default arguments given a climatic variable either as ``str`` or member of the :py:class:`Variable`-class. ``kwargs`` are meant to overwrite default arguments for this variable. Given a `dict` of default arguments: with variables of the :py:class:`Variable` class as keys and `dict` of default arguments as values the :py:func:`_from_variable`-function can be used.
 
     The :py:func:`apply` function, maps the debiaser's :py:func:`apply_window` function over windows and locations. This allows to always initialise and apply debiasers follows:
 
@@ -72,6 +72,23 @@ class RunningWindowDebiaser(Debiaser):
 
     @abstractmethod
     def apply_on_window(obs, cm_hist, cm_future, **kwargs):
+        """
+        Applies the debiaser at one location and on one window.
+
+        Parameters
+        ----------
+        obs : np.ndarray
+            1-dimensional numpy array of observations of the meteorological variable at one location.
+        cm_hist : np.ndarray
+            1-dimensional numpy array of values of the historical climate model run (run during the same or a similar period as observations) at one location.
+        cm_future : np.ndarray
+            1-dimensional numpy array of values of a climate model to debias (future run) at one location.
+
+        Returns
+        -------
+        np.ndarray
+            1-dimensional numpy array containing the debiased climate model values for the future run (cm_future).
+        """
         pass
 
     def apply_location(
@@ -83,6 +100,24 @@ class RunningWindowDebiaser(Debiaser):
         time_cm_hist: Optional[np.ndarray] = None,
         time_cm_future: Optional[np.ndarray] = None,
     ) -> np.ndarray:
+        """
+        Applies the debiaser at one location.
+
+        Parameters
+        ----------
+        obs : np.ndarray
+            1-dimensional numpy array of observations of the meteorological variable at one location.
+        cm_hist : np.ndarray
+            1-dimensional numpy array of values of the historical climate model run (run during the same or a similar period as observations) at one location.
+        cm_future : np.ndarray
+            1-dimensional numpy array of values of a climate model to debias (future run) at one location.
+
+        Returns
+        -------
+        np.ndarray
+            1-dimensional numpy array containing the debiased climate model values for the future run (cm_future).
+        """
+
         if self.running_window_mode:
             if time_obs is None or time_cm_hist is None or time_cm_future is None:
                 warnings.warn(
