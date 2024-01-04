@@ -14,7 +14,6 @@ import numpy as np
 import scipy
 
 from ..utils import (
-    RunningWindowOverDaysOfYear,
     RunningWindowOverYears,
     StatisticalModel,
     ecdf,
@@ -23,7 +22,7 @@ from ..utils import (
     year,
 )
 from ..variables import Variable, hurs, pr, psl, rlds, sfcwind, tas, tasmax, tasmin
-from ._debiaser import Debiaser
+from ._running_window_debiaser import RunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -51,7 +50,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class QuantileDeltaMapping(Debiaser):
+class QuantileDeltaMapping(RunningWindowDebiaser):
     """
     |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
 
@@ -220,15 +219,12 @@ class QuantileDeltaMapping(Debiaser):
     )
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
         if self.running_window_mode_over_years_of_cm_future:
             self.running_window_over_years_of_cm_future = RunningWindowOverYears(
                 window_length_in_years=self.running_window_over_years_of_cm_future_length,
                 window_step_length_in_years=self.running_window_over_years_of_cm_future_step_length,
-            )
-        if self.running_window_mode_within_year:
-            self.running_window_within_year = RunningWindowOverDaysOfYear(
-                window_length_in_days=self.running_window_within_year_length,
-                window_step_length_in_days=self.running_window_within_year_step_length,
             )
         if self.cdf_threshold is None:
             self.cdf_threshold = 1 / (
