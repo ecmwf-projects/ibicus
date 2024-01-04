@@ -253,6 +253,11 @@ class RunningWindowOverDaysOfYear:
     )
 
     def __attrs_post_init__(self):
+        if self.window_step_length_in_days > self.window_length_in_days:
+            raise ValueError(
+                "Running window step length (how many days are bias adjusted / how far the window is moved) needs to be equal or smaller than the running window length (how many days are used for calculating the bias adjustment transformation). Please adjust the debiaser-arguments."
+            )
+
         if self.window_length_in_days % 2 == 0:
             warnings.warn(
                 "Currently only uneven window lengths are allowed for window_length_in_days. Automatically increased by 1.",

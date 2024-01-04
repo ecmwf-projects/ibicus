@@ -60,6 +60,10 @@ class RunningWindowDebiaser(Debiaser):
     )
 
     def __attrs_post_init__(self):
+        if self.running_window_step_length > self.running_window_length:
+            raise ValueError(
+                "Running window step length (how many days are bias adjusted / how far the window is moved) needs to be equal or smaller than the running window length (how many days are used for calculating the bias adjustment transformation)"
+            )
         if self.running_window_mode:
             self.running_window = RunningWindowOverDaysOfYear(
                 window_length_in_days=self.running_window_length,
