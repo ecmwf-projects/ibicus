@@ -129,19 +129,19 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
         If it is used (so ``censor_values_to_zero = True``) one needs to make sure that the distribution fits to censored data, knows the correct ``censoring_threshold`` and assumes all observations under the specified censoring_threshold are zero/censored. |br|
         If the standard for_precipitation and from_variable methods are used to construct the class this is ensured by default. However if this parameter is changed manually or own distributions for precipitation are specified problems can arise. |brr|
 
+    running_window_mode : bool
+        Whether QuantileDeltaMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then QuantileDeltaMapping is applied on the whole period. Default: ``True``.
+    running_window_length : int
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``91``.
+    running_window_step_length : int
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``31``.
+
     running_window_mode_over_years_of_cm_future : bool
         Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
     running_window_over_years_of_cm_future_length : int
         Length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 31 years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
         Step length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 1 year). Only relevant if ``running_window_mode_over_years_of_cm_future = True``. |brr|
-
-    running_window_mode_within_year : bool
-        Controls whether the methodology is applied in a running window over the year. Default: ``True``.
-    running_window_within_year_length : int
-        Length of the running window over the year in days (default: 91 days). Only relevant if ``running_window_over_year = True``.
-    running_window_within_year_step_length : int
-        Step length of the running window over the year in days (default 31 days). Only relevant if ``running_window_over_year = True``. |brr|
 
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``. |brr|
@@ -182,6 +182,19 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
         converter=float,
     )
 
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=91,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
     # Running window over years
     running_window_mode_over_years_of_cm_future: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
@@ -192,19 +205,6 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
     )
     running_window_over_years_of_cm_future_step_length: int = attrs.field(
         default=1, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
-    )
-
-    # Running window within years
-    running_window_mode_within_year: bool = attrs.field(
-        default=True, validator=attrs.validators.instance_of(bool)
-    )
-    running_window_within_year_length: int = attrs.field(
-        default=91,
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
-    )
-    running_window_within_year_step_length: int = attrs.field(
-        default=31,
-        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
     # Calculation parameters
