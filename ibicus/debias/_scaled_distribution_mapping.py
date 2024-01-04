@@ -20,7 +20,7 @@ from ..utils import (
     threshold_cdf_vals,
 )
 from ..variables import Variable, pr, tas, tasmax, tasmin
-from ._debiaser import Debiaser
+from ._running_window_debiaser import RunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -42,7 +42,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class ScaledDistributionMapping(Debiaser):
+class ScaledDistributionMapping(RunningWindowDebiaser):
     """
     |br| Implements Scaled Distribution Matching (SDM) based on Switanek et al. 2017.
 
@@ -131,6 +131,15 @@ class ScaledDistributionMapping(Debiaser):
         Dict of additional arguments passed to the ``distribution.fit``-method. Useful for fixing certain parameters of a distribution. Default: ``{}`` (empty dict).
     cdf_threshold : float
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+
+    running_window_mode : bool
+        Whether ScaledDistributionMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then ScaledDistributionMapping is applied on the whole period. Default: ``False``.
+    running_window_length : int
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
+    running_window_step_length : int
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
+
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
     """
@@ -402,7 +411,7 @@ class ScaledDistributionMapping(Debiaser):
         reverse_sorting_idx = np.argsort(argsort_cm_future)
         return bias_corrected[reverse_sorting_idx] + trend
 
-    def apply_location(self, obs, cm_hist, cm_future):
+    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.mapping_type == "absolute":
             return self.apply_location_absolute_sdm(obs, cm_hist, cm_future)
         elif self.mapping_type == "relative":
