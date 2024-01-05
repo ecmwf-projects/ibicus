@@ -1357,7 +1357,7 @@ class ISIMIP(Debiaser):
 
             # Main iteration
             for window_center, indices_bias_corrected_values in self.running_window.use(
-                days_of_year_cm_future, years_cm_future
+                days_of_year_cm_future
             ):
                 indices_window_obs = self.running_window.get_indices_vals_in_window(
                     days_of_year_obs, window_center

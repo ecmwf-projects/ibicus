@@ -18,7 +18,6 @@ from ..utils import (
     day_of_year,
     get_library_logger,
     infer_and_create_time_arrays_if_not_given,
-    year,
 )
 from ..variables import (
     Variable,
@@ -183,8 +182,6 @@ class DeltaChange(Debiaser):
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
-            years_obs = year(time_obs)
-
             days_of_year_obs = day_of_year(time_obs)
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)
@@ -195,7 +192,7 @@ class DeltaChange(Debiaser):
             for (
                 window_center,
                 indices_bias_corrected_values,
-            ) in self.running_window.use(days_of_year_obs, years_obs):
+            ) in self.running_window.use(days_of_year_obs):
                 indices_window_obs = self.running_window.get_indices_vals_in_window(
                     days_of_year_obs, window_center
                 )

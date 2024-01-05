@@ -74,6 +74,11 @@ class RunningWindowOverYears:
             )
             self.window_step_length_in_years = self.window_step_length_in_years + 1
 
+        if self.window_step_length_in_years > self.window_length_in_years:
+            raise ValueError(
+                "Running window step length (how many years are bias adjusted / how far the window is moved) needs to be equal or smaller than the running window length (how many years are used for calculating the bias adjustment transformation). Please adjust the debiaser-arguments."
+            )
+
     # ----- Helpers: get window centers and given a window center the years to adjust and the years in the window used for calculations -----
     def _get_years_forming_window_centers(self, unique_years: np.ndarray) -> np.ndarray:
         """
@@ -253,11 +258,6 @@ class RunningWindowOverDaysOfYear:
     )
 
     def __attrs_post_init__(self):
-        if self.window_step_length_in_days > self.window_length_in_days:
-            raise ValueError(
-                "Running window step length (how many days are bias adjusted / how far the window is moved) needs to be equal or smaller than the running window length (how many days are used for calculating the bias adjustment transformation). Please adjust the debiaser-arguments."
-            )
-
         if self.window_length_in_days % 2 == 0:
             warnings.warn(
                 "Currently only uneven window lengths are allowed for window_length_in_days. Automatically increased by 1.",
@@ -270,6 +270,11 @@ class RunningWindowOverDaysOfYear:
                 stacklevel=2,
             )
             self.window_step_length_in_days = self.window_step_length_in_days + 1
+
+        if self.window_step_length_in_days > self.window_length_in_days:
+            raise ValueError(
+                "Running window step length (how many days are bias adjusted / how far the window is moved) needs to be equal or smaller than the running window length (how many days are used for calculating the bias adjustment transformation). Please adjust the debiaser-arguments."
+            )
 
     # ----- Helpers: get window centers and their indices ----- #
     def _get_window_centers(self, days_of_year: np.ndarray) -> np.ndarray:
@@ -292,7 +297,7 @@ class RunningWindowOverDaysOfYear:
         # Running window with step length fits perfectly into year
         if days_left_after_last_step == 0:
             first_window_center = 1 + self.window_step_length_in_days // 2
-        # Adjust start-window-center so the last window is not too much sorter
+        # Adjust start-window-center so the last window is not too much shorter
         else:
             first_window_center = (
                 min_day_of_year
@@ -323,92 +328,36 @@ class RunningWindowOverDaysOfYear:
             Window center around which in each year a window of length self.window_length is taken and the indices returned
         """
 
-        if window_center == 366:
-            indices_center = np.where(days_of_year == 365)[0] + 1
-        else:
-            indices_center = np.where(days_of_year == window_center)[0]
-
-        if indices_center.size == 0:
-            return indices_center
-
-        indices = np.sort(
-            np.mod(
-                np.concatenate(
-                    [
-                        np.arange(
-                            i - self.window_length_in_days // 2,
-                            i + self.window_length_in_days // 2 + 1,
-                        )
-                        for i in indices_center
-                    ]
-                ),
-                days_of_year.size,
-            )
+        window_range = np.mod(
+            np.arange(
+                window_center - self.window_length_in_days // 2,
+                window_center + self.window_length_in_days // 2 + 1,
+            ),
+            366 + 1,
         )
-        return indices
+
+        return np.where(np.in1d(days_of_year, window_range))[0]
 
     def get_indices_vals_to_adjust(
-        self, days_of_year: np.ndarray, years: np.ndarray, window_center: int
+        self, days_of_year: np.ndarray, window_center: int
     ) -> np.ndarray:
         """
-        Gets the indices of which values inside a running window are to be adjusted and makes sure that the indices of the values to adjust values do not extend into a neighbouring year.
-        For example if the window_center is 364 and the step size 5 then the day of year values to store the bc values would be [362, 363, 364,  and 365, 1 or 1, 2]. However since this would extend into the following year -- values already covered by another running window center/index -- days 1 and 2 are filtered out using years.
+        Gets the indices of which values inside a running window are to be adjusted.
 
         Parameters
         ----------
         days_of_year : np.ndarray
             Array of days of years to find indices of bc values.
-        years: np.ndarray:
-            Array of years to make sure indices of bc values do not extend into neighbouring years.
         window_center: int
             Window center around which a window of length self.window_step_length_in_days is taken which stores the bc values.
-
         """
-        if window_center == 366:
-            indices_center = np.where(days_of_year == 365)[0] + 1
-            years_indices_center = years[indices_center - 1]
-        else:
-            indices_center = np.where(days_of_year == window_center)[0]
-            years_indices_center = years[indices_center]
+        window_range = np.arange(
+            window_center - self.window_step_length_in_days // 2,
+            window_center + self.window_step_length_in_days // 2 + 1,
+        )
+        window_range = window_range[(window_range >= 0) & (window_range <= 366)]
 
-        if indices_center.size == 0:
-            return indices_center
-
-        if np.unique(years).size == 1:
-            # If timeseries spans only one year then we only circle through this year anyway and do not need to match running windows together
-            indices = np.concatenate(
-                [
-                    np.arange(
-                        i - self.window_step_length_in_days // 2,
-                        i + self.window_step_length_in_days // 2 + 1,
-                    )
-                    for i in indices_center
-                ]
-            )
-            indices = indices[(indices <= days_of_year.size) & (indices >= 0)]
-        else:
-            # If timeseries spans multiple year make sure that indices in window-center that get bc-values are only always in one year.
-            years_indices_center = np.unique(years_indices_center)
-            indices = np.array(
-                [
-                    index
-                    for index_nr, index_window_center, in enumerate(indices_center)
-                    # Compute indices in window-center to store bc values inside
-                    for index in np.mod(
-                        np.arange(
-                            index_window_center - self.window_step_length_in_days // 2,
-                            index_window_center
-                            + self.window_step_length_in_days // 2
-                            + 1,
-                        ),
-                        days_of_year.size,
-                    )
-                    # Make sure these indices are in the respective year
-                    if years[index] == years_indices_center[index_nr]
-                ]
-            )
-
-        return indices
+        return np.where(np.in1d(days_of_year, window_range))[0]
 
     @staticmethod
     def get_mask_vals_to_adjust_in_window(indices_window, indices_vals_to_correct):
@@ -417,7 +366,7 @@ class RunningWindowOverDaysOfYear:
             get_mask_for_unique_subarray(indices_window),
         )
 
-    def use(self, days_of_year: np.ndarray, years: np.ndarray) -> np.ndarray:
+    def use(self, days_of_year: np.ndarray) -> np.ndarray:
         """
         This applies the running window onto an array of days of year, whilst respecting year bounds.
         It returns an iterator of (indices_vals_to_adjust, window_center) giving:
@@ -453,5 +402,5 @@ class RunningWindowOverDaysOfYear:
 
         for window_center in window_centers:
             yield window_center, self.get_indices_vals_to_adjust(
-                days_of_year, years, window_center
+                days_of_year, window_center
             )

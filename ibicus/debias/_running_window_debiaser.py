@@ -10,7 +10,6 @@ from ..utils import (
     check_time_information_and_raise_error,
     day_of_year,
     infer_and_create_time_arrays_if_not_given,
-    year,
 )
 from ._debiaser import Debiaser
 
@@ -139,8 +138,6 @@ class RunningWindowDebiaser(Debiaser):
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
-            years_cm_future = year(time_cm_future)
-
             days_of_year_obs = day_of_year(time_obs)
             days_of_year_cm_hist = day_of_year(time_cm_hist)
             days_of_year_cm_future = day_of_year(time_cm_future)
@@ -151,7 +148,7 @@ class RunningWindowDebiaser(Debiaser):
             for (
                 window_center,
                 indices_bias_corrected_values,
-            ) in self.running_window.use(days_of_year_cm_future, years_cm_future):
+            ) in self.running_window.use(days_of_year_cm_future):
                 indices_window_obs = self.running_window.get_indices_vals_in_window(
                     days_of_year_obs, window_center
                 )
