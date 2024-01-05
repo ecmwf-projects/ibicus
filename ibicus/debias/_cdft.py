@@ -6,12 +6,19 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import warnings
 from typing import Union
 
 import attrs
 import numpy as np
 
-from ..utils import RunningWindowOverYears, ecdf, iecdf, year
+from ..utils import (
+    RunningWindowOverYears,
+    create_array_of_consecutive_dates,
+    ecdf,
+    iecdf,
+    year,
+)
 from ..variables import (
     Variable,
     hurs,
@@ -319,13 +326,20 @@ class CDFt(RunningWindowDebiaser):
         obs: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        time_obs: np.ndarray,
-        time_cm_hist: np.ndarray,
-        time_cm_future: np.ndarray,
+        time_obs: np.ndarray = None,
+        time_cm_hist: np.ndarray = None,
+        time_cm_future: np.ndarray = None,
     ):
-        years_cm_future = year(time_cm_future)
-
         if self.running_window_mode_over_years_of_cm_future:
+            if time_cm_future is None:
+                warnings.warn(
+                    """CDFt runs without time-information for cm_future. This information is inferred, assuming the first observation is on a January 1st.""",
+                    stacklevel=2,
+                )
+                time_cm_future = create_array_of_consecutive_dates(cm_future.size)
+
+            years_cm_future = year(time_cm_future)
+
             debiased_cm_future = np.empty_like(cm_future)
             for (
                 years_to_debias,

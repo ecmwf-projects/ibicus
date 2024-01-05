@@ -182,4 +182,11 @@ class RunningWindowDebiaser(Debiaser):
             return debiased_cm_future
 
         else:
-            return self.apply_on_window(obs, cm_hist, cm_future)
+            return self.apply_on_window(
+                obs,
+                cm_hist,
+                cm_future,
+                time_obs=time_obs,
+                time_cm_hist=time_cm_hist,
+                time_cm_future=time_cm_future,
+            )

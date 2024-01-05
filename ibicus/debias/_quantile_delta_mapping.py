@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+import warnings
 from logging import warning
 from typing import Optional, Union
 
@@ -16,6 +17,7 @@ import scipy
 from ..utils import (
     RunningWindowOverYears,
     StatisticalModel,
+    create_array_of_consecutive_dates,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
     threshold_cdf_vals,
@@ -324,11 +326,18 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
         time_cm_hist: np.ndarray,
         time_cm_future: np.ndarray,
     ):
-        years_cm_future = year(time_cm_future)
-
         fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
 
         if self.running_window_mode_over_years_of_cm_future:
+            if time_cm_future is None:
+                warnings.warn(
+                    """QuantileDeltaMapping runs without time-information for cm_future. This information is inferred, assuming the first observation is on a January 1st.""",
+                    stacklevel=2,
+                )
+                time_cm_future = create_array_of_consecutive_dates(cm_future.size)
+
+            years_cm_future = year(time_cm_future)
+
             debiased_cm_future = np.empty_like(cm_future)
 
             # Iteration over years of cm_future to account for trends
