@@ -333,8 +333,9 @@ class RunningWindowOverDaysOfYear:
                 window_center - self.window_length_in_days // 2,
                 window_center + self.window_length_in_days // 2 + 1,
             ),
-            366 + 1,
+            365 + 1,
         )
+        window_range[window_range == 0] = 366
 
         return np.where(np.in1d(days_of_year, window_range))[0]
 
