@@ -13,7 +13,12 @@ import numpy as np
 import scipy
 import scipy.stats
 
-from ..utils import PrecipitationHurdleModelGamma, StatisticalModel, threshold_cdf_vals
+from ..utils import (
+    PrecipitationHurdleModelGamma,
+    StatisticalModel,
+    quantile_map_non_parametically_with_constant_extrapolation,
+    threshold_cdf_vals,
+)
 from ..variables import (
     Variable,
     hurs,
@@ -30,16 +35,48 @@ from ._running_window_debiaser import RunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
-    tas: {"distribution": scipy.stats.norm, "detrending": "additive"},
-    pr: {"distribution": PrecipitationHurdleModelGamma, "detrending": "multiplicative"},
+    tas: {
+        "distribution": scipy.stats.norm,
+        "detrending": "additive",
+        "mapping_type": "parametric",
+    },
+    pr: {
+        "distribution": PrecipitationHurdleModelGamma,
+        "detrending": "multiplicative",
+        "mapping_type": "parametric",
+    },
 }
 experimental_default_settings = {
-    hurs: {"distribution": scipy.stats.beta, "detrending": "multiplicative"},
-    psl: {"distribution": scipy.stats.beta, "detrending": "additive"},
-    rlds: {"distribution": scipy.stats.beta, "detrending": "additive"},
-    sfcwind: {"distribution": scipy.stats.gamma, "detrending": "multiplicative"},
-    tasmin: {"distribution": scipy.stats.beta, "detrending": "additive"},
-    tasmax: {"distribution": scipy.stats.beta, "detrending": "additive"},
+    hurs: {
+        "distribution": scipy.stats.beta,
+        "detrending": "multiplicative",
+        "mapping_type": "parametric",
+    },
+    psl: {
+        "distribution": scipy.stats.beta,
+        "detrending": "additive",
+        "mapping_type": "parametric",
+    },
+    rlds: {
+        "distribution": scipy.stats.beta,
+        "detrending": "additive",
+        "mapping_type": "parametric",
+    },
+    sfcwind: {
+        "distribution": scipy.stats.gamma,
+        "detrending": "multiplicative",
+        "mapping_type": "parametric",
+    },
+    tasmin: {
+        "distribution": scipy.stats.beta,
+        "detrending": "additive",
+        "mapping_type": "parametric",
+    },
+    tasmax: {
+        "distribution": scipy.stats.beta,
+        "detrending": "additive",
+        "mapping_type": "parametric",
+    },
 }
 
 # ----- Debiaser ----- #
@@ -104,9 +141,11 @@ class QuantileMapping(RunningWindowDebiaser):
 
     Attributes
     ----------
-    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
-        Distribution or statistical model used to compute the CDFs F.
+    distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel, None]
+        Distribution or statistical model used to compute the CDFs F. Default: ``None``.
         Usually a distribution in :py:class:`scipy.stats.rv_continuous`, but can also be an empirical distribution as given by :py:class:`scipy.stats.rv_histogram` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
+    mapping_type : str
+        One of ``["parametric", "nonparametric"]``. Whether quantile mapping is done using parametric CDFs or using nonparametric density estimation ("empirical quantile mapping"). Default: ``nonparametric``.
     detrending : str
         One of ``["additive", "multiplicative", "no_detrending"]``. What kind of scaling is applied to the future climate model data before quantile mapping. Default: ``"no_detrending"``.
     cdf_threshold : float
@@ -128,7 +167,9 @@ class QuantileMapping(RunningWindowDebiaser):
         scipy.stats.rv_discrete,
         scipy.stats.rv_histogram,
         StatisticalModel,
+        None,
     ] = attrs.field(
+        default=None,
         validator=attrs.validators.instance_of(
             (
                 scipy.stats.rv_continuous,
@@ -136,7 +177,11 @@ class QuantileMapping(RunningWindowDebiaser):
                 scipy.stats.rv_histogram,
                 StatisticalModel,
             )
-        )
+        ),
+    )
+    mapping_type: str = attrs.field(
+        default="nonparametric",
+        validator=attrs.validators.in_(["parametric", "nonparametric"]),
     )
     detrending: str = attrs.field(
         default="no_detrending",
@@ -156,12 +201,13 @@ class QuantileMapping(RunningWindowDebiaser):
     @classmethod
     def for_precipitation(
         cls,
+        mapping_type="parametric",
         model_type: str = "hurdle",
         amounts_distribution=scipy.stats.gamma,
         censoring_threshold: float = 0.1 / 86400,
         hurdle_model_randomization: bool = True,
         hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
-        **kwargs
+        **kwargs,
     ):
         """
         Instanciates the class to a precipitation-debiaser. This allows granular setting of available precipitation models without needing to explicitly specify the precipitation censored model for example.
@@ -196,32 +242,42 @@ class QuantileMapping(RunningWindowDebiaser):
             **default_settings[variable],
             "distribution": method,
             "variable": variable.name,
+            "mapping_type": mapping_type,
         }
 
         return cls(**{**parameters, **kwargs})
 
     # ----- Helpers -----
-    def _standard_qm(self, x, fit_cm_hist, fit_obs):
-        return self.distribution.ppf(
-            threshold_cdf_vals(
-                self.distribution.cdf(x, *fit_cm_hist), self.cdf_threshold
-            ),
-            *fit_obs
-        )
+    def _standard_qm(self, x, obs, cm_hist):
+        if self.mapping_type == "parametric":
+            fit_obs = self.distribution.fit(obs)
+            fit_cm_hist = self.distribution.fit(cm_hist)
 
-    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
-        fit_obs = self.distribution.fit(obs)
-        fit_cm_hist = self.distribution.fit(cm_hist)
-
-        if self.detrending == "additive":
-            delta = np.mean(cm_future) - np.mean(cm_hist)
-            return self._standard_qm(cm_future - delta, fit_cm_hist, fit_obs) + delta
-        elif self.detrending == "multiplicative":
-            delta = np.mean(cm_future) / np.mean(cm_hist)
-            return self._standard_qm(cm_future / delta, fit_cm_hist, fit_obs) * delta
-        elif self.detrending == "no_detrending":
-            return self._standard_qm(cm_future, fit_cm_hist, fit_obs)
+            return self.distribution.ppf(
+                threshold_cdf_vals(
+                    self.distribution.cdf(x, *fit_cm_hist), self.cdf_threshold
+                ),
+                *fit_obs,
+            )
+        elif self.mapping_type == "nonparametric":
+            return quantile_map_non_parametically_with_constant_extrapolation(
+                obs, cm_hist, x
+            )
         else:
             raise ValueError(
-                "self.detrending has wrong value. Needs to be one of ['additive', 'multiplicative', 'no_detrending']"
+                "self.mapping_type needs to be one of ['parametric', 'nonparametric']"
+            )
+
+    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
+        if self.detrending == "additive":
+            delta = np.mean(cm_future) - np.mean(cm_hist)
+            return self._standard_qm(cm_future - delta, obs, cm_hist) + delta
+        elif self.detrending == "multiplicative":
+            delta = np.mean(cm_future) / np.mean(cm_hist)
+            return self._standard_qm(cm_future / delta, obs, cm_hist) * delta
+        elif self.detrending == "no_detrending":
+            return self._standard_qm(cm_future, obs, cm_hist)
+        else:
+            raise ValueError(
+                "self.detrending needs to be one of ['additive', 'multiplicative', 'no_detrending']"
             )
