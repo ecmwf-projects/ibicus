@@ -36,6 +36,13 @@ ibicus releases are available via PyPI. Just write::
 
 For more information about installation and requirements see the `install documentation <https://ibicus.readthedocs.io/en/latest/getting_started/installing.html>`_ in the docs.
 
+How to cite
+-----------
+
+If you are using the package, please consider citing: 
+
+Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
+
 
 Contact
 -------
