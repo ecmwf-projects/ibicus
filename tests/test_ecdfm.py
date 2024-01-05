@@ -148,13 +148,15 @@ class TestECDFM(unittest.TestCase):
         assert pr_1 != pr_2
 
     def test_apply_location_tas(self):
-        tas = ECDFM.from_variable("tas")
-
         # Test: perfect match between obs and cm_hist
         obs = np.random.beta(5, 2, size=1000)
         cm_hist = obs
         cm_future = np.random.beta(7, 3, size=1000)
 
+        tas = ECDFM.from_variable("tas")
+        assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future)
+
+        tas = ECDFM.from_variable("tas", running_window_mode=False)
         assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -162,6 +164,10 @@ class TestECDFM(unittest.TestCase):
         cm_hist = obs
         cm_future = np.random.uniform(low=0, high=1, size=1000)
 
+        tas = ECDFM.from_variable("tas")
+        assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future)
+
+        tas = ECDFM.from_variable("tas", running_window_mode=False)
         assert np.allclose(tas.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Test: corrects mean difference
@@ -169,6 +175,13 @@ class TestECDFM(unittest.TestCase):
         cm_hist = np.random.beta(5, 2, size=1000) + 5
         cm_future = np.random.beta(7, 3, size=1000) + 5
 
+        tas = ECDFM.from_variable("tas")
+        assert (
+            np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 0.1
+        )
+
+        tas = ECDFM.from_variable("tas", running_window_mode=False)
         assert (
             np.abs(np.mean(tas.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
             < 0.1
@@ -178,19 +191,31 @@ class TestECDFM(unittest.TestCase):
         obs = np.random.beta(5, 2, size=1000)
         cm_hist = obs + 5
         cm_future = np.random.beta(7, 4, size=1000) + 7
+
+        tas = ECDFM.from_variable("tas")
+        assert np.allclose(
+            tas.apply_location(obs, cm_hist, cm_future), cm_future - 5, atol=0.5
+        )
+
+        tas = ECDFM.from_variable("tas", running_window_mode=False)
         assert np.allclose(
             tas.apply_location(obs, cm_hist, cm_future), cm_future - 5, atol=1e-5
         )
 
     def test_apply_location_pr(self):
         # Compare all values
-        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
         cm_hist = obs
         cm_future = gen_precip_data(0.4, 1000, 5, 2)
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
+        assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=False, running_window_mode=False
+        )
         assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -198,6 +223,12 @@ class TestECDFM(unittest.TestCase):
         cm_hist = obs
         cm_future = gen_precip_data(0.6, 2000, 13, 9)
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
+        assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=False, running_window_mode=False
+        )
         assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -205,10 +236,15 @@ class TestECDFM(unittest.TestCase):
         cm_hist = obs
         cm_future = gen_precip_data(0.2, 2000, 13, 9)
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
+        assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=False, running_window_mode=False
+        )
         assert np.allclose(pr.apply_location(obs, cm_hist, cm_future), cm_future)
 
         # Compare non-zero values
-        pr = ECDFM.for_precipitation(hurdle_model_randomization=True)
 
         # Test: perfect match between obs and cm_hist
         obs = gen_precip_data(0.4, 1000, 5, 2)
@@ -216,6 +252,15 @@ class TestECDFM(unittest.TestCase):
         cm_future = gen_precip_data(0.4, 1000, 5, 2)
         cm_future_non_zero = cm_future > 0
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=True)
+        assert np.allclose(
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
+        )
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=True, running_window_mode=False
+        )
         assert np.allclose(
             pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
             cm_future[cm_future_non_zero],
@@ -227,6 +272,15 @@ class TestECDFM(unittest.TestCase):
         cm_future = gen_precip_data(0.6, 2000, 13, 9)
         cm_future_non_zero = cm_future > 0
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=True)
+        assert np.allclose(
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
+        )
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=True, running_window_mode=False
+        )
         assert np.allclose(
             pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
             cm_future[cm_future_non_zero],
@@ -238,18 +292,34 @@ class TestECDFM(unittest.TestCase):
         cm_future = gen_precip_data(0.2, 2000, 13, 9)
         cm_future_non_zero = cm_future > 0
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=True)
+        assert np.allclose(
+            pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
+            cm_future[cm_future_non_zero],
+        )
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=True, running_window_mode=False
+        )
         assert np.allclose(
             pr.apply_location(obs, cm_hist, cm_future)[cm_future_non_zero],
             cm_future[cm_future_non_zero],
         )
 
         # Test: corrects mean difference
-        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
-
         obs = gen_precip_data(0.4, 1000, 5, 2)
         cm_hist = gen_precip_data(0.4, 1000, 5, 2) + 5
         cm_future = gen_precip_data(0.4, 1000, 5, 2) + 5
 
+        pr = ECDFM.for_precipitation(hurdle_model_randomization=False)
+        assert (
+            np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
+            < 1
+        )
+
+        pr = ECDFM.for_precipitation(
+            hurdle_model_randomization=False, running_window_mode=False
+        )
         assert (
             np.abs(np.mean(pr.apply_location(obs, cm_hist, cm_future)) - np.mean(obs))
             < 1

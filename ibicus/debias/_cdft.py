@@ -7,17 +7,16 @@
 # nor does it submit to any jurisdiction.
 
 import warnings
-from typing import Optional, Union
+from typing import Union
 
 import attrs
 import numpy as np
 
 from ..utils import (
     RunningWindowOverYears,
+    create_array_of_consecutive_dates,
     ecdf,
     iecdf,
-    infer_and_create_time_arrays_if_not_given,
-    month,
     year,
 )
 from ..variables import (
@@ -34,10 +33,12 @@ from ..variables import (
     tasrange,
     tasskew,
 )
-from ._debiaser import Debiaser
+from ._running_window_debiaser import RunningWindowDebiaser
 
 default_settings = {
-    tas: {"delta_shift": "additive"},
+    tas: {
+        "delta_shift": "additive",
+    },
     pr: {"delta_shift": "additive", "SSR": True},
     tasmin: {"delta_shift": "additive"},
     tasmax: {"delta_shift": "additive"},
@@ -57,7 +58,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class CDFt(Debiaser):
+class CDFt(RunningWindowDebiaser):
     """
     |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
 
@@ -89,8 +90,9 @@ class CDFt(Debiaser):
     After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`.
 
     - If ``SSR = True`` then Stochastic Singularity Removal (SSR) based on Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default setting for ``pr``). All zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
-    - If ``apply_by_month = True`` (default) then CDF-t is applied by month following Famien et al. 2018 to take seasonality into account. Otherwise the method is applied to the whole year.
-    - If ``running_window_mode = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
+    - If ``running_window_mode_over_years_of_cm_future = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
+    - If ``running_window_mode_within_year = True`` (default) then the method is used in a running window mode, running over the year to account for seasonalities.
+    - If ``apply_by_month = True`` (default: False) then CDF-t uses a running window within the year (`running_window_mode_within_year`) with a window length and step length of 31, so broadly applies it by month following Famien et al. 2018 to take seasonality into account. If  ``apply_by_month = False`` and ``running_window_mode_within_year = False`` the method is applied to the whole year.
 
     .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
 
@@ -131,14 +133,24 @@ class CDFt(Debiaser):
         If Stochastic Singularity Removal (SSR) following Vrac et al. 2016 is applied to adjust the number of zero values (only relevant for ``pr``).
     delta_shift : str
         One of ``["additive", "multiplicative", "no_shift"]``. Type of shift applied to the data prior to fitting empirical distributions.
-    apply_by_month : bool
-        Whether CDF-t is applied month by month (default) to account for seasonality or onto the whole dataset at once. Default: ``True``.
+
     running_window_mode : bool
+        Controls whether CDF-t is applied in a running window over the year to account for seasonality. Default: ``True``.
+    running_window_length : int
+        Length of the running window over the year in days (default: 31 days): the amount of days used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``.
+    running_window_step_length : int
+        Step length of the running window over the year in days (default 31 days): the amount of days that are bias adjusted/how far the running window is moved. Only relevant if ``running_window_mode = True``. |brr|
+
+    running_window_mode_over_years_of_cm_future : bool
         Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities. Default: ``True``.
-    running_window_length_in_years : int
-        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if ``running_window_mode = True``. Default: ``17``.
-    running_window_step_length_in_years : int
-        Step length of the running window in years: how many values are debiased inside the running window. Only relevant if ``running_window_mode = True``. Default: ``9``.
+    running_window_over_years_of_cm_future_length : int
+        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``17``.
+    running_window_over_years_of_cm_future_step_length : int
+        Step length of the running window in years: how many values are bias adjusted inside the running window. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``9``.
+
+    apply_by_month : bool
+        Whether CDF-t is applied month by month (default) to account for seasonality. This is equivalent to a running window within the year with length 31 and step length 31. Default: ``Faöse``.
+
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
     ecdf_method : str
@@ -158,13 +170,28 @@ class CDFt(Debiaser):
     apply_by_month: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )
+
+    # Running window mode
     running_window_mode: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
     )
-    running_window_length_in_years: int = attrs.field(
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    # Running window mode over years
+    running_window_mode_over_years_of_cm_future: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_over_years_of_cm_future_length: int = attrs.field(
         default=17, validator=attrs.validators.instance_of(int)
     )
-    running_window_step_length_in_years: int = attrs.field(
+    running_window_over_years_of_cm_future_step_length: int = attrs.field(
         default=9, validator=attrs.validators.instance_of(int)
     )
 
@@ -193,10 +220,12 @@ class CDFt(Debiaser):
     )
 
     def __attrs_post_init__(self):
-        if self.running_window_mode:
-            self.running_window = RunningWindowOverYears(
-                window_length_in_years=self.running_window_length_in_years,
-                window_step_length_in_years=self.running_window_step_length_in_years,
+        super().__attrs_post_init__()
+
+        if self.running_window_mode_over_years_of_cm_future:
+            self.running_window_over_years_of_cm_future = RunningWindowOverYears(
+                window_length_in_years=self.running_window_over_years_of_cm_future_length,
+                window_step_length_in_years=self.running_window_over_years_of_cm_future_step_length,
             )
 
     @classmethod
@@ -205,27 +234,9 @@ class CDFt(Debiaser):
             cls, variable, default_settings, experimental_default_settings, **kwargs
         )
 
-    # ----- Helpers: General ----- #
-    @staticmethod
-    def _check_time_information_and_raise_error(
-        obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-    ):
-        if (
-            obs.size != time_obs.size
-            or cm_hist.size != time_cm_hist.size
-            or cm_future.size != time_cm_future.size
-        ):
-            raise ValueError(
-                """
-                Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
-                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays.
-                """
-            )
-
     # ----- Helpers: CDFt application -----#
 
     def _apply_CDFt_mapping(self, obs, cm_hist, cm_future):
-
         if self.delta_shift == "additive":
             shift = np.mean(obs) - np.mean(cm_hist)
             cm_hist = cm_hist + shift
@@ -290,10 +301,9 @@ class CDFt(Debiaser):
         cm_future = CDFt._set_values_below_threshold_to_zero(cm_future, threshold)
         return cm_future
 
-    def _apply_on_month_and_window(
+    def _apply_debiasing_steps(
         self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
     ):
-
         # Precipitation
         if self.SSR:
             (
@@ -311,74 +321,30 @@ class CDFt(Debiaser):
 
         return cm_future
 
-    def _apply_on_window(
+    def apply_on_window(
         self,
         obs: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        time_obs: Optional[np.ndarray] = None,
-        time_cm_hist: Optional[np.ndarray] = None,
-        time_cm_future: Optional[np.ndarray] = None,
+        time_obs: np.ndarray = None,
+        time_cm_hist: np.ndarray = None,
+        time_cm_future: np.ndarray = None,
     ):
-
-        if self.apply_by_month:
-            debiased_cm_future = np.empty_like(cm_future)
-            for i_month in range(1, 13):
-                mask_i_month_in_obs_hist = month(time_obs) == i_month
-                mask_i_month_in_cm_hist = month(time_cm_hist) == i_month
-                mask_i_month_in_cm_future = month(time_cm_future) == i_month
-
-                debiased_cm_future[
-                    mask_i_month_in_cm_future
-                ] = self._apply_on_month_and_window(
-                    obs=obs[mask_i_month_in_obs_hist],
-                    cm_hist=cm_hist[mask_i_month_in_cm_hist],
-                    cm_future=cm_future[mask_i_month_in_cm_future],
+        if self.running_window_mode_over_years_of_cm_future:
+            if time_cm_future is None:
+                warnings.warn(
+                    """CDFt runs without time-information for cm_future. This information is inferred, assuming the first observation is on a January 1st.""",
+                    stacklevel=2,
                 )
-            return debiased_cm_future
-        else:
-            return self._apply_on_month_and_window(
-                obs=obs, cm_hist=cm_hist, cm_future=cm_future
-            )
+                time_cm_future = create_array_of_consecutive_dates(cm_future.size)
 
-    def apply_location(
-        self,
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: Optional[np.ndarray] = None,
-        time_cm_hist: Optional[np.ndarray] = None,
-        time_cm_future: Optional[np.ndarray] = None,
-    ):
-
-        if time_obs is None or time_cm_hist is None or time_cm_future is None:
-            warnings.warn(
-                """CDF-t runs without time-information for at least one of obs, cm_hist or cm_future.
-                This information is inferred, assuming the first observation is on a January 1st. Observations are chunked according to the assumed time information.
-                This might lead to slight numerical differences to the run with time information, however the debiasing is not fundamentally changed.""",
-                stacklevel=2,
-            )
-
-            (
-                time_obs,
-                time_cm_hist,
-                time_cm_future,
-            ) = infer_and_create_time_arrays_if_not_given(
-                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-            )
-
-        CDFt._check_time_information_and_raise_error(
-            obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-        )
-
-        if self.running_window_mode:
             years_cm_future = year(time_cm_future)
 
             debiased_cm_future = np.empty_like(cm_future)
-            for years_to_debias, years_in_window in self.running_window.use(
-                years_cm_future
-            ):
-
+            for (
+                years_to_debias,
+                years_in_window,
+            ) in self.running_window_over_years_of_cm_future.use(years_cm_future):
                 mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
                     years_cm_future, years_in_window
                 )
@@ -391,18 +357,13 @@ class CDFt(Debiaser):
                     )
                 )
 
-                debiased_cm_future[mask_years_to_debias] = self._apply_on_window(
+                debiased_cm_future[mask_years_to_debias] = self._apply_debiasing_steps(
                     obs=obs,
                     cm_hist=cm_hist,
                     cm_future=cm_future[mask_years_in_window],
-                    time_obs=time_obs,
-                    time_cm_hist=time_cm_hist,
-                    time_cm_future=time_cm_future[mask_years_in_window],
                 )[mask_years_in_window_to_debias]
 
             return debiased_cm_future
 
         else:
-            return self._apply_on_window(
-                obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-            )
+            return self._apply_debiasing_steps(obs, cm_hist, cm_future)

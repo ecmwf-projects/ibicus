@@ -24,7 +24,7 @@ from ..variables import (
     tasmax,
     tasmin,
 )
-from ._debiaser import Debiaser
+from ._running_window_debiaser import RunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -45,7 +45,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class ECDFM(Debiaser):
+class ECDFM(RunningWindowDebiaser):
     """
     |br| Implements Equidistant CDF Matching (ECDFM) based on Li et al. 2010.
 
@@ -105,6 +105,14 @@ class ECDFM(Debiaser):
         Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     cdf_threshold : float
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+
+    running_window_mode : bool
+        Whether DeltaChange is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then DeltaChange is applied on the whole period. Default: ``False``.
+    running_window_length : int
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``91``.
+    running_window_step_length : int
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
@@ -126,6 +134,19 @@ class ECDFM(Debiaser):
     )
     cdf_threshold: float = attrs.field(
         default=1e-10, validator=attrs.validators.instance_of(float)
+    )
+
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=91,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=1,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
     @classmethod
@@ -175,7 +196,7 @@ class ECDFM(Debiaser):
         parameters = {"distribution": method, "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
-    def apply_location(self, obs, cm_hist, cm_future):
+    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
         fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)

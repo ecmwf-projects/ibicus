@@ -18,6 +18,7 @@ import scipy.stats
 from ..utils import (
     RunningWindowOverDaysOfYear,
     StatisticalModel,
+    check_time_information_and_raise_error,
     day_of_year,
     ecdf,
     get_library_logger,
@@ -409,20 +410,6 @@ class ISIMIP(Debiaser):
 
     def get_proportion_of_days_beyond_upper_threshold(self, x):
         return self._get_mask_for_values_beyond_upper_threshold(x).mean()
-
-    @staticmethod
-    def _check_time_information_and_raise_error(
-        obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
-    ):
-        if (
-            obs.size != time_obs.size
-            or cm_hist.size != time_cm_hist.size
-            or cm_future.size != time_cm_future.size
-        ):
-            raise ValueError(
-                """Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
-                Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays."""
-            )
 
     # ----- Non public helpers: ISIMIP-steps ----- #
 
@@ -1348,7 +1335,7 @@ class ISIMIP(Debiaser):
                 obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
             )
 
-        ISIMIP._check_time_information_and_raise_error(
+        check_time_information_and_raise_error(
             obs, cm_hist, cm_future, time_obs, time_cm_hist, time_cm_future
         )
 
@@ -1370,7 +1357,7 @@ class ISIMIP(Debiaser):
 
             # Main iteration
             for window_center, indices_bias_corrected_values in self.running_window.use(
-                days_of_year_cm_future, years_cm_future
+                days_of_year_cm_future
             ):
                 indices_window_obs = self.running_window.get_indices_vals_in_window(
                     days_of_year_obs, window_center

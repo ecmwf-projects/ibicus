@@ -23,7 +23,7 @@ from ..variables import (
     tasmax,
     tasmin,
 )
-from ._debiaser import Debiaser
+from ._running_window_debiaser import RunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -45,7 +45,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class LinearScaling(Debiaser):
+class LinearScaling(RunningWindowDebiaser):
     """
     |br| Implements debiasing via linear scaling based on Maraun 2016.
 
@@ -91,6 +91,14 @@ class LinearScaling(Debiaser):
     ----------
     delta_type : str
         One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
+
+    running_window_mode : bool
+        Whether LinearScaling is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then LinearScaling is applied on the whole period. Default: ``False``.
+    running_window_length : int
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
+    running_window_step_length : int
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
     variable : str
         Variable for which the debiasing is used
     """
@@ -105,9 +113,7 @@ class LinearScaling(Debiaser):
             cls, variable, default_settings, experimental_default_settings, **kwargs
         )
 
-    def apply_location(
-        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
-    ) -> np.ndarray:
+    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":

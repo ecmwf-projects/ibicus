@@ -18,25 +18,27 @@ Overview
 
 ibicus currently implements eight state of the art methods for bias adjustment published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009). The package enables the user to modify and refine their settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties as well as a range of climate indices of the bias adjusted climate model.
 
-You can find an introduction-video for ibicus `here <https://www.youtube.com/watch?v=n8QlGLU2gIo>`_.
+You can find an introduction-video to ibicus `here <https://www.youtube.com/watch?v=n8QlGLU2gIo>`_.
 
 What is bias adjustment?
 ------------------------
 
-The bias adjustment or bias correction of climate models is a tricky business: although climate models have gained impressive skill over the recent years, they are still prone to biases. By ‘bias’, we here mean a systematic discrepancy between the simulated climate statistic and the corresponding real-world statistic over a historical period. These biases could be due to unresolved topography, processes such as convection occurring below grid-cell level, or the misplacement of large-scale atmospheric patterns. Bias adjustment cannot fundamentally address these issues. What bias adjustment can do is calibrate an empirical transfer function between simulated and observed distributional parameters in order to improve (“bias adjust”) the climate model.
+Even though climate models have gained impressive skill over the recent years, simulations of both global and regional climate models still exhibit biases. This means that there are systematic discrepancies between statistics of the model output and observational distribution. These discrepancies in the two distributions become especially relevant when using the output of climate models for local impact studies that often require focus on specific threshold metrics such as dry days.
 
-Because experiments with the climate are not possible, and climate models are our only way of finding out what the implications of different scenarios of climatic change are, bias adjustment not only is a useful and necessary step but has de-facto become a standard in climate impact studies.
+Biases could be due to unresolved topography, the parametrization of processes such as convection occurring below grid-cell level, or the misplacement of large-scale atmospheric patterns. Bias adjustment cannot fundamentally address these issues. Rather, bias adjustment calibrates a statistical transfer function between simulated and observed distributional parameters in order to improve (“bias adjust”) the climate model. While bias adjustment can reduce the location-wise bias of the climate model in many cases, the approach is also prone to misuse and can introduce changes in the spatial, temporal and multivariate structure of the climate model as well as the climate change trend. Nevertheless, bias adjustment has de-facto become a standard pre-processing step in climate impact studies.
 
-For more info have a look at: `What is bias adjustment? <whatisdebiasing.html>`_
+For a more detailed introduction, as well as an overview of relevant literature on existing methods and issues, we refer to our paper recently published in Geoscientific Model Development:
+
+How to cite: Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
 
 What is ibicus?
 ---------------
 
 *A user-friendly toolkit to bias adjust climate models…*
 
-A variety of methods exist for bias adjustin climate models. Some are better suited for certain variables; others will introduce modifications to the climate change trend while others are explicitly trend-preserving. ibicus provides a unified interface for applying a variety of different methods (8 currently) for bias adjustment published in peer reviewed literature.
+A variety of methods have been developed for the bias adjustment of climate models. Some are better suited for certain variables; others will introduce modifications to the climate change trend while others are explicitly trend-preserving. ibicus provides a unified interface for applying a variety of different methods (8 currently) for bias adjustment published in peer reviewed literature.
 
-Given climate model data: during a reference period (``cm_hist``) and future / application period (``cm_future``) as well as observations or reanalysis data during the reference period (``obs``), ibicus provides a straightforward user-interface for initializing and applying a bias adjustment method:
+Given climate model data: during a reference period (``cm_hist``) and future / application period (``cm_future``) as well as observations or reanalysis data during the reference period (``obs``), ibicus provides a standardized user-interface for initializing and applying a bias adjustment method, for example ISIMIP:
 
 >>> from ibicus import ISIMIP
 >>> debiaser = ISIMIP.from_variable("tas")
@@ -81,7 +83,7 @@ The methods currently implemented in ibicus include:
      - * Maraun 2016
      - Delta Change applies the trend from historical to future climate model to the observations. Although technically not a bias adjustment method, as no transformation is applied to the climate model, it is included here as it provides an adjusted future climatology.
 
-Users can adapt the settings of different debiasers to adapt them to their use-case, for example:
+Users can modify the settings of different debiasers to adapt them to their use-case, for example:
 
 >>> pr_debiaser1 = QuantileMapping.for_precipitation(model_type = "hurdle")
 >>> pr_debiaser2 = pr_debiaser2 = QuantileMapping.for_precipitation(model_type = "censored")
@@ -91,8 +93,6 @@ Users can adapt the settings of different debiasers to adapt them to their use-c
 Bias adjustment is prone to misuse and can generate seemingly meaningful results even if applied to variables that have no physical link whatsoever. Any bias adjustment approach should therefore include a thorough evaluation of the obtained results, not only of marginal aspects of the corrected statistics, but also comparing the multivariate, temporal and spatial structure of observations, the raw climate model and the bias corrected climate model. Furthermore users should ideally evaluate wether bias adjustment modifies derived quantities of interest such as climate indices.
 
 ibicus includes a framework that enables the user to conduct this evaluation as part of the bias adjustment process. The evaluation framework consists of three parts:
-
-- Assumptions testing: this component helps the user check some assumptions underlying the use of different bias adjustment methods to choose the most appropriate method and refine its parameters.
 
 - Evaluation of the method on a validation period: This component enables the user to compare the bias corrected model to the ‘raw’ model and observations / reanalysis data, all on a chosen validation period. Both statistical properties as well as threshold based climate indices (threshold metrics) such as dry days, hot days, etc. that are often used for calculating climate impacts can be compared. The following table summarises the types of analysis that can be conducted in this component:
 
@@ -112,14 +112,16 @@ ibicus includes a framework that enables the user to conduct this evaluation as 
 
 - Analysis of trend preservation: Bias adjustment can significantly modify the trend projected in the climate model simulation. This component helps the user assess whether a certain method preserves the climate model trend or not, in order to provide the basis for an informed choice on whether trend modification is desirable for the application at hand.
 
-What ibicus is not?
+- Assumptions testing: this component helps the user check some assumptions underlying the use of different bias adjustment methods to choose the most appropriate method and refine its parameters.
+
+What is ibicus not?
 -------------------
 
 After trying to convince you of the advantages of using ibicus, we also want to alert you to what ibicus currently does not do:
 
-1. ibicus does not currently support multivariate bias adjustment, meaning the correction of spatial or inter-variable structure. Whether or not to correct for example the inter-variable structure, which could be seen as an integral feature of the climate model, is a contentious and debated topic of research. If such correction is necessary, the excellent `MBC <https://cran.r-project.org/web/packages/MBC/index.html>`_ or `SBCK <https://github.com/yrobink/SBCK>`_ package are suitable solutions. We refer to Maraun 2016 for a discussion of some of the issues around multivariate bias adjustment. |brr|
+1. ibicus offers a multivariate evaluation of the bias adjusted climate model but does not currently support multivariate bias adjustment, meaning the correction of spatial or inter-variable structure. Whether or not to correct for example the inter-variable structure, which could be seen as an integral feature of the climate model, is a contentious and debated topic of research. If such correction is necessary, the excellent `MBC <https://cran.r-project.org/web/packages/MBC/index.html>`_ or `SBCK <https://github.com/yrobink/SBCK>`_ package are suitable solutions. For a more detailed discussion of the advantages and possible drawbacks of multivariate bias adjustment we refer to Spuler et al. (2023) cited above. |brr|
 
-2. ibicus is not suitable for 'downscaling' the climate model which is a term for methods used to increase the spatial resolution of climate models. Although bias adjustments methods have been used for downscaling, in general they are not appropriate, since they do not reproduce the local scale variability that is crucial on those scales. Maraun 2016 argues that for downscaling, stochastic methods have great advantages. An example of a package addressing the problem of downscaling is: `Rglimclim <https://www.ucl.ac.uk/~ucakarc/work/glimclim.html>`_. |brr|
+2. ibicus is not suitable for 'downscaling' the climate model which is a term for methods used to increase the spatial resolution of climate models. Although bias adjustment methods have been used for downscaling, in general they are not appropriate, since they do not reproduce the local scale variability that is crucial on those scales. Maraun 2016 argues that for downscaling, stochastic methods have great advantages. An example of a package addressing the problem of downscaling is: `Rglimclim <https://www.ucl.ac.uk/~ucakarc/work/glimclim.html>`_. |brr|
 
 3. 'Garbage in, garbage out'. ibicus cannot guarantee that the climate model is suitable for the problem at hand. As mentioned above, although bias adjustment can help with misspecifications, it cannot solve fundamental problems within climate models. The evaluation framework can help you identify whether such fundamental issues exist in the chosen climate model. However, this cannot replace careful climate model selection before starting a climate impact study. |brr|
 
@@ -134,7 +136,16 @@ Jakob Wessel is a PhD student at the University of Exeter where he is working on
 Get in touch
 ------------
 
-This project was conducted as part of the ESoWC challenge 2022. If you have suggestions on additional methods we could add, questions you'd like to ask, issues that you are finding in the application of the methods that are already implemented, or bugs in the code, please contact us under ibicus.py@gmail.com or `raise an issue on github <https://github.com/ecmwf-projects/ibicus/issues>`_.
+If you have suggestions on additional methods we could add, questions you'd like to ask, issues that you are finding in the application of the methods that are already implemented, or bugs in the code, please contact us under ibicus.py@gmail.com or `raise an issue on github <https://github.com/ecmwf-projects/ibicus/issues>`_.
+
+
+Cite the package
+----------------
+
+If you use ibicus for your research, please cite our publication in Geoscientific Model Development:
+
+Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
+
 
 References
 ----------
