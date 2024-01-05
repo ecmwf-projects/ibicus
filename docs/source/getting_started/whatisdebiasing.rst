@@ -15,16 +15,13 @@ convection processes, due to misplacement of large scale processes such as the m
 or many other factors. These model errors then manifest as discrepancies in the values and statistical properties of meteorological variables.
 With biases in place it can be difficult to use this 'raw' climate model output to project real-world impact of climate change.
 
-This is where 'bias adjustment' methods come in, which have now become standard procedure for many climate impact studies.
-The general idea behind bias adjustment is to calibrate an empirical transfer function between simulated and observed distribution,
-that can be used to adjust the climate model output.
+'Bias adjustment' methods, which have now become a standard pre-processing step for climate impact studies, calibrate an empirical transfer function
+between simulated and observed distribution over a historical period that can be used to adjust the climate model output over a future period.
 
-A broad overview of existing methods for bias adjustment
---------------------------------------------------------
+Overview of existing methods for bias adjustment
+------------------------------------------------
 
-A variety of different methods for bias adjustment have been developed over the years. We will just give a very brief overview here --
-for a detailed explanation of the specific bias adjustment methods implemented in this package, please have a look at the `documentation of the
-debiaser class <../reference/debias.html>`_.
+This section provides a brief overview of different methods for bias adjustment that have been developed over the years. For a more detailed overview see the ibicus paper (Spuler et al. 2023), and for a more in-depth explanation of the specific bias adjustment methods implemented in this package and options for modifying them, please have a look at the `documentation of the debiaser class <../reference/debias.html>`_. For a more detailed general overview of different methods see Spuler et al 2023.
 
 Two simple methods include the delta method (adding or multiplying a climate change signal to historical observational data) and
 linear scaling (calculating the present-day bias in mean and variance, leaving the ratio constant and applying it to the future climate model output).
@@ -35,13 +32,12 @@ terms of the fit, but can run into issues of overfitting, whilst parametric meth
 extrapolation outside of observed quantiles (Themeßl et al. 2012) but obviously need the fit to be good enough to produce meaningful results.
 One issue with quantile mapping is that it is in general not trend preserving.
 
-More complex methods include for example Quantile Delta Mapping, CDFt, Equidistant CDF Matching or the ISIMIP3BASD approach. Those
-are oftentimes trend preserving in the mean and other quantiles. The methods are most of the time based on some form of quantile
-mapping as core, but with different additional adjustments. They also have different assumptions. For an overview of the inner workings
-of those and some other methods, please have a look at the :py:mod:`debias`-module.
+A range of more complex methods build on quantile mapping in different ways: these include Quantile Delta Mapping, CDFt, Equidistant CDF Matching or the ISIMIP3BASD approach. Those
+are oftentimes trend preserving in the mean and other quantiles, based on different assumptions. For an overview of the inner workings
+of these and other methods, please have a look at the :py:mod:`debias`-module.
 
-The methods named so far all provide univariate bias adjustment: meaning they work location-wise and do not provide an adjustment of
-either spatial or inter-variable structure. Also, multivariate and spatial quantile mapping methods exist (eg. Vrac et al. 2015) -- allowing for the
+The methods named so far all implement univariate bias adjustment, meaning they work location-wise and do not provide an adjustment of
+either spatial or inter-variable structure. Multivariate and spatial quantile mapping methods exist (eg. Vrac et al. 2015) -- allowing for the
 correction of dependences, next to marginal properties, for multiple meteorological variables, or singular ones at multiple locations.
 Whether or not to correct for example the inter-variable structure, which could be seen as an integral feature of the climate model, and how such a correction could be evaluated
 is a contentious and debated topic of research. If such correction is necessary, the excellent
@@ -63,9 +59,13 @@ feedback such as a misrepresentation of regional responses to large-scale proces
 cannot correct fundamental misrepresentations of the climate model. We refer to Maraun et al. 2017 for a good overview of issues with bias adjustment
 and an appeal to place a solid understanding of the process meant to be bias corrected at the center of any bias adjustment exploration.
 
-Further limitations include the assumptions that exploring the climate model bias of today can tell us anything about the bias the simulations
-of the climate model into the future has under different scenarios (i.e. that the bias is stationary), as well as the issues with observational
+Further limitations include the assumption that the climate model bias of today can tell us anything about the bias the simulations
+of the climate model in the future (i.e. that the bias is stationary), as well as biases and errors in the observational
 and reanalysis data, that is often used to bias correct.
+
+Applying ibicus in a case study over the Mediterranean region using seven CMIP6 global circulation models, Spuler et al (2023) find that the most appropriate bias adjustment method depends on the variable and impact studied. This finding highlight the importance of a use-case-specific choice of method and the need for a rigorous multivariate evaluation of results when applying statistical bias adjustment. Furthermore, the authors find and that even methods that aim to preserve the climate change trend can modify it.
+
+
 
 
 The importance of evaluation as well as climate model and method selection
@@ -98,5 +98,6 @@ See also
 - Maraun, D. (2013). Bias Correction, Quantile Mapping, and Downscaling: Revisiting the Inflation Issue. In Journal of Climate (Vol. 26, Issue 6, pp. 2137–2143). American Meteorological Society. https://doi.org/10.1175/jcli-d-12-00821.1
 - Maraun, D. Bias Correcting Climate Change Simulations - a Critical Review. Curr Clim Change Rep 2, 211–220 (2016). https://doi.org/10.1007/s40641-016-0050-x
 - Maraun, D., Shepherd, T. G., Widmann, M., Zappa, G., Walton, D., Gutiérrez, J. M., Hagemann, S., Richter, I., Soares, P. M. M., Hall, A., & Mearns, L. O. (2017). Towards process-informed bias correction of climate change simulations. In Nature Climate Change (Vol. 7, Issue 11, pp. 764–773). Springer Science and Business Media LLC. https://doi.org/10.1038/nclimate3418
+- Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
 - Themeßl, M. J., Gobiet, A., & Heinrich, G. (2011). Empirical-statistical downscaling and error correction of regional climate models and its impact on the climate change signal. In Climatic Change (Vol. 112, Issue 2, pp. 449–468). Springer Science and Business Media LLC. https://doi.org/10.1007/s10584-011-0224-4
 - Vrac, M., & Friederichs, P. (2014). Multivariate—Intervariable, Spatial, and Temporal—Bias Correction*. In Journal of Climate (Vol. 28, Issue 1, pp. 218–237). American Meteorological Society. https://doi.org/10.1175/jcli-d-14-00059.1
