@@ -228,7 +228,7 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
             )
         if self.cdf_threshold is None:
             self.cdf_threshold = 1 / (
-                self.running_window_within_year_length
+                self.running_window_length
                 * self.running_window_over_years_of_cm_future_length
                 + 1
             )
