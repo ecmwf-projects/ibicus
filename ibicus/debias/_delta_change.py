@@ -123,7 +123,7 @@ class DeltaChange(Debiaser):
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_step_length: int = attrs.field(
-        default=31,
+        default=1,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
