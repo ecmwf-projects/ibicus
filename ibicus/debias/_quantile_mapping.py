@@ -176,6 +176,7 @@ class QuantileMapping(RunningWindowDebiaser):
                 scipy.stats.rv_discrete,
                 scipy.stats.rv_histogram,
                 StatisticalModel,
+                type(None),
             )
         ),
     )
@@ -261,7 +262,7 @@ class QuantileMapping(RunningWindowDebiaser):
             )
         elif self.mapping_type == "nonparametric":
             return quantile_map_non_parametically_with_constant_extrapolation(
-                obs, cm_hist, x
+                x=cm_hist, y=obs, vals=x
             )
         else:
             raise ValueError(
