@@ -28,7 +28,7 @@ ibicus.debias Debiaser abstract-class
 ibicus.debias RunningWindowDebiaser abstract-class
 --------------------------------------------
 
-.. autoclass:: RunningWindowDebiaserDebiaser
+.. autoclass:: RunningWindowDebiaser
 	:members: from_variable, apply, apply_on_window
 
 ibicus.debias LinearScaling class
