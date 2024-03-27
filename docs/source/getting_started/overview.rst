@@ -27,9 +27,9 @@ Even though climate models have gained impressive skill over the recent years, s
 
 Biases could be due to unresolved topography, the parametrization of processes such as convection occurring below grid-cell level, or the misplacement of large-scale atmospheric patterns. Bias adjustment cannot fundamentally address these issues. Rather, bias adjustment calibrates a statistical transfer function between simulated and observed distributional parameters in order to improve (“bias adjust”) the climate model. While bias adjustment can reduce the location-wise bias of the climate model in many cases, the approach is also prone to misuse and can introduce changes in the spatial, temporal and multivariate structure of the climate model as well as the climate change trend. Nevertheless, bias adjustment has de-facto become a standard pre-processing step in climate impact studies.
 
-For a more detailed introduction, as well as an overview of relevant literature on existing methods and issues, we refer to our paper recently published in Geoscientific Model Development:
+For a more detailed introduction, as well as an overview of relevant literature on existing methods and issues, we refer to our paper published in Geoscientific Model Development:
 
-How to cite: Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
+How to cite: Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), Geosci. Model Dev., 17, 1249–1269, https://doi.org/10.5194/gmd-17-1249-2024, 2024.
 
 What is ibicus?
 ---------------
@@ -144,8 +144,7 @@ Cite the package
 
 If you use ibicus for your research, please cite our publication in Geoscientific Model Development:
 
-Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), EGUsphere [preprint], https://doi.org/10.5194/egusphere-2023-1481, 2023.
-
+Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), Geosci. Model Dev., 17, 1249–1269, https://doi.org/10.5194/gmd-17-1249-2024, 2024.
 
 References
 ----------
