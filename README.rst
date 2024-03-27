@@ -11,16 +11,16 @@ ibicus
 ibicus implements a variety of methods for bias correction (8 currently) published in peer-reviewed literature, including ISIMIP (Lange 2019) and CDFt (Michelangeli et al. 2009) and provides a unified interface for their usage.
 The package enables the user to modify and refine their behavior with settings and parameters, and provides an evaluation framework to assess marginal, temporal, spatial, and multivariate properties of the bias corrected climate model.
 
-Given future climate model data to debias (``cm_future``), climate model data during a reference period (``cm_hist``) and observational or reanalysis data during the same reference period (``obs``) running a debiaser is as easy as:
+Given future climate model data to debias (``cm_future``), climate model data during a reference period (``cm_hist``) and observational or reanalysis data during the same reference period (``obs``) running a debiaser is as easy as::
 
->>> from ibicus import CDFt
->>> debiaser = CDFt.from_variable("pr")
->>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
+   >>> from ibicus import CDFt
+   >>> debiaser = CDFt.from_variable("pr")
+   >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
 
-Evaluating dry spell length can be as easy as:
+Evaluating dry spell length can be as easy as::
 
->>> from ibicus.evaluate.metrics import dry_days
->>> spell_length = dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
+   >>> from ibicus.evaluate.metrics import dry_days
+   >>> spell_length = dry_days.calculate_spell_length(minimum_length: 4, obs = obs, raw = cm_future, ISIMIP = debiased_cm_future)
 
 
 For more information on the usage have a look at `our docs <https://ibicus.readthedocs.io/en/latest/>`_.
@@ -41,7 +41,7 @@ How to cite
 
 If you are using the package, please consider citing:
 
-Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), Geosci. Model Dev., 17, 1249–1269, https://doi.org/10.5194/gmd-17-1249-2024, 2024.
+   Spuler, F. R., Wessel, J. B., Comyn-Platt, E., Varndell, J., and Cagnazzo, C.: ibicus: a new open-source Python package and comprehensive interface for statistical bias adjustment and evaluation in climate modelling (v1.0.1), Geosci. Model Dev., 17, 1249–1269, https://doi.org/10.5194/gmd-17-1249-2024, 2024.
 
 
 Contact
