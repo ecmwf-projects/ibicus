@@ -29,20 +29,20 @@ jobs:
     - uses: pre-commit/action@v3.0.0
 
   unit-tests:
-    name: unit-tests (3.10)
+    name: unit-tests (3.12)
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
     - name: Install Conda environment with Micromamba
-      uses: mamba-org/provision-with-micromamba@v14
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-file: environment.yml
         environment-name: DEVELOP
         channels: conda-forge
         cache-env: true
-        extra-specs: |
-          python=3.10
+        create-args: |
+          python=3.12
     - name: Install package
       run: |
         python -m pip install --no-deps -e .
@@ -57,14 +57,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Conda environment with Micromamba
-      uses: mamba-org/provision-with-micromamba@v14
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-file: docs/requirements.txt
         environment-name: DEVELOP
         channels: conda-forge
         cache-env: true
-        extra-specs: |
-          python=3.10
+        create-args: |
+          python=3.12
     - name: Install package
       run: |
         python -m pip install --no-deps -e .
@@ -79,13 +79,13 @@ jobs:
     strategy:
       matrix:
         include:
-        - python-version: '3.8'
+        - python-version: '3.12'
           extra: -minver
 
     steps:
     - uses: actions/checkout@v3
     - name: Install Conda environment with Micromamba
-      uses: mamba-org/provision-with-micromamba@v14
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-file: environment${{ matrix.extra }}.yml
         environment-name: DEVELOP${{ matrix.extra }}
