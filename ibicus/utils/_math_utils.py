@@ -279,7 +279,7 @@ class gen_PrecipitationHurdleModel(StatisticalModel):
         else:
             return np.where(
                 x == 0,
-                np.random.uniform(0, p0, x.size),
+                np.random.uniform(0, p0, x.shape),
                 p0 + (1 - p0) * self.distribution.cdf(x, *fit_rainy_days),
             )
 
@@ -423,7 +423,7 @@ class gen_PrecipitationGammaLeftCensoredModel(StatisticalModel):
         """
         x = np.where(
             x < self.censoring_threshold,
-            np.random.uniform(0, self.censoring_threshold, x.size),
+            np.random.uniform(0, self.censoring_threshold, x.shape),
             x,
         )
         return scipy.stats.gamma.cdf(x, *fit)
