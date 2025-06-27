@@ -424,9 +424,14 @@ class ScaledDistributionMapping(RunningWindowDebiaser):
         reverse_sorting_idx = np.argsort(argsort_cm_future)
 
         # Note: this transformation follows the reference implementation referred to in the paper, rather than the algorithm description which differs.
-        # Detrending does zero centering, which means that trend is centered on np.mean(cm_future) and bias_corrected is centered around zero. 
+        # Detrending does zero centering, which means that trend is centered on np.mean(cm_future) and bias_corrected is centered around zero.
         # To this the observational mean is added and this transformation then corresponds to a linear scaling of the mean.
-        return bias_corrected[reverse_sorting_idx] + trend + np.mean(obs) - np.mean(cm_hist)
+        return (
+            bias_corrected[reverse_sorting_idx]
+            + trend
+            + np.mean(obs)
+            - np.mean(cm_hist)
+        )
 
     def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.mapping_type == "absolute":
