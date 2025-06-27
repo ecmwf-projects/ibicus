@@ -204,6 +204,26 @@ class TestQuantileDeltaMapping(unittest.TestCase):
             tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future - 5
         )
 
+        # Systematic tests of tas
+        debiaser = QuantileDeltaMapping.from_variable("tas", running_window_mode = False, running_window_mode_over_years_of_cm_future = False)
+        
+        n = 10000
+        np.random.seed(1234)
+        for mean_obs in [0, 5]:
+            for scale_obs in [1., 2.]:
+                for bias in [0, 1, 2, 10]:                
+                    for scale_bias in [1., 1.5, 2.]:
+                        for trend in [0., 10., 20.]:
+                            for trend_scale in [1., 2.]:
+
+                                obs = np.random.normal(size = n)*scale_obs + mean_obs
+                                cm_hist = np.random.normal(size = n)*scale_obs*scale_bias + mean_obs + bias
+                                cm_fut = np.random.normal(size = n)*scale_obs*scale_bias*trend_scale + mean_obs + bias + trend
+                
+                                debiased_cm_fut = debiaser.apply_location(obs, cm_hist, cm_fut)
+                                assert np.abs(np.mean(debiased_cm_fut) - trend - mean_obs ) < 0.5
+                                #assert np.abs(np.std(debiased_cm_fut)/trend_scale - scale_obs) < 0.5
+
     def test__apply_debiasing_steps_pr(self):
         pr = QuantileDeltaMapping.from_variable("pr")
         model = gen_PrecipitationGammaLeftCensoredModel(pr.censoring_threshold)

@@ -112,3 +112,23 @@ class TestQuantileMapping(unittest.TestCase):
         tas = QuantileMapping.from_variable("tas", running_window_mode=True)
         debiased = tas.apply(obs, cm_hist, cm_future)
         assert scipy.stats.kstest(debiased.flatten(), obs.flatten())[0] <= 0.5
+
+        # Systematically test tas for different bias levels
+        debiaser = QuantileMapping.from_variable("tas", running_window_mode=False)
+
+        n = 10000
+        np.random.seed(1234)
+        for mean_obs in [0, 5]:
+            for scale_obs in [1., 2.]:
+                for bias in [0, 1, 2, 10]:                
+                    for scale_bias in [1., 1.5, 2.]:
+                        for trend in [0., 10., 20.]:
+                            for trend_scale in [1., 2.]:
+
+                                obs = np.random.normal(size = n)*scale_obs + mean_obs
+                                cm_hist = np.random.normal(size = n)*scale_obs*scale_bias + mean_obs + bias
+                                cm_fut = np.random.normal(size = n)*scale_obs*scale_bias*trend_scale + mean_obs + bias + trend
+                
+                                debiased_cm_fut = debiaser.apply_location(obs, cm_hist, cm_fut)
+                                assert np.abs(np.mean(debiased_cm_fut) - trend - mean_obs ) < 0.5
+                                assert np.abs(np.std(debiased_cm_fut)/trend_scale - scale_obs) < 0.1
