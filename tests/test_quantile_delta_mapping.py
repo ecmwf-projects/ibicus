@@ -107,11 +107,11 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         assert tas.trend_preservation == "absolute"
 
         tasmin = QuantileDeltaMapping.from_variable("tasmin")
-        assert tasmin.distribution == scipy.stats.beta
+        assert tasmin.distribution == scipy.stats.norm
         assert tasmin.trend_preservation == "absolute"
 
         tasmax = QuantileDeltaMapping.from_variable("tasmax")
-        assert tasmax.distribution == scipy.stats.beta
+        assert tasmax.distribution == scipy.stats.norm
         assert tasmax.trend_preservation == "absolute"
 
     def test__init__(self):
@@ -205,24 +205,45 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         )
 
         # Systematic tests of tas
-        debiaser = QuantileDeltaMapping.from_variable("tas", running_window_mode = False, running_window_mode_over_years_of_cm_future = False)
-        
+        debiaser = QuantileDeltaMapping.from_variable(
+            "tas",
+            running_window_mode=False,
+            running_window_mode_over_years_of_cm_future=False,
+        )
+
         n = 10000
         np.random.seed(1234)
         for mean_obs in [0, 5]:
-            for scale_obs in [1., 2.]:
-                for bias in [0, 1, 2, 10]:                
-                    for scale_bias in [1., 1.5, 2.]:
-                        for trend in [0., 10., 20.]:
-                            for trend_scale in [1., 2.]:
+            for scale_obs in [1.0, 2.0]:
+                for bias in [0, 1, 2, 10]:
+                    for scale_bias in [1.0, 1.5, 2.0]:
+                        for trend in [0.0, 10.0, 20.0]:
+                            for trend_scale in [1.0, 2.0]:
 
-                                obs = np.random.normal(size = n)*scale_obs + mean_obs
-                                cm_hist = np.random.normal(size = n)*scale_obs*scale_bias + mean_obs + bias
-                                cm_fut = np.random.normal(size = n)*scale_obs*scale_bias*trend_scale + mean_obs + bias + trend
-                
-                                debiased_cm_fut = debiaser.apply_location(obs, cm_hist, cm_fut)
-                                assert np.abs(np.mean(debiased_cm_fut) - trend - mean_obs ) < 0.5
-                                #assert np.abs(np.std(debiased_cm_fut)/trend_scale - scale_obs) < 0.5
+                                obs = np.random.normal(size=n) * scale_obs + mean_obs
+                                cm_hist = (
+                                    np.random.normal(size=n) * scale_obs * scale_bias
+                                    + mean_obs
+                                    + bias
+                                )
+                                cm_fut = (
+                                    np.random.normal(size=n)
+                                    * scale_obs
+                                    * scale_bias
+                                    * trend_scale
+                                    + mean_obs
+                                    + bias
+                                    + trend
+                                )
+
+                                debiased_cm_fut = debiaser.apply_location(
+                                    obs, cm_hist, cm_fut
+                                )
+                                assert (
+                                    np.abs(np.mean(debiased_cm_fut) - trend - mean_obs)
+                                    < 0.5
+                                )
+                                # assert np.abs(np.std(debiased_cm_fut)/trend_scale - scale_obs) < 0.5
 
     def test__apply_debiasing_steps_pr(self):
         pr = QuantileDeltaMapping.from_variable("pr")
