@@ -68,12 +68,12 @@ experimental_default_settings = {
         "mapping_type": "parametric",
     },
     tasmin: {
-        "distribution": scipy.stats.beta,
+        "distribution": scipy.stats.norm,
         "detrending": "additive",
         "mapping_type": "parametric",
     },
     tasmax: {
-        "distribution": scipy.stats.beta,
+        "distribution": scipy.stats.norm,
         "detrending": "additive",
         "mapping_type": "parametric",
     },

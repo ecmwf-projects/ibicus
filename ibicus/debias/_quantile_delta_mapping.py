@@ -43,8 +43,8 @@ experimental_default_settings = {
     psl: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
     rlds: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
     sfcwind: {"distribution": scipy.stats.gamma, "trend_preservation": "relative"},
-    tasmin: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
-    tasmax: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
+    tasmin: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
+    tasmax: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
 }
 
 
