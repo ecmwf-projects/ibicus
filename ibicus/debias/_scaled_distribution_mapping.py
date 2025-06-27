@@ -343,9 +343,9 @@ class ScaledDistributionMapping(RunningWindowDebiaser):
 
     def _apply_on_window_absolute_sdm(self, obs, cm_hist, cm_future):
         # Step 1
-        obs_detrended = detrend(obs, type="constant")
-        cm_hist_detrended = detrend(cm_hist, type="constant")
-        cm_future_detrended = detrend(cm_future, type="constant")
+        obs_detrended = detrend(obs, type="linear")
+        cm_hist_detrended = detrend(cm_hist, type="linear")
+        cm_future_detrended = detrend(cm_future, type="linear")
 
         # Step 2
         fit_obs_detrended = self.distribution.fit(obs_detrended)
@@ -422,7 +422,11 @@ class ScaledDistributionMapping(RunningWindowDebiaser):
         # Step 7
         trend = cm_future - cm_future_detrended
         reverse_sorting_idx = np.argsort(argsort_cm_future)
-        return bias_corrected[reverse_sorting_idx] + trend
+
+        # Note: this transformation follows the reference implementation referred to in the paper, rather than the algorithm description which differs.
+        # Detrending does zero centering, which means that trend is centered on np.mean(cm_future) and bias_corrected is centered around zero. 
+        # To this the observational mean is added and this transformation then corresponds to a linear scaling of the mean.
+        return bias_corrected[reverse_sorting_idx] + trend + np.mean(obs) - np.mean(cm_hist)
 
     def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.mapping_type == "absolute":
