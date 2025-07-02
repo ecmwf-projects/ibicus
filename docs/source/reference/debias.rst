@@ -25,10 +25,16 @@ ibicus.debias Debiaser abstract-class
 .. autoclass:: Debiaser
 	:members: from_variable, apply, apply_location
 
-ibicus.debias RunningWindowDebiaser abstract-class
+ibicus.debias SeasonalRunningWindowDebiaser abstract-class
 --------------------------------------------
 
-.. autoclass:: RunningWindowDebiaser
+.. autoclass:: SeasonalRunningWindowDebiaser
+	:members: from_variable, apply, apply_on_window
+
+ibicus.debias SeasonalAndFutureRunningWindowDebiaser abstract-class
+--------------------------------------------
+
+.. autoclass:: SeasonalAndFutureRunningWindowDebiaser
 	:members: from_variable, apply, apply_on_window
 
 ibicus.debias LinearScaling class

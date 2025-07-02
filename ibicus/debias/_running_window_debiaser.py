@@ -22,7 +22,7 @@ class SeasonalRunningWindowDebiaser(Debiaser):
     """
     A generic debiaser meant for subclassing which applies methods in a running window over the year to account for seasonality. Provides functionality for individual debiasers and a unified interface to apply bias adjustment.
 
-    Have a look at the :py:class:`Debiaser` parent class for the general structure. In order to subclass the :py:class:`RunningWindowDebiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_window` functions:
+    Have a look at the :py:class:`Debiaser` parent class for the general structure. In order to subclass the :py:class:`SeasonalRunningWindowDebiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_on_seasonal_window` functions:
 
     - :py:func:`apply_on_window`: this applies an initialised debiaser at one location and in one window. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future) as well as time-information ``time_obs``, ``time_cm_hist`` and ``time_cm_future``) as 1d-numpy arrays corresponding to ``obs``, ``cm_hist`` ``and cm_future``. Additionally time a``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
@@ -198,7 +198,7 @@ class SeasonalAndFutureRunningWindowDebiaser(SeasonalRunningWindowDebiaser):
     """
     A generic debiaser meant for subclassing which applies methods both in a running window over the year to account for seasonality and in a running window over the future period to smooth trends. Provides functionality for individual debiasers and a unified interface to apply bias adjustment.
 
-    Have a look at the :py:class:`Debiaser` parent class for the general structure. In order to subclass the :py:class:`DoubleRunningWindowDebiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_on_double_window` functions:
+    Have a look at the :py:class:`Debiaser` parent class for the general structure. In order to subclass the :py:class:`SeasonalAndFutureRunningWindowDebiaser`-class, the proposed debiaser needs to implement the :py:func:`from_variable` and :py:func:`apply_on_seasonal_and_future_window` functions:
 
     - :py:func:`apply_on_double_window`: this applies an initialised debiaser at one location and in one window. Arguments are 1d-vectors of obs, cm_hist, and cm_future representing observations, and climate model values during the reference (cm_hist) and future period (cm_future) as well as time-information ``time_obs``, ``time_cm_hist`` and ``time_cm_future``) as 1d-numpy arrays corresponding to ``obs``, ``cm_hist`` ``and cm_future``. Additionally time a``kwargs`` passed to the debiaser :py:func:`apply`-function are passed down to the :py:func:`apply_location`-function.
 
@@ -206,7 +206,7 @@ class SeasonalAndFutureRunningWindowDebiaser(SeasonalRunningWindowDebiaser):
 
     The :py:func:`apply` function, maps the debiaser's :py:func:`apply_window` function over windows and locations. This allows to always initialise and apply debiasers follows:
 
-    >>> debiaser = LinearScaling.from_variable("tas", running_window_mode = True) # LinearScaling is a child-class of Debiaser
+    >>> debiaser = QuantileMapping.from_variable("tas", running_window_mode_over_years_of_cm_future = True) # QuantileMapping is a child-class of Debiaser
     >>> debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future, time_obs = time_obs, time_cm_hist = time_cm_hist, time_cm_future = time_cm_future)
 
     Attributes

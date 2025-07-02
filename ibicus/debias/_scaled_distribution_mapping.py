@@ -145,7 +145,7 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         Length of the running window in years: how many years are used to define the future climate (default: ``31`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
         Step length of the running window in years: how many years are bias adjusted inside the running window (default: ``9`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
-        
+
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
     """
