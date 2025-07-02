@@ -23,7 +23,7 @@ from ..variables import (
     tasmax,
     tasmin,
 )
-from ._running_window_debiaser import RunningWindowDebiaser
+from ._running_window_debiaser import SeasonalRunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -45,7 +45,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class LinearScaling(RunningWindowDebiaser):
+class LinearScaling(SeasonalRunningWindowDebiaser):
     """
     |br| Implements debiasing via linear scaling based on Maraun 2016.
 
@@ -113,7 +113,7 @@ class LinearScaling(RunningWindowDebiaser):
             cls, variable, default_settings, experimental_default_settings, **kwargs
         )
 
-    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":

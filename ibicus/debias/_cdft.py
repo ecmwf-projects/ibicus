@@ -6,19 +6,12 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import warnings
 from typing import Union
 
 import attrs
 import numpy as np
 
-from ..utils import (
-    RunningWindowOverYears,
-    create_array_of_consecutive_dates,
-    ecdf,
-    iecdf,
-    year,
-)
+from ..utils import ecdf, iecdf
 from ..variables import (
     Variable,
     hurs,
@@ -33,7 +26,7 @@ from ..variables import (
     tasrange,
     tasskew,
 )
-from ._running_window_debiaser import RunningWindowDebiaser
+from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 
 default_settings = {
     tas: {
@@ -58,7 +51,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class CDFt(RunningWindowDebiaser):
+class CDFt(SeasonalAndFutureRunningWindowDebiaser):
     """
     |br| Implements CDF-t based on Michelangeli et al. 2009, Vrac et al. 2012 and Famien et al. 2018, as well as Vrac et al. 2016 for precipitation.
 
@@ -219,15 +212,6 @@ class CDFt(RunningWindowDebiaser):
         ),
     )
 
-    def __attrs_post_init__(self):
-        super().__attrs_post_init__()
-
-        if self.running_window_mode_over_years_of_cm_future:
-            self.running_window_over_years_of_cm_future = RunningWindowOverYears(
-                window_length_in_years=self.running_window_over_years_of_cm_future_length,
-                window_step_length_in_years=self.running_window_over_years_of_cm_future_step_length,
-            )
-
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         return super()._from_variable(
@@ -301,7 +285,7 @@ class CDFt(RunningWindowDebiaser):
         cm_future = CDFt._set_values_below_threshold_to_zero(cm_future, threshold)
         return cm_future
 
-    def _apply_debiasing_steps(
+    def apply_on_seasonal_and_future_window(
         self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
     ):
         # Precipitation
@@ -320,50 +304,3 @@ class CDFt(RunningWindowDebiaser):
             cm_future = CDFt._apply_SSR_steps_after_adjustment(cm_future, threshold)
 
         return cm_future
-
-    def apply_on_window(
-        self,
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: np.ndarray = None,
-        time_cm_hist: np.ndarray = None,
-        time_cm_future: np.ndarray = None,
-    ):
-        if self.running_window_mode_over_years_of_cm_future:
-            if time_cm_future is None:
-                warnings.warn(
-                    """CDFt runs without time-information for cm_future. This information is inferred, assuming the first observation is on a January 1st.""",
-                    stacklevel=2,
-                )
-                time_cm_future = create_array_of_consecutive_dates(cm_future.size)
-
-            years_cm_future = year(time_cm_future)
-
-            debiased_cm_future = np.empty_like(cm_future)
-            for (
-                years_to_debias,
-                years_in_window,
-            ) in self.running_window_over_years_of_cm_future.use(years_cm_future):
-                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_in_window
-                )
-                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_to_debias
-                )
-                mask_years_in_window_to_debias = (
-                    RunningWindowOverYears.get_if_in_chosen_years(
-                        years_cm_future[mask_years_in_window], years_to_debias
-                    )
-                )
-
-                debiased_cm_future[mask_years_to_debias] = self._apply_debiasing_steps(
-                    obs=obs,
-                    cm_hist=cm_hist,
-                    cm_future=cm_future[mask_years_in_window],
-                )[mask_years_in_window_to_debias]
-
-            return debiased_cm_future
-
-        else:
-            return self._apply_debiasing_steps(obs, cm_hist, cm_future)

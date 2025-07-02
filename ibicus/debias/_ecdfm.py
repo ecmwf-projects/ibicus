@@ -24,7 +24,7 @@ from ..variables import (
     tasmax,
     tasmin,
 )
-from ._running_window_debiaser import RunningWindowDebiaser
+from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -45,7 +45,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class ECDFM(RunningWindowDebiaser):
+class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
     """
     |br| Implements Equidistant CDF Matching (ECDFM) based on Li et al. 2010.
 
@@ -113,6 +113,13 @@ class ECDFM(RunningWindowDebiaser):
     running_window_step_length : int
         Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
 
+    running_window_mode_over_years_of_cm_future : bool
+        Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
+    running_window_over_years_of_cm_future_length : int
+        Length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 31 years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
+    running_window_over_years_of_cm_future_step_length : int
+        Step length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 1 year). Only relevant if ``running_window_mode_over_years_of_cm_future = True``. |brr|
+
     variable : str
         Variable for which the debiasing is done. Default: "unknown".
     """
@@ -147,6 +154,18 @@ class ECDFM(RunningWindowDebiaser):
     running_window_step_length: int = attrs.field(
         default=1,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    # Running window over years
+    running_window_mode_over_years_of_cm_future: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_over_years_of_cm_future_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_over_years_of_cm_future_step_length: int = attrs.field(
+        default=1, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
     )
 
     @classmethod
@@ -196,7 +215,7 @@ class ECDFM(RunningWindowDebiaser):
         parameters = {"distribution": method, "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
-    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_and_future_window(self, obs, cm_hist, cm_future, **kwargs):
         fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)

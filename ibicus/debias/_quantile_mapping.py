@@ -31,7 +31,7 @@ from ..variables import (
     tasmax,
     tasmin,
 )
-from ._running_window_debiaser import RunningWindowDebiaser
+from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -83,7 +83,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class QuantileMapping(RunningWindowDebiaser):
+class QuantileMapping(SeasonalAndFutureRunningWindowDebiaser):
     """
     |br| Implements (detrended) Quantile Mapping based on Cannon et al. 2015 and Maraun 2016.
 
@@ -157,6 +157,13 @@ class QuantileMapping(RunningWindowDebiaser):
         Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
         Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+
+    running_window_mode_over_years_of_cm_future : bool
+        Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
+    running_window_over_years_of_cm_future_length : int
+        Length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 17 years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
+    running_window_over_years_of_cm_future_step_length : int
+        Step length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 9 year). Only relevant if ``running_window_mode_over_years_of_cm_future = True``. |brr|
 
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
@@ -269,7 +276,7 @@ class QuantileMapping(RunningWindowDebiaser):
                 "self.mapping_type needs to be one of ['parametric', 'nonparametric']"
             )
 
-    def apply_on_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_and_future_window(self, obs, cm_hist, cm_future, **kwargs):
         if self.detrending == "additive":
             delta = np.mean(cm_future) - np.mean(cm_hist)
             return self._standard_qm(cm_future - delta, obs, cm_hist) + delta
