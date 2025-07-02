@@ -135,11 +135,11 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
         Step length of the running window over the year in days (default 31 days): the amount of days that are bias adjusted/how far the running window is moved. Only relevant if ``running_window_mode = True``. |brr|
 
     running_window_mode_over_years_of_cm_future : bool
-        Whether CDF-t is used in running window mode, running over the values of the future climate model to help smooth discontinuities. Default: ``True``.
+        Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``False``.
     running_window_over_years_of_cm_future_length : int
-        Length of the running window in years: how many values are used to calculate the empirical CDF. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``17``.
+        Length of the running window in years: how many years are used to define the future climate (default: ``17`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
-        Step length of the running window in years: how many values are bias adjusted inside the running window. Only relevant if ``running_window_mode_over_years_of_cm_future = True``. Default: ``9``.
+        Step length of the running window in years: how many years are bias adjusted inside the running window (default: ``9`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
 
     apply_by_month : bool
         Whether CDF-t is applied month by month (default) to account for seasonality. This is equivalent to a running window within the year with length 31 and step length 31. Default: ``Faöse``.
