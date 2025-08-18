@@ -159,7 +159,7 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
 
     # Running window over years
     running_window_mode_over_years_of_cm_future: bool = attrs.field(
-        default=True, validator=attrs.validators.instance_of(bool)
+        default=False, validator=attrs.validators.instance_of(bool)
     )
     running_window_over_years_of_cm_future_length: int = attrs.field(
         default=31,
