@@ -216,6 +216,16 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         default=None, validator=attrs.validators.instance_of((float, type(None)))
     )
 
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+
+        if self.cdf_threshold is None:
+            self.cdf_threshold = 1 / (
+                self.running_window_length
+                * self.running_window_over_years_of_cm_future_length
+                + 1
+            )
+
     @classmethod
     def from_variable(cls, variable: Union[str, Variable], **kwargs):
         if (variable == "pr" or variable == pr) and (
@@ -269,9 +279,7 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         obs: np.ndarray,
         cm_hist: np.ndarray,
         cm_future: np.ndarray,
-        time_obs: np.ndarray,
-        time_cm_hist: np.ndarray,
-        time_cm_future: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.

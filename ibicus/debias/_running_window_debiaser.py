@@ -244,12 +244,6 @@ class SeasonalAndFutureRunningWindowDebiaser(SeasonalRunningWindowDebiaser):
                 window_length_in_years=self.running_window_over_years_of_cm_future_length,
                 window_step_length_in_years=self.running_window_over_years_of_cm_future_step_length,
             )
-        if self.cdf_threshold is None:
-            self.cdf_threshold = 1 / (
-                self.running_window_length
-                * self.running_window_over_years_of_cm_future_length
-                + 1
-            )
 
     @abstractmethod
     def apply_on_seasonal_and_future_window(obs, cm_hist, cm_future, **kwargs):
@@ -311,14 +305,16 @@ class SeasonalAndFutureRunningWindowDebiaser(SeasonalRunningWindowDebiaser):
                     )
                 )
 
-                debiased_cm_future[mask_years_to_debias] = self.apply_on_seasonal_and_future_window(
-                    obs=obs,
-                    cm_hist=cm_hist,
-                    cm_future=cm_future[mask_years_in_window],
-                    time_obs=time_obs,
-                    time_cm_hist=time_cm_hist,
-                    time_cm_future=time_cm_future[mask_years_in_window],
-                )[mask_years_in_window_to_debias]
+                debiased_cm_future[mask_years_to_debias] = (
+                    self.apply_on_seasonal_and_future_window(
+                        obs=obs,
+                        cm_hist=cm_hist,
+                        cm_future=cm_future[mask_years_in_window],
+                        time_obs=time_obs,
+                        time_cm_hist=time_cm_hist,
+                        time_cm_future=time_cm_future[mask_years_in_window],
+                    )[mask_years_in_window_to_debias]
+                )
 
             return debiased_cm_future
 
