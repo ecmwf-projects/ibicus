@@ -439,7 +439,9 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
             - np.mean(cm_hist)
         )
 
-    def apply_on_seasonal_and_future_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_and_future_window(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, **kwargs
+    ):
         if self.mapping_type == "absolute":
             return self._apply_on_window_absolute_sdm(obs, cm_hist, cm_future)
         elif self.mapping_type == "relative":

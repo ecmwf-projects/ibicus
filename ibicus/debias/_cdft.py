@@ -286,7 +286,11 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
         return cm_future
 
     def apply_on_seasonal_and_future_window(
-        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray
+        self,
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        **kwargs,
     ):
         # Precipitation
         if self.SSR:

@@ -9,6 +9,7 @@
 from typing import Union
 
 import attrs
+import numpy as np
 import scipy.stats
 
 from ..utils import PrecipitationHurdleModelGamma, StatisticalModel, threshold_cdf_vals
@@ -215,7 +216,9 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
         parameters = {"distribution": method, "variable": variable.name}
         return cls(**{**parameters, **kwargs})
 
-    def apply_on_seasonal_and_future_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_and_future_window(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, **kwargs
+    ):
         fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)

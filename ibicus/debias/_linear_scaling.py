@@ -113,7 +113,9 @@ class LinearScaling(SeasonalRunningWindowDebiaser):
             cls, variable, default_settings, experimental_default_settings, **kwargs
         )
 
-    def apply_on_seasonal_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_window(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, **kwargs
+    ):
         if self.delta_type == "additive":
             return cm_future - (np.mean(cm_hist) - np.mean(obs))
         elif self.delta_type == "multiplicative":

@@ -276,7 +276,9 @@ class QuantileMapping(SeasonalAndFutureRunningWindowDebiaser):
                 "self.mapping_type needs to be one of ['parametric', 'nonparametric']"
             )
 
-    def apply_on_seasonal_and_future_window(self, obs, cm_hist, cm_future, **kwargs):
+    def apply_on_seasonal_and_future_window(
+        self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, **kwargs
+    ):
         if self.detrending == "additive":
             delta = np.mean(cm_future) - np.mean(cm_hist)
             return self._standard_qm(cm_future - delta, obs, cm_hist) + delta
