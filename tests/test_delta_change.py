@@ -30,7 +30,7 @@ def get_min_distance_in_array(x):
     return np.min(np.abs(x[0 : (x.size - 1)] - x[1:]))
 
 
-class TestCDFt(unittest.TestCase):
+class TestDeltaChange(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         np.random.seed(12345)
@@ -64,3 +64,53 @@ class TestCDFt(unittest.TestCase):
 
         tasmax = DeltaChange.from_variable("tasmax")
         assert tasmax.delta_type == "additive"
+
+    def test_tas_apply_location(self):
+        debiaser = DeltaChange.from_variable("tas")
+
+        n = 10000
+        np.random.seed(1234)
+        for mean_obs in [0, 5]:
+            for scale_obs in [1.0, 2.0]:
+                for bias in [0, 1, 2, 10]:
+                    for scale_bias in [1.0, 1.5, 2.0]:
+                        for trend in [0.0, 10.0, 20.0]:
+                            for trend_scale in [1.0, 2.0]:
+
+                                obs = np.random.normal(size=n) * scale_obs + mean_obs
+                                cm_hist = (
+                                    np.random.normal(size=n) * scale_obs * scale_bias
+                                    + mean_obs
+                                    + bias
+                                )
+                                cm_fut = (
+                                    np.random.normal(size=n)
+                                    * scale_obs
+                                    * scale_bias
+                                    * trend_scale
+                                    + mean_obs
+                                    + bias
+                                    + trend
+                                )
+
+                                dc_obs = debiaser.apply_location(obs, cm_hist, cm_fut)
+                                assert len(dc_obs) == len(obs)
+                                assert np.abs(np.mean(dc_obs) - trend - mean_obs) < 0.5
+
+    def test_pr_apply_location(self):
+
+        # Systematic tests of tas
+        debiaser = DeltaChange.from_variable("pr")
+
+        n = 10000
+        np.random.seed(1234)
+        for scale_bias in [1.0, 1.5, 2.0]:
+            for trend_scale in [1.0, 2.0]:
+
+                obs = np.exp(np.random.normal(size=n))
+                cm_hist = np.exp(np.random.normal(size=n)) * scale_bias
+                cm_fut = np.exp(np.random.normal(size=n)) * scale_bias * trend_scale
+
+                dc_obs = debiaser.apply_location(obs, cm_hist, cm_fut)
+                assert len(dc_obs) == len(obs)
+                assert np.abs(np.mean(dc_obs) / trend_scale - np.mean(obs)) < 0.1
