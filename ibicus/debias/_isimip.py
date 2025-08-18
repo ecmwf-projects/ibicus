@@ -1145,12 +1145,12 @@ class ISIMIP(Debiaser):
                 ).size
                 > 0
             ):
-                obs_future[
-                    mask_for_values_between_thresholds_obs_hist
-                ] = self._step5_transfer_trend(
-                    obs_hist[mask_for_values_between_thresholds_obs_hist],
-                    values_between_thresholds_cm_hist,
-                    values_between_thresholds_cm_future,
+                obs_future[mask_for_values_between_thresholds_obs_hist] = (
+                    self._step5_transfer_trend(
+                        obs_hist[mask_for_values_between_thresholds_obs_hist],
+                        values_between_thresholds_cm_hist,
+                        values_between_thresholds_cm_future,
+                    )
                 )
             return obs_future
         else:
@@ -1241,14 +1241,14 @@ class ISIMIP(Debiaser):
                     obs_future_sorted
                 )
             ).size > 0:
-                mapped_vals[
-                    mask_for_entries_not_set_to_either_bound
-                ] = self._step6_adjust_values_between_thresholds(
-                    self._get_values_between_thresholds(obs_hist_sorted),
-                    values_between_thresholds_obs_future_sorted,
-                    self._get_values_between_thresholds(cm_hist_sorted),
-                    mapped_vals[mask_for_entries_not_set_to_either_bound],
-                    self._get_values_between_thresholds(cm_future_sorted),
+                mapped_vals[mask_for_entries_not_set_to_either_bound] = (
+                    self._step6_adjust_values_between_thresholds(
+                        self._get_values_between_thresholds(obs_hist_sorted),
+                        values_between_thresholds_obs_future_sorted,
+                        self._get_values_between_thresholds(cm_hist_sorted),
+                        mapped_vals[mask_for_entries_not_set_to_either_bound],
+                        self._get_values_between_thresholds(cm_future_sorted),
+                    )
                 )
             else:
                 logger = get_library_logger()

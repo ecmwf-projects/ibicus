@@ -211,15 +211,13 @@ class DeltaChange(Debiaser):
                     )
                 )
 
-                debiased_cm_future[
-                    indices_bias_corrected_values
-                ] = self._apply_on_within_year_window(
-                    obs=obs[indices_window_obs],
-                    cm_hist=cm_hist[indices_window_cm_hist],
-                    cm_future=cm_future[indices_window_cm_future],
-                )[
-                    mask_vals_to_adjust_in_window
-                ]
+                debiased_cm_future[indices_bias_corrected_values] = (
+                    self._apply_on_within_year_window(
+                        obs=obs[indices_window_obs],
+                        cm_hist=cm_hist[indices_window_cm_hist],
+                        cm_future=cm_future[indices_window_cm_future],
+                    )[mask_vals_to_adjust_in_window]
+                )
             return debiased_cm_future
         else:
             return self._apply_on_within_year_window(obs, cm_hist, cm_future)
