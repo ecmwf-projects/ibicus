@@ -153,3 +153,4 @@ notebooks/own_testing_notebooks/*
 # ISIMIP tests: they require external data (and packages) and are not run by default.
 tests/isimip_reference_data/
 tests/test_full_isimip_against_reference.py
+tests/test_backwards_compatibility.py
