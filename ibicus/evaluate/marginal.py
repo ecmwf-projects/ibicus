@@ -568,7 +568,6 @@ def plot_spatiotemporal(
     ],
     xlims=[30, 30, 1],
 ):
-
     """
     Plots empirical CDFs of spatiotemporal clustersizes over entire area.
 

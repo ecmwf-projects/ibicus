@@ -35,7 +35,6 @@ def _calculate_aic(dataset, distribution):
 
 
 def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.DataFrame:
-
     """
     Calculates the Akaike Information Criterion (AIC) at each location for each of the distributions specified.
 
@@ -75,7 +74,6 @@ def calculate_aic(variable: str, dataset: np.ndarray, *distributions) -> pd.Data
 
 
 def plot_aic(variable: str, aic_values: pd.DataFrame, manual_title: str = " "):
-
     """
     Creates a boxplot of AIC values across all locations.
 

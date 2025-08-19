@@ -145,64 +145,7 @@ class TestQuantileDeltaMapping(unittest.TestCase):
             0.1,
         )
 
-    def test__apply_debiasing_steps_tas(self):
-        tas = QuantileDeltaMapping.from_variable("tas")
-
-        # Test same vectors:
-        obs = scipy.stats.norm.rvs(size=1000)
-        cm_hist = obs
-        cm_future = obs
-
-        # distance = get_min_distance_in_array(obs)
-
-        fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(
-            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
-        )
-
-        # Test: perfect match between obs and cm_hist
-        obs = np.random.random(size=1000)
-        cm_hist = obs
-        cm_future = np.random.random(size=1000)
-
-        fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(
-            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
-        )
-
-        # Test: perfect match between obs and cm_hist and cm_fut from new distribution
-        obs = np.random.random(size=1000)
-        cm_hist = obs
-        cm_future = np.random.normal(size=1000)
-
-        fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(
-            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
-        )
-
-        # Test: corrects mean difference
-        obs = np.random.normal(size=1000)
-        cm_hist = np.random.normal(size=1000) + 5
-        cm_future = np.random.normal(size=1000) + 5
-
-        fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert (
-            np.abs(
-                np.mean(tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist))
-                - np.mean(obs)
-            )
-            < 0.1
-        )
-
-        # Test: perfect match between obs and cm_hist up to translation and cm_fut from new distribution
-        obs = np.random.random(size=1000)
-        cm_hist = obs + 5
-        cm_future = np.random.normal(size=1000)
-
-        fit_obs, fit_cm_hist = tas._get_obs_and_cm_hist_fits(obs, cm_hist)
-        assert np.allclose(
-            tas._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future - 5
-        )
+    def test_tas_apply_on_seasonal_and_future_window(self):
 
         # Systematic tests of tas
         debiaser = QuantileDeltaMapping.from_variable(
@@ -245,7 +188,90 @@ class TestQuantileDeltaMapping(unittest.TestCase):
                                 )
                                 # assert np.abs(np.std(debiased_cm_fut)/trend_scale - scale_obs) < 0.5
 
-    def test__apply_debiasing_steps_pr(self):
+    def test_pr_apply_on_seasonal_and_future_window(self):
+
+        # Systematic tests of tas
+        debiaser = QuantileDeltaMapping.from_variable(
+            "pr",
+            running_window_mode=False,
+            running_window_mode_over_years_of_cm_future=False,
+        )
+
+        n = 10000
+        np.random.seed(1234)
+        for scale_bias in [1.0, 1.5, 2.0]:
+            for trend_scale in [1.0, 2.0]:
+
+                obs = np.exp(np.random.normal(size=n))
+                cm_hist = np.exp(np.random.normal(size=n)) * scale_bias
+                cm_fut = np.exp(np.random.normal(size=n)) * scale_bias * trend_scale
+
+                debiased_cm_fut = debiaser.apply_location(obs, cm_hist, cm_fut)
+                assert (
+                    np.abs(np.mean(debiased_cm_fut) / trend_scale - np.mean(obs)) < 0.1
+                )
+
+    def test_apply_on_seasonal_and_future_window_tas(self):
+        tas = QuantileDeltaMapping.from_variable("tas")
+
+        # Test same vectors:
+        obs = scipy.stats.norm.rvs(size=1000)
+        cm_hist = obs
+        cm_future = obs
+
+        # distance = get_min_distance_in_array(obs)
+
+        assert np.allclose(
+            tas.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
+        )
+
+        # Test: perfect match between obs and cm_hist
+        obs = np.random.random(size=1000)
+        cm_hist = obs
+        cm_future = np.random.random(size=1000)
+
+        assert np.allclose(
+            tas.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
+        )
+
+        # Test: perfect match between obs and cm_hist and cm_fut from new distribution
+        obs = np.random.random(size=1000)
+        cm_hist = obs
+        cm_future = np.random.normal(size=1000)
+
+        assert np.allclose(
+            tas.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
+        )
+
+        # Test: corrects mean difference
+        obs = np.random.normal(size=1000)
+        cm_hist = np.random.normal(size=1000) + 5
+        cm_future = np.random.normal(size=1000) + 5
+
+        assert (
+            np.abs(
+                np.mean(
+                    tas.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future)
+                )
+                - np.mean(obs)
+            )
+            < 0.1
+        )
+
+        # Test: perfect match between obs and cm_hist up to translation and cm_fut from new distribution
+        obs = np.random.random(size=1000)
+        cm_hist = obs + 5
+        cm_future = np.random.normal(size=1000)
+
+        assert np.allclose(
+            tas.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future - 5,
+        )
+
+    def test_apply_on_seasonal_and_future_window_pr(self):
         pr = QuantileDeltaMapping.from_variable("pr")
         model = gen_PrecipitationGammaLeftCensoredModel(pr.censoring_threshold)
 
@@ -256,9 +282,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
 
         # distance = get_min_distance_in_array(obs)
 
-        fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
         assert np.allclose(
-            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+            pr.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
         )
 
         # Test: perfect match between obs and cm_hist
@@ -266,9 +292,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_hist = obs
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 3))
 
-        fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
         assert np.allclose(
-            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+            pr.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
         )
 
         # Test: perfect match between obs and cm_hist and cm_fut from new distribution
@@ -276,9 +302,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_hist = obs
         cm_future = model.ppf(np.random.random(size=1000), *(5, 0, 2))
 
-        fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
         assert np.allclose(
-            pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist), cm_future
+            pr.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future),
+            cm_future,
         )
 
         # Test: corrects mean relative difference
@@ -286,10 +312,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_hist = model.ppf(np.random.random(size=1000), *(2, 0, 3)) * 5
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 3)) * 5
 
-        fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
         assert (
             np.abs(
-                np.mean(pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist))
+                np.mean(pr.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future))
                 / np.mean(obs)
                 - 1
             )
@@ -301,10 +326,9 @@ class TestQuantileDeltaMapping(unittest.TestCase):
         cm_hist = obs * 5
         cm_future = model.ppf(np.random.random(size=1000), *(2, 0, 5)) * 5
 
-        fit_obs, fit_cm_hist = pr._get_obs_and_cm_hist_fits(obs, cm_hist)
         assert all(
             np.abs(
-                pr._apply_debiasing_steps(cm_future, fit_obs, fit_cm_hist)
+                pr.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future)
                 - cm_future / 5
             )
             < 1e-5

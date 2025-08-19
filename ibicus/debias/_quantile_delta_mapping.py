@@ -6,7 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import warnings
 from logging import warning
 from typing import Optional, Union
 
@@ -15,16 +14,13 @@ import numpy as np
 import scipy
 
 from ..utils import (
-    RunningWindowOverYears,
     StatisticalModel,
-    create_array_of_consecutive_dates,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
     threshold_cdf_vals,
-    year,
 )
 from ..variables import Variable, hurs, pr, psl, rlds, sfcwind, tas, tasmax, tasmin
-from ._running_window_debiaser import RunningWindowDebiaser
+from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
@@ -52,7 +48,7 @@ experimental_default_settings = {
 
 
 @attrs.define(slots=False)
-class QuantileDeltaMapping(RunningWindowDebiaser):
+class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
     """
     |br| Implements Quantile Delta Mapping based on Cannon et al. 2015.
 
@@ -139,11 +135,11 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
         Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``31``.
 
     running_window_mode_over_years_of_cm_future : bool
-        Controls whether the methodology is applied on a running time window, running over the years of cm_fut to calculate time dependent quantiles in future climate model values.
+        Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``True``.
     running_window_over_years_of_cm_future_length : int
-        Length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 31 years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
+        Length of the running window in years: how many years are used to define the future climate (default: ``31`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
-        Step length of the time window centered around t to calculate time dependent quantiles in future climate model values (default: 1 year). Only relevant if ``running_window_mode_over_years_of_cm_future = True``. |brr|
+        Step length of the running window in years: how many years are bias adjusted inside the running window (default: ``1`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
 
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``. |brr|
@@ -223,11 +219,6 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
 
-        if self.running_window_mode_over_years_of_cm_future:
-            self.running_window_over_years_of_cm_future = RunningWindowOverYears(
-                window_length_in_years=self.running_window_over_years_of_cm_future_length,
-                window_step_length_in_years=self.running_window_over_years_of_cm_future_step_length,
-            )
         if self.cdf_threshold is None:
             self.cdf_threshold = 1 / (
                 self.running_window_length
@@ -277,12 +268,24 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
 
     # ----- Main application functions ----- #
 
-    def _apply_debiasing_steps(
-        self, cm_future: np.ndarray, fit_obs: np.ndarray, fit_cm_hist: np.ndarray
+    def _get_obs_and_cm_hist_fits(self, obs: np.ndarray, cm_hist: np.ndarray):
+        fit_obs = self.distribution.fit(obs)
+        fit_cm_hist = self.distribution.fit(cm_hist)
+
+        return fit_obs, fit_cm_hist
+
+    def apply_on_seasonal_and_future_window(
+        self,
+        obs: np.ndarray,
+        cm_hist: np.ndarray,
+        cm_future: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.
         """
+
+        fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
 
         tau_t = threshold_cdf_vals(
             ecdf(cm_future, cm_future, method=self.ecdf_method),
@@ -310,62 +313,3 @@ class QuantileDeltaMapping(RunningWindowDebiaser):
             bias_corrected_vals[bias_corrected_vals < self.censoring_threshold] = 0
 
         return bias_corrected_vals
-
-    def _get_obs_and_cm_hist_fits(self, obs: np.ndarray, cm_hist: np.ndarray):
-        fit_obs = self.distribution.fit(obs)
-        fit_cm_hist = self.distribution.fit(cm_hist)
-
-        return fit_obs, fit_cm_hist
-
-    def apply_on_window(
-        self,
-        obs: np.ndarray,
-        cm_hist: np.ndarray,
-        cm_future: np.ndarray,
-        time_obs: np.ndarray,
-        time_cm_hist: np.ndarray,
-        time_cm_future: np.ndarray,
-    ):
-        fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
-
-        if self.running_window_mode_over_years_of_cm_future:
-            if time_cm_future is None:
-                warnings.warn(
-                    """QuantileDeltaMapping runs without time-information for cm_future. This information is inferred, assuming the first observation is on a January 1st.""",
-                    stacklevel=2,
-                )
-                time_cm_future = create_array_of_consecutive_dates(cm_future.size)
-
-            years_cm_future = year(time_cm_future)
-
-            debiased_cm_future = np.empty_like(cm_future)
-
-            # Iteration over years of cm_future to account for trends
-            for (
-                years_to_debias,
-                years_in_window,
-            ) in self.running_window_over_years_of_cm_future.use(years_cm_future):
-                mask_years_in_window = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_in_window
-                )
-                mask_years_to_debias = RunningWindowOverYears.get_if_in_chosen_years(
-                    years_cm_future, years_to_debias
-                )
-                mask_years_in_window_to_debias = (
-                    RunningWindowOverYears.get_if_in_chosen_years(
-                        years_cm_future[mask_years_in_window], years_to_debias
-                    )
-                )
-
-                debiased_cm_future[mask_years_to_debias] = self._apply_debiasing_steps(
-                    cm_future=cm_future[mask_years_in_window],
-                    fit_obs=fit_obs,
-                    fit_cm_hist=fit_cm_hist,
-                )[mask_years_in_window_to_debias]
-
-            return debiased_cm_future
-
-        else:
-            return self._apply_debiasing_steps(
-                cm_future=cm_future, fit_obs=fit_obs, fit_cm_hist=fit_cm_hist
-            )

@@ -367,7 +367,7 @@ class RunningWindowOverDaysOfYear:
             get_mask_for_unique_subarray(indices_window),
         )
 
-    def use(self, days_of_year: np.ndarray) -> np.ndarray:
+    def use(self, days_of_year: np.ndarray):
         """
         This applies the running window onto an array of days of year, whilst respecting year bounds.
         It returns an iterator of (indices_vals_to_adjust, window_center) giving:

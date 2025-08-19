@@ -91,7 +91,6 @@ def rmse_spatial_correlation_distribution(
 def rmse_spatial_correlation_boxplot(
     variable: str, dataset: pd.DataFrame, manual_title: str = " "
 ):
-
     """
     Boxplot of RMSE of spatial correlation across locations.
 

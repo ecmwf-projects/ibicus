@@ -19,7 +19,6 @@ import statsmodels.distributions.empirical_distribution
 
 
 class StatisticalModel(ABC):
-
     """
     Abstract functionality to wrap an arbitrary statistical model given by a fit-method, a cdf and a ppf.
 
