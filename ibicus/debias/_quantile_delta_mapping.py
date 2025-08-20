@@ -25,23 +25,50 @@ from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 
 # ----- Default settings for debiaser ----- #
 default_settings = {
-    tas: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
+    tas: {
+        "distribution": None,
+        "trend_preservation": "absolute",
+        "mapping_type": "nonparametric",
+    },
     pr: {
-        "distribution": gen_PrecipitationGammaLeftCensoredModel(
-            censoring_threshold=0.05 / 86400, censor_in_ppf=False
-        ),
+        "distribution": None,
+        "mapping_type": "nonparametric",
         "trend_preservation": "relative",
         "censor_values_to_zero": True,
         "censoring_threshold": 0.05 / 86400,
     },
 }
 experimental_default_settings = {
-    hurs: {"distribution": scipy.stats.beta, "trend_preservation": "relative"},
-    psl: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
-    rlds: {"distribution": scipy.stats.beta, "trend_preservation": "absolute"},
-    sfcwind: {"distribution": scipy.stats.gamma, "trend_preservation": "relative"},
-    tasmin: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
-    tasmax: {"distribution": scipy.stats.norm, "trend_preservation": "absolute"},
+    hurs: {
+        "distribution": None,
+        "trend_preservation": "relative",
+        "mapping_type": "nonparametric",
+    },
+    psl: {
+        "distribution": None,
+        "trend_preservation": "absolute",
+        "mapping_type": "nonparametric",
+    },
+    rlds: {
+        "distribution": None,
+        "trend_preservation": "absolute",
+        "mapping_type": "nonparametric",
+    },
+    sfcwind: {
+        "distribution": None,
+        "trend_preservation": "relative",
+        "mapping_type": "nonparametric",
+    },
+    tasmin: {
+        "distribution": None,
+        "trend_preservation": "absolute",
+        "mapping_type": "nonparametric",
+    },
+    tasmax: {
+        "distribution": None,
+        "trend_preservation": "absolute",
+        "mapping_type": "nonparametric",
+    },
 }
 
 
@@ -116,8 +143,11 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
     Attributes
     ----------
     distribution : Union[scipy.stats.rv_continuous, scipy.stats.rv_discrete, scipy.stats.rv_histogram, StatisticalModel]
-        Distribution or statistical model used to compute the CDF :math:`F` of observations and historical climate model values. |br|
+        Distribution or statistical model used to compute the CDF :math:`F` of observations and historical climate model values.
         Usually a distribution in scipy.stats.rv_continuous, but can also be an empirical distribution as given by scipy.stats.rv_histogram or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
+        Only relevant if ``mapping_type = "parametric"``.
+    mapping_type : str
+        One of ``["parametric", "nonparametric"]``. Whether all CDF mappings are done using parametric CDFs or using nonparametric density estimation. Default: ``"nonparametric"``.
     trend_preservation : str
         One of ``["absolute", "relative"]``. If ``"absolute"`` then absolute trend preservation is used, if ``"relative"`` then relative trend preservation is used. |brr|
 
@@ -165,6 +195,7 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
                 scipy.stats.rv_discrete,
                 scipy.stats.rv_histogram,
                 StatisticalModel,
+                type(None),
             )
         )
     )
@@ -172,7 +203,7 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         validator=attrs.validators.in_(["absolute", "relative"])
     )
     mapping_type: str = attrs.field(
-        default="parametric",
+        default="nonparametric",
         validator=attrs.validators.in_(["parametric", "nonparametric"]),
     )
 
@@ -237,13 +268,20 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         if (variable == "pr" or variable == pr) and (
             censoring_threshold := kwargs.pop("censoring_threshold", None)
         ):
-            return QuantileDeltaMapping.for_precipitation(censoring_threshold, **kwargs)
+            return QuantileDeltaMapping.for_precipitation(
+                censoring_threshold=censoring_threshold, **kwargs
+            )
         return super()._from_variable(
             cls, variable, default_settings, experimental_default_settings, **kwargs
         )
 
     @classmethod
-    def for_precipitation(cls, censoring_threshold: float = 0.05 / 86400, **kwargs):
+    def for_precipitation(
+        cls,
+        mapping_type="nonparametric",
+        censoring_threshold: float = 0.05 / 86400,
+        **kwargs,
+    ):
         """
         Instanciates the class to a precipitation-debiaser.
 
@@ -255,20 +293,31 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
             All other class attributes that shall be set and where the standard values shall be overwritten.
 
         """
-        if distribution := kwargs.pop("distribution", None):
-            warning(
-                "If specifying an own precipitation distribution make sure that the .fit-methods fits to censored data and assumes all observations under the specified censoring_threshold are zero/censored."
-            )
+        if mapping_type == "nonparametric":
+            if distribution := kwargs.pop("distribution", None):
+                warning("distribution is ignored for nonparametric mapping.")
+                distribution = None
+        elif mapping_type == "parametric":
+            if distribution := kwargs.pop("distribution", None):
+                warning(
+                    "If specifying an own precipitation distribution make sure that the .fit-methods fits to censored data and assumes all observations under the specified censoring_threshold are zero/censored."
+                )
+            else:
+                distribution = gen_PrecipitationGammaLeftCensoredModel(
+                    censoring_threshold=censoring_threshold, censor_in_ppf=False
+                )
         else:
-            distribution = gen_PrecipitationGammaLeftCensoredModel(
-                censoring_threshold=censoring_threshold, censor_in_ppf=False
+            raise ValueError(
+                'mapping_type must be one of ["parametric", "nonparametric"]'
             )
+
         return super()._from_variable(
             cls,
             "pr",
             default_settings,
             censoring_threshold=censoring_threshold,
             distribution=distribution,
+            mapping_type=mapping_type,
             **kwargs,
         )
 

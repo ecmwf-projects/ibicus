@@ -55,77 +55,97 @@ class TestQuantileDeltaMapping(unittest.TestCase):
     def test_from_variable(self):
         tas = QuantileDeltaMapping.from_variable("tas")
         assert tas.censor_values_to_zero is False
-        assert tas.distribution == scipy.stats.norm
+        assert tas.distribution is None
+        assert tas.mapping_type == "nonparametric"
         assert tas.trend_preservation == "absolute"
 
         pr1 = QuantileDeltaMapping.from_variable("pr")
         assert pr1.censor_values_to_zero is True
-        assert pr1.censoring_threshold == pr1.distribution.censoring_threshold
+        assert pr1.censoring_threshold == 0.05 / 86400
         assert pr1.trend_preservation == "relative"
 
         pr2 = QuantileDeltaMapping.from_variable("pr", censoring_threshold=0.1)
-        assert pr2.distribution.censoring_threshold == pr2.censoring_threshold
         assert pr2.censor_values_to_zero
 
-        pr3 = QuantileDeltaMapping.for_precipitation(0.1)
+        pr3 = QuantileDeltaMapping.for_precipitation(censoring_threshold=0.1)
         assert pr2 == pr3
 
         pr4 = QuantileDeltaMapping.for_precipitation(distribution=scipy.stats.norm)
-        assert pr4.distribution == scipy.stats.norm
+        assert pr4.distribution is None
+        assert pr4.mapping_type == "nonparametric"
         assert pr4.censoring_threshold == 0.05 / 86400
         assert pr4.censor_values_to_zero
 
+        pr5 = QuantileDeltaMapping.for_precipitation(
+            mapping_type="parametric", distribution=scipy.stats.norm
+        )
+        assert pr5.distribution == scipy.stats.norm
+        assert pr5.censoring_threshold == 0.05 / 86400
+        assert pr5.censor_values_to_zero
+
+        pr6 = QuantileDeltaMapping.for_precipitation(
+            mapping_type="parametric", censoring_threshold=0.1
+        )
+        assert isinstance(pr6.distribution, gen_PrecipitationGammaLeftCensoredModel)
+        assert pr6.distribution.censoring_threshold == pr3.censoring_threshold
+
         # Check default arguments
         hurs = QuantileDeltaMapping.from_variable("hurs")
-        assert hurs.distribution == scipy.stats.beta
+        assert hurs.distribution is None
+        assert hurs.mapping_type == "nonparametric"
         assert hurs.trend_preservation == "relative"
 
         pr = QuantileDeltaMapping.from_variable("pr")
-        assert pr.distribution == gen_PrecipitationGammaLeftCensoredModel(
-            censoring_threshold=0.05 / 86400, censor_in_ppf=False
-        )
+        assert pr.distribution is None
         assert pr.trend_preservation == "relative"
+        assert pr.mapping_type == "nonparametric"
         assert pr.censor_values_to_zero is True
 
         psl = QuantileDeltaMapping.from_variable("psl")
-        assert psl.distribution == scipy.stats.beta
+        assert psl.distribution is None
+        assert psl.mapping_type == "nonparametric"
         assert psl.trend_preservation == "absolute"
 
         rlds = QuantileDeltaMapping.from_variable("rlds")
-        assert rlds.distribution == scipy.stats.beta
+        assert rlds.distribution is None
+        assert rlds.mapping_type == "nonparametric"
         assert rlds.trend_preservation == "absolute"
 
         with self.assertRaises(ValueError):
             QuantileDeltaMapping.from_variable("rsds")
 
         sfcWind = QuantileDeltaMapping.from_variable("sfcWind")
-        assert sfcWind.distribution == scipy.stats.gamma
+        assert sfcWind.distribution is None
+        assert sfcWind.mapping_type == "nonparametric"
         assert sfcWind.trend_preservation == "relative"
 
         tas = QuantileDeltaMapping.from_variable("tas")
-        assert tas.distribution == scipy.stats.norm
+        assert tas.distribution is None
+        assert tas.mapping_type == "nonparametric"
         assert tas.trend_preservation == "absolute"
 
         tasmin = QuantileDeltaMapping.from_variable("tasmin")
-        assert tasmin.distribution == scipy.stats.norm
+        assert tasmin.distribution is None
+        assert tasmin.mapping_type == "nonparametric"
         assert tasmin.trend_preservation == "absolute"
 
         tasmax = QuantileDeltaMapping.from_variable("tasmax")
-        assert tasmax.distribution == scipy.stats.norm
+        assert tasmax.distribution is None
+        assert tasmax.mapping_type == "nonparametric"
         assert tasmax.trend_preservation == "absolute"
 
     def test__init__(self):
         tas_1 = QuantileDeltaMapping.from_variable("tas")
-        tas_2 = QuantileDeltaMapping(
-            distribution=scipy.stats.norm, trend_preservation="absolute"
-        )
+        tas_2 = QuantileDeltaMapping(distribution=None, trend_preservation="absolute")
         assert tas_1 == tas_2
 
         pr_1 = QuantileDeltaMapping.from_variable("pr")
         assert pr_1.censor_values_to_zero
 
     def test__get_obs_and_cm_hist_fits(self):
-        tas = QuantileDeltaMapping.from_variable("tas")
+        tas = QuantileDeltaMapping.from_variable(
+            "tas", distribution=scipy.stats.norm, mapping_type="parametric"
+        )
 
         obs = scipy.stats.norm.rvs(loc=2, scale=4, size=1000)
         cm_hist = scipy.stats.norm.rvs(loc=8, scale=2, size=1000)
@@ -133,7 +153,7 @@ class TestQuantileDeltaMapping(unittest.TestCase):
             tas._get_obs_and_cm_hist_fits(obs, cm_hist), ((2, 4), (8, 2)), 0.1
         )
 
-        pr = QuantileDeltaMapping.from_variable("pr")
+        pr = QuantileDeltaMapping.for_precipitation(mapping_type="parametric")
 
         model = gen_PrecipitationGammaLeftCensoredModel(pr.censoring_threshold)
         obs = model.ppf(np.random.random(size=1000), *(2, 0, 3))
