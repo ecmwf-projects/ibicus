@@ -17,6 +17,7 @@ from ..utils import (
     StatisticalModel,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
+    iecdf,
     threshold_cdf_vals,
 )
 from ..variables import Variable, hurs, pr, psl, rlds, sfcwind, tas, tasmax, tasmin
@@ -156,6 +157,7 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         scipy.stats.rv_discrete,
         scipy.stats.rv_histogram,
         StatisticalModel,
+        None,
     ] = attrs.field(
         validator=attrs.validators.instance_of(
             (
@@ -168,6 +170,10 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
     )
     trend_preservation: str = attrs.field(
         validator=attrs.validators.in_(["absolute", "relative"])
+    )
+    mapping_type: str = attrs.field(
+        default="parametric",
+        validator=attrs.validators.in_(["parametric", "nonparametric"]),
     )
 
     # Relevant for precipitation
@@ -285,25 +291,28 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.
         """
 
-        fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
-
-        tau_t = threshold_cdf_vals(
+        tau_m_p = threshold_cdf_vals(
             ecdf(cm_future, cm_future, method=self.ecdf_method),
             cdf_threshold=self.cdf_threshold,
         )
 
+        if self.mapping_type == "nonparametric":
+            x_obs_to_cm_fut = iecdf(obs, tau_m_p)
+            inv_F_cm_hist_tau = iecdf(cm_hist, tau_m_p)
+        elif self.mapping_type == "parametric":
+            fit_obs, fit_cm_hist = self._get_obs_and_cm_hist_fits(obs, cm_hist)
+
+            x_obs_to_cm_fut = self.distribution.ppf(tau_m_p, *fit_obs)
+            inv_F_cm_hist_tau = self.distribution.ppf(tau_m_p, *fit_cm_hist)
+        else:
+            raise ValueError(
+                'self.mapping_type needs to be one of ["parametric", "nonparametric"]'
+            )
+
         if self.trend_preservation == "absolute":
-            bias_corrected_vals = (
-                cm_future
-                + self.distribution.ppf(tau_t, *fit_obs)
-                - self.distribution.ppf(tau_t, *fit_cm_hist)
-            )
+            bias_corrected_vals = x_obs_to_cm_fut + cm_future - inv_F_cm_hist_tau
         elif self.trend_preservation == "relative":
-            bias_corrected_vals = (
-                cm_future
-                * self.distribution.ppf(tau_t, *fit_obs)
-                / self.distribution.ppf(tau_t, *fit_cm_hist)
-            )
+            bias_corrected_vals = x_obs_to_cm_fut * cm_future / inv_F_cm_hist_tau
         else:
             raise ValueError(
                 'self.trend_preservation needs to be one of ["absolute", "relative"]'
