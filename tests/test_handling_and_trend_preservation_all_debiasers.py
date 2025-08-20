@@ -175,9 +175,9 @@ class TestAllDebiasers(unittest.TestCase):
 
                         debiased_cm_fut = debiaser.apply_location(obs, cm_hist, cm_fut)
 
-                        print(
+                        assert (
                             np.abs(
                                 np.mean(debiased_cm_fut) / trend_scale - np.mean(obs)
-                                < 0.5
                             )
+                            < 0.5
                         )
