@@ -190,7 +190,7 @@ class ThresholdMetric:
         if threshold_scope == "day":
             days_of_year = np.arange(1, 367)
             if not all(
-                mask_days_of_year_in_quantiles := np.in1d(
+                mask_days_of_year_in_quantiles := np.isin(
                     days_of_year, list(thresholds.keys())
                 )
             ):
@@ -201,7 +201,7 @@ class ThresholdMetric:
         elif threshold_scope == "month":
             months = np.arange(1, 13)
             if not all(
-                mask_months_in_quantiles := np.in1d(months, list(thresholds.keys()))
+                mask_months_in_quantiles := np.isin(months, list(thresholds.keys()))
             ):
                 warnings.warn(
                     "Not all months present inside the dataset used for initialisation. Not threshold defined for months %s"
@@ -210,7 +210,7 @@ class ThresholdMetric:
         elif threshold_scope == "season":
             seasons = np.array(["Spring", "Summer", "Autumn", "Winter"])
             if not all(
-                mask_seasons_in_quantiles := np.in1d(seasons, list(thresholds.keys()))
+                mask_seasons_in_quantiles := np.isin(seasons, list(thresholds.keys()))
             ):
                 warnings.warn(
                     "Not all seasons present inside the dataset used for initialisation. Not threshold defined for seasons %s"
@@ -349,7 +349,7 @@ class ThresholdMetric:
 
             time = ThresholdMetric._get_time_group_by_scope(time, self.threshold_scope)
 
-            if not np.all(np.in1d(time, list(threshold_value.keys()))):
+            if not np.all(np.isin(time, list(threshold_value.keys()))):
                 raise ValueError(
                     "time contains values for %ss for which no thresholds exist in self.threshold_value"
                     % self.threshold_scope

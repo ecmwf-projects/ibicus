@@ -1382,7 +1382,7 @@ class ISIMIP(Debiaser):
                     years_cm_future=years_cm_future[indices_window_cm_future],
                 )[
                     np.logical_and(
-                        np.in1d(
+                        np.isin(
                             indices_window_cm_future, indices_bias_corrected_values
                         ),
                         get_mask_for_unique_subarray(indices_window_cm_future),

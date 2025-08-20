@@ -156,7 +156,7 @@ class TestRunningWindowOverYears(unittest.TestCase):
         assert len(np.unique(debiased_years)) == len(debiased_years)
 
         # Check that all years are given
-        assert all(np.in1d(years, debiased_years))
+        assert all(np.isin(years, debiased_years))
 
     def test_use(self):
         for step_length in range(1, 10):
@@ -215,7 +215,7 @@ class TestRunningWindowOverDaysOfYear(unittest.TestCase):
             indices_vals_in_window = window.get_indices_vals_in_window(
                 days_of_year_dates, window_center
             )
-            assert np.all(np.in1d(indices_vals_to_debias, indices_vals_in_window))
+            assert np.all(np.isin(indices_vals_to_debias, indices_vals_in_window))
 
             n_occurrences = (days_of_year_dates == window_center).sum()
             if length > 365:

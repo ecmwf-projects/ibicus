@@ -165,7 +165,7 @@ class RunningWindowOverYears:
         chosen_years : np.ndarray
             Array of chosen years.
         """
-        return np.in1d(years, chosen_years)
+        return np.isin(years, chosen_years)
 
     def use(self, years):
         """
@@ -337,7 +337,7 @@ class RunningWindowOverDaysOfYear:
         )
         window_range[window_range == 0] = 366
 
-        return np.where(np.in1d(days_of_year, window_range))[0]
+        return np.where(np.isin(days_of_year, window_range))[0]
 
     def get_indices_vals_to_adjust(
         self, days_of_year: np.ndarray, window_center: int
@@ -358,12 +358,12 @@ class RunningWindowOverDaysOfYear:
         )
         window_range = window_range[(window_range >= 0) & (window_range <= 366)]
 
-        return np.where(np.in1d(days_of_year, window_range))[0]
+        return np.where(np.isin(days_of_year, window_range))[0]
 
     @staticmethod
     def get_mask_vals_to_adjust_in_window(indices_window, indices_vals_to_correct):
         return np.logical_and(
-            np.in1d(indices_window, indices_vals_to_correct),
+            np.isin(indices_window, indices_vals_to_correct),
             get_mask_for_unique_subarray(indices_window),
         )
 
