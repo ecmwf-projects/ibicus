@@ -340,6 +340,22 @@ class QuantileDeltaMapping(SeasonalAndFutureRunningWindowDebiaser):
         Applies QuantileDeltaMapping at one location and returns the debiased timeseries.
         """
 
+        if self.censor_values_to_zero:
+            # Shuffle zeros values and values below the threshold prior to computation
+            # Shuffling values below the threshold (instead of just zero) helps with issues due to very small climate model precipitation values, which can lead to very large bias correction values.
+            mask = obs <= self.censoring_threshold
+            obs[mask] = np.random.rand(len(obs[mask])) * self.censoring_threshold
+
+            mask = cm_hist <= self.censoring_threshold
+            cm_hist[mask] = (
+                np.random.rand(len(cm_hist[mask])) * self.censoring_threshold
+            )
+
+            mask = cm_future <= self.censoring_threshold
+            cm_future[mask] = (
+                np.random.rand(len(cm_future[mask])) * self.censoring_threshold
+            )
+
         tau_m_p = threshold_cdf_vals(
             ecdf(cm_future, cm_future, method=self.ecdf_method),
             cdf_threshold=self.cdf_threshold,
