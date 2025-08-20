@@ -185,14 +185,14 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
 
     # Running window mode
     running_window_mode: bool = attrs.field(
-        default=False, validator=attrs.validators.instance_of(bool)
+        default=True, validator=attrs.validators.instance_of(bool)
     )
     running_window_length: int = attrs.field(
-        default=91,
+        default=31,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_step_length: int = attrs.field(
-        default=1,
+        default=31,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
