@@ -215,7 +215,7 @@ str_to_variable_class = {
 def map_standard_precipitation_method(
     model_type: str = "censored",
     amounts_distribution=scipy.stats.gamma,
-    censoring_threshold: float = 0.1,
+    censoring_threshold: float = 0.1 / 86400,
     hurdle_model_randomization: bool = True,
     hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
 ):

@@ -180,7 +180,7 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
         cls,
         model_type: str = "hurdle",
         amounts_distribution: scipy.stats.rv_continuous = scipy.stats.gamma,
-        censoring_threshold: float = 0.1,
+        censoring_threshold: float = 0.1 / 86400,
         hurdle_model_randomization: bool = True,
         hurdle_model_kwds_for_distribution_fit={"floc": 0, "fscale": None},
         **kwargs
