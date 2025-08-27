@@ -13,6 +13,7 @@ Demo tests for raw template.
 import unittest
 
 import numpy as np
+import scipy.stats
 
 from ibicus.debias import (
     ECDFM,
@@ -181,3 +182,67 @@ class TestAllDebiasers(unittest.TestCase):
                             )
                             < 0.5
                         )
+
+    def test_perfect_match_tas(self):
+        debiasers = [
+            QuantileMapping.from_variable("tas", running_window_mode=False),
+            QuantileDeltaMapping.from_variable(
+                "tas",
+                running_window_mode=False,
+                running_window_mode_over_years_of_cm_future=False,
+            ),
+            CDFt.from_variable(
+                "tas",
+                running_window_mode=False,
+                running_window_mode_over_years_of_cm_future=False,
+            ),
+            ScaledDistributionMapping.from_variable("tas", running_window_mode=False),
+            ISIMIP.from_variable("tas", running_window_mode=False),
+            ECDFM.from_variable("tas", running_window_mode=False),
+        ]
+        for debiaser in debiasers:
+            n = 10000
+            np.random.seed(1234)
+            for mean_obs in [270]:
+                for scale_obs in [20.0, 30.0]:
+                    for bias in [0, 2, 10]:
+                        for scale_bias in [1.0, 2.0]:
+                            obs = np.random.normal(size=n) * scale_obs + mean_obs
+                            cm_hist = (
+                                np.random.normal(size=n) * scale_obs * scale_bias
+                                + mean_obs
+                                + bias
+                            )
+
+                            deb = debiaser.apply_location(obs, cm_hist, cm_hist)
+                            assert scipy.stats.kstest(obs, deb).pvalue > 0.05
+
+    def test_perfect_match_pr(self):
+        debiasers = [
+            QuantileMapping.from_variable("pr", running_window_mode=False),
+            CDFt.from_variable(
+                "pr",
+                running_window_mode=False,
+                running_window_mode_over_years_of_cm_future=False,
+            ),
+            ScaledDistributionMapping.from_variable("pr", running_window_mode=False),
+            ISIMIP.from_variable("pr", running_window_mode=False),
+            ECDFM.from_variable("pr", running_window_mode=False),
+        ]
+
+        def generate_pr(size, prop_zeros=0.3):
+            arr = np.zeros(size)
+            arr[int(arr.size * prop_zeros) :] = scipy.stats.gamma(5, 1).rvs(
+                size=arr.size - int(arr.size * prop_zeros)
+            )
+            np.random.shuffle(arr)
+            return arr
+
+        for debiaser in debiasers:
+            n = 10000
+            np.random.seed(1234)
+            for mult_bias in [1, 1.1, 1.25, 1.5, 2.0, 5.0]:
+                obs = generate_pr(n)
+                cm_hist = generate_pr(n) * mult_bias
+                deb = debiaser.apply_location(obs, cm_hist, cm_hist)
+                assert scipy.stats.kstest(obs, deb).pvalue > 0.05

@@ -338,10 +338,13 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         # Step 6
 
         bc_initial = self.distribution.ppf(cdf_scaled, *fit_rainy_days_obs) * scaling
+        bc_initial_scaled = interp_sorted_cdf_vals_on_given_length(
+            bc_initial, expected_nr_rainy_days_cm_future
+        )
         cm_future[: cm_future.size - expected_nr_rainy_days_cm_future] = 0
-        cm_future[cm_future.size - expected_nr_rainy_days_cm_future :] = bc_initial[
-            bc_initial.size - expected_nr_rainy_days_cm_future :
-        ]
+        cm_future[cm_future.size - expected_nr_rainy_days_cm_future :] = (
+            bc_initial_scaled
+        )
 
         # Step 7
         reverse_sorting_idx = np.argsort(argsort_cm_future)
