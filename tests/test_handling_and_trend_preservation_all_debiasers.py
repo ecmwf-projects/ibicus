@@ -225,7 +225,16 @@ class TestAllDebiasers(unittest.TestCase):
                 running_window_mode=False,
                 running_window_mode_over_years_of_cm_future=False,
             ),
-            ScaledDistributionMapping.from_variable("pr", running_window_mode=False),
+            QuantileDeltaMapping.from_variable(
+                "pr",
+                running_window_mode=False,
+                running_window_mode_over_years_of_cm_future=False,
+            ),
+            ScaledDistributionMapping.from_variable(
+                "pr",
+                running_window_mode=False,
+                running_window_mode_over_years_of_cm_future=False,
+            ),
             ISIMIP.from_variable("pr", running_window_mode=False),
             ECDFM.from_variable("pr", running_window_mode=False),
         ]
@@ -242,7 +251,15 @@ class TestAllDebiasers(unittest.TestCase):
             n = 10000
             np.random.seed(1234)
             for mult_bias in [1, 1.1, 1.25, 1.5, 2.0, 5.0]:
-                obs = generate_pr(n)
-                cm_hist = generate_pr(n) * mult_bias
-                deb = debiaser.apply_location(obs, cm_hist, cm_hist)
-                assert scipy.stats.kstest(obs, deb).pvalue > 0.05
+                for prop_zeros_cm_hist in [0.1, 0.2, 0.25, 0.3, 0.35, 0.4]:
+                    obs = generate_pr(n, 0.3)
+                    cm_hist = generate_pr(n, prop_zeros_cm_hist) * mult_bias
+                    deb = debiaser.apply_location(
+                        obs.copy(), cm_hist.copy(), cm_hist.copy()
+                    )
+                    if not (
+                        debiaser.__class__.__name__ == "ScaledDistributionMapping"
+                        and prop_zeros_cm_hist >= 0.3
+                    ):
+                        # Perfect match is not ensured for SDM if the number of dry days in cm is larger than in obs
+                        assert scipy.stats.kstest(obs, deb).pvalue > 0.05
