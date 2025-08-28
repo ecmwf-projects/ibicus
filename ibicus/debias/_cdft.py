@@ -83,9 +83,8 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
     After this shift by the absolute or relative mean bias between cm_hist and obs are applied to both cm_fut and cm_hist, the cm_fut values are mapped as shown above using the QQ-mapping between :math:`F_{\\text{cm_fut}}` and :math:`F_{\\text{obs_fut}}`.
 
     - If ``SSR = True`` then Stochastic Singularity Removal (SSR) based on Vrac et al. 2016 is used to correct the precipitation occurrence in addition to amounts (default setting for ``pr``). All zero values are first replaced by uniform draws between 0 and a small threshold (the minimum positive value of observation and model data). Then CDFt-mapping is used and afterwards all observations under the threshold are set to zero again.
-    - If ``running_window_mode_over_years_of_cm_future = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities.
+    - If ``running_window_mode_over_years_of_cm_future = True`` (default) then the method is used in a running window mode, running over the values of the future climate model. This helps to smooth discontinuities. Default is a window length and step length of 31 days which corresponds broadly to application by month as in Famien et al. 2018.
     - If ``running_window_mode_within_year = True`` (default) then the method is used in a running window mode, running over the year to account for seasonalities.
-    - If ``apply_by_month = True`` (default: False) then CDF-t uses a running window within the year (`running_window_mode_within_year`) with a window length and step length of 31, so broadly applies it by month following Famien et al. 2018 to take seasonality into account. If  ``apply_by_month = False`` and ``running_window_mode_within_year = False`` the method is applied to the whole year.
 
     .. warning:: Currently only uneven sizes are allowed for window length and window step length. This allows symmetrical windows of the form [window_center - window length//2, window_center + window length//2] given an arbitrary window center.
 
@@ -103,7 +102,7 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
 
     - :py:func:`apply` requires: time arguments ``time_obs``, ``time_cm_hist``, and ``time_cm_future`` next to ``obs``, ``cm_hist`` and ``cm_future``. These are just 1d numpy-arrays of dates (multiple formats are possible as long as they as convertible to numpy or datetime dates) specifying the date for each value/timestep in ``obs``, ``cm_hist`` and ``cm_future``. If they are not specified they are inferred, assuming the first observation in all three observation/climate value arrays is on a 1st of January.
 
-    - The debiaser has been developed for and assumes daily data, however application on data using other time specifications (monthly etc.) is possible by setting ``apply_by_month = False``, modifying the running window arguments and specifying the time arguments in :py:func:`apply`.
+    - The debiaser has been developed for and assumes daily data, however application on data using other time specifications (monthly etc.) is possible by modifying the running window arguments and specifying the time arguments in :py:func:`apply`.
 
     |br|
     **Examples:**
@@ -130,9 +129,9 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
     running_window_mode : bool
         Controls whether CDF-t is applied in a running window over the year to account for seasonality. Default: ``True``.
     running_window_length : int
-        Length of the running window over the year in days (default: 31 days): the amount of days used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``.
+        Length of the running window over the year in days: the amount of days used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: `31` days.
     running_window_step_length : int
-        Step length of the running window over the year in days (default 31 days): the amount of days that are bias adjusted/how far the running window is moved. Only relevant if ``running_window_mode = True``. |brr|
+        Step length of the running window over the year in days: the amount of days that are bias adjusted/how far the running window is moved. Only relevant if ``running_window_mode = True``. Default: `31` days. |brr|
 
     running_window_mode_over_years_of_cm_future : bool
         Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``False``.
@@ -140,9 +139,6 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
         Length of the running window in years: how many years are used to define the future climate (default: ``17`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
         Step length of the running window in years: how many years are bias adjusted inside the running window (default: ``9`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
-
-    apply_by_month : bool
-        Whether CDF-t is applied month by month (default) to account for seasonality. This is equivalent to a running window within the year with length 31 and step length 31. Default: ``Faöse``.
 
     variable : str
         Variable for which the debiasing is done. Default: ``"unknown"``.
@@ -157,11 +153,6 @@ class CDFt(SeasonalAndFutureRunningWindowDebiaser):
     delta_shift: str = attrs.field(
         default="additive",
         validator=attrs.validators.in_(["additive", "multiplicative", "no_shift"]),
-    )
-
-    # Iteration parameters
-    apply_by_month: bool = attrs.field(
-        default=True, validator=attrs.validators.instance_of(bool)
     )
 
     # Running window mode
