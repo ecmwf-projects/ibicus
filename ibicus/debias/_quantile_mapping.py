@@ -152,7 +152,7 @@ class QuantileMapping(SeasonalAndFutureRunningWindowDebiaser):
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
 
     running_window_mode : bool
-        Whether QuantileMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then QuantileMapping is applied on the whole period. Default: ``False``.
+        Whether QuantileMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then QuantileMapping is applied on the whole period. Default: ``True``.
     running_window_length : int
         Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
@@ -197,6 +197,19 @@ class QuantileMapping(SeasonalAndFutureRunningWindowDebiaser):
     )
     cdf_threshold: float = attrs.field(
         default=1e-10, validator=attrs.validators.instance_of(float)
+    )
+
+    # Running window mode
+    running_window_mode: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_step_length: int = attrs.field(
+        default=1,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
     # ----- Constructors -----

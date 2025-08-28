@@ -100,7 +100,7 @@ class DeltaChange(Debiaser):
         One of ``["additive", "multiplicative"]``. Determines whether additive or multiplicative scaling is used.
 
     running_window_mode : bool
-        Whether DeltaChange is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then DeltaChange is applied on the whole period. Default: ``False``.
+        Whether DeltaChange is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then DeltaChange is applied on the whole period. Default: ``True``.
     running_window_length : int
         Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
@@ -116,7 +116,7 @@ class DeltaChange(Debiaser):
 
     # Running window mode
     running_window_mode: bool = attrs.field(
-        default=False, validator=attrs.validators.instance_of(bool)
+        default=True, validator=attrs.validators.instance_of(bool)
     )
     running_window_length: int = attrs.field(
         default=31,
