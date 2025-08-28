@@ -133,14 +133,14 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
 
     running_window_mode : bool
-        Whether ScaledDistributionMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then ScaledDistributionMapping is applied on the whole period. Default: ``False``.
+        Whether ScaledDistributionMapping is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then ScaledDistributionMapping is applied on the whole period. Default: ``True``.
     running_window_length : int
-        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``91``.
+        Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``31``.
     running_window_step_length : int
-        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``31``.
 
     running_window_mode_over_years_of_cm_future : bool
-        Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``False``.
+        Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``True``.
     running_window_over_years_of_cm_future_length : int
         Length of the running window in years: how many years are used to define the future climate (default: ``31`` years). Only relevant if ``running_window_mode_over_years_of_cm_future = True``.
     running_window_over_years_of_cm_future_step_length : int
@@ -194,6 +194,18 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
     running_window_step_length: int = attrs.field(
         default=31,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+
+    # Running window over future
+    running_window_mode_over_years_of_cm_future: bool = attrs.field(
+        default=True, validator=attrs.validators.instance_of(bool)
+    )
+    running_window_over_years_of_cm_future_length: int = attrs.field(
+        default=31,
+        validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
+    )
+    running_window_over_years_of_cm_future_step_length: int = attrs.field(
+        default=9, validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)]
     )
 
     @classmethod
