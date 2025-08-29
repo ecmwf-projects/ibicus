@@ -109,7 +109,7 @@ class LinearScaling(SeasonalRunningWindowDebiaser):
 
     # Running window mode
     running_window_mode: bool = attrs.field(
-        default=False, validator=attrs.validators.instance_of(bool)
+        default=True, validator=attrs.validators.instance_of(bool)
     )
     running_window_length: int = attrs.field(
         default=31,
