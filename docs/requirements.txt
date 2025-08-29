@@ -4,14 +4,3 @@ ipykernel
 nbsphinx
 sphinx_rtd_theme
 numpydoc
-
-# ibicus requirements
-numpy
-attrs
-pandas
-matplotlib
-seaborn
-scipy
-statsmodels
-scikit-learn
-tqdm
