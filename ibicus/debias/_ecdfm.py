@@ -30,7 +30,11 @@ from ._running_window_debiaser import SeasonalAndFutureRunningWindowDebiaser
 # ----- Default settings for debiaser ----- #
 default_settings = {
     tas: {"distribution": scipy.stats.beta},
-    pr: {"distribution": PrecipitationHurdleModelGamma},
+    pr: {
+        "distribution": PrecipitationHurdleModelGamma,
+        "censor_values_to_zero": True,
+        "censoring_threshold": 0.1 / 86400,
+    },
 }
 experimental_default_settings = {
     hurs: {"distribution": scipy.stats.beta},
@@ -62,7 +66,7 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
     In essence, this method says that future climate model data can be bias corrected directly with reference period observations, if the quantile specific difference between present-day and future climate model simulations is taken into account.
     This allows for changes in higher moments in the climate model, compared to standard Quantile Mapping where just the mean is assumed to change in future climate.
 
-    The method was originally developed with monthly data in view, however the authors of this package think that there is no reason for the method not to be applicable to daily data.
+    .. note:: The method was originally developed with monthly data. Whilst it can be used for daily data, care needs to be taken when doing so. The method can also be seen as an additive QuantileDeltaMapping and the latter might be simpler to use for daily data.
 
     .. note:: As opposed to most other publications, Li et al. use a  4-parameter beta distribution (:py:data:`scipy.stats.beta`) for ``tas`` instead of a normal distribution. This can be slow for the fit at times. Consider modifying the ``distribution`` parameter for ``tas``.
 
@@ -105,14 +109,21 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
         Method used for the fit to the historical and future climate model outputs as well as the observations.
         Usually a distribution in ``scipy.stats.rv_continuous``, but can also be an empirical distribution as given by ``scipy.stats.rv_histogram`` or a more complex statistical model as wrapped by the :py:class:`ibicus.utils.StatisticalModel` class.
     cdf_threshold : float
-        Threshold to round CDF-values away from zero and one. Default: ``1e-10``.
+        Threshold to round CDF-values away from zero and one. Default: ``1e-10``. |brr|
+
+    censor_values_to_zero : bool
+        Whether values below a censoring threshold shall be censored to zero. Only relevant for precipitation. Default: ``False``.
+    censoring_threshold : float
+        Threshold below which values shall be censored to zero if ``censor_values_to_zero = True``. Relevant mainly for precipitation. |br|
+        If it is used (so ``censor_values_to_zero = True``) one needs to make sure that the distribution fits to censored data, knows the correct ``censoring_threshold`` and assumes all observations under the specified censoring_threshold are zero/censored. |br|
+        If the standard for_precipitation and from_variable methods are used to construct the class this is ensured by default. However if this parameter is changed manually or own distributions for precipitation are specified problems can arise. |brr|
 
     running_window_mode : bool
         Whether DeltaChange is used in running window over the year to account for seasonality. If ``running_window_mode = False`` then DeltaChange is applied on the whole period. Default: ``False``.
     running_window_length : int
         Length of the running window in days: how many values are used to calculate the bias adjustment transformation. Only relevant if ``running_window_mode = True``. Default: ``91``.
     running_window_step_length : int
-        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``1``.
+        Step length of the running window in days: how many values are bias adjusted inside the running window and by how far it is moved. Only relevant if ``running_window_mode = True``. Default: ``31``.
 
     running_window_mode_over_years_of_cm_future : bool
         Controls whether the methodology is applied on a running time window, running over the years of the future climate model. This helps to smooth discontinuities in the preserved trends. Default: ``False``.
@@ -144,6 +155,16 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
         default=1e-10, validator=attrs.validators.instance_of(float)
     )
 
+    # Relevant for precipitation
+    censor_values_to_zero: bool = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
+    censoring_threshold: float = attrs.field(
+        default=0.1 / 86400,
+        validator=attrs.validators.instance_of(float),
+        converter=float,
+    )
+
     # Running window mode
     running_window_mode: bool = attrs.field(
         default=False, validator=attrs.validators.instance_of(bool)
@@ -153,7 +174,7 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
     running_window_step_length: int = attrs.field(
-        default=1,
+        default=31,
         validator=[attrs.validators.instance_of(int), attrs.validators.gt(0)],
     )
 
@@ -213,12 +234,23 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
             hurdle_model_randomization,
             hurdle_model_kwds_for_distribution_fit,
         )
-        parameters = {"distribution": method, "variable": variable.name}
+        parameters = {
+            "distribution": method,
+            "variable": variable.name,
+            "censor_values_to_zero": True,
+            "censoring_threshold": censoring_threshold,
+        }
         return cls(**{**parameters, **kwargs})
 
     def apply_on_seasonal_and_future_window(
         self, obs: np.ndarray, cm_hist: np.ndarray, cm_future: np.ndarray, **kwargs
     ):
+
+        if self.censor_values_to_zero:
+            obs[obs < self.censoring_threshold] = 0
+            cm_hist[cm_hist < self.censoring_threshold] = 0
+            cm_future[cm_future < self.censoring_threshold] = 0
+
         fit_obs = self.distribution.fit(obs)
         fit_cm_hist = self.distribution.fit(cm_hist)
         fit_cm_future = self.distribution.fit(cm_future)
@@ -227,8 +259,13 @@ class ECDFM(SeasonalAndFutureRunningWindowDebiaser):
             self.distribution.cdf(cm_future, *fit_cm_future), self.cdf_threshold
         )
 
-        return (
+        bias_corrected_vals = (
             cm_future
             + self.distribution.ppf(quantile_cm_future, *fit_obs)
             - self.distribution.ppf(quantile_cm_future, *fit_cm_hist)
         )
+
+        if self.censor_values_to_zero:
+            bias_corrected_vals[bias_corrected_vals < self.censoring_threshold] = 0
+
+        return bias_corrected_vals

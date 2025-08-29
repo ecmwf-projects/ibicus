@@ -95,7 +95,11 @@ class TestECDFM(unittest.TestCase):
         assert tas_1 == tas_2
 
         pr_1 = ECDFM.from_variable("pr")
-        pr_2 = ECDFM(distribution=PrecipitationHurdleModelGamma)
+        pr_2 = ECDFM(
+            distribution=PrecipitationHurdleModelGamma,
+            censor_values_to_zero=True,
+            censoring_threshold=0.1 / 86400,
+        )
         assert pr_1 == pr_2
 
     def test_for_precipitation(self):
@@ -104,7 +108,11 @@ class TestECDFM(unittest.TestCase):
 
         assert pr_1 == pr_2
 
-        pr_1 = ECDFM(distribution=gen_PrecipitationGammaLeftCensoredModel(0.2))
+        pr_1 = ECDFM(
+            distribution=gen_PrecipitationGammaLeftCensoredModel(0.2),
+            censor_values_to_zero=True,
+            censoring_threshold=0.2,
+        )
         pr_2 = ECDFM.for_precipitation(
             model_type="censored",
             censoring_threshold=0.2,
@@ -119,7 +127,8 @@ class TestECDFM(unittest.TestCase):
         assert pr_1 != pr_2
 
         pr_1 = ECDFM.for_precipitation(
-            distribution=gen_PrecipitationGammaLeftCensoredModel(0.2)
+            distribution=gen_PrecipitationGammaLeftCensoredModel(0.2),
+            censoring_threshold=0.2,
         )
         pr_2 = ECDFM.for_precipitation(
             model_type="censored",
@@ -129,7 +138,9 @@ class TestECDFM(unittest.TestCase):
 
         assert pr_1 == pr_2
 
-        pr_1 = ECDFM.for_precipitation(distribution=PrecipitationHurdleModelGamma)
+        pr_1 = ECDFM.for_precipitation(
+            distribution=PrecipitationHurdleModelGamma, censoring_threshold=0.2
+        )
         pr_2 = ECDFM.for_precipitation(
             model_type="hurdle",
             censoring_threshold=0.2,
