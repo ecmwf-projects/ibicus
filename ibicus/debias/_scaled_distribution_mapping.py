@@ -182,6 +182,9 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
     cdf_threshold: float = attrs.field(
         default=1e-10, validator=attrs.validators.instance_of(float)
     )
+    min_values_for_relative_sdm_distribution_fit: int = attrs.field(
+        default=10, validator=attrs.validators.instance_of(int)
+    )
 
     # Running window mode
     running_window_mode: bool = attrs.field(
@@ -250,12 +253,16 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         rainy_days_cm_future = cm_future[mask_rainy_days_cm_future]
 
         if (
-            rainy_days_obs.size == 0
-            or rainy_days_cm_hist.size == 0
-            or rainy_days_cm_future.size == 0
+            rainy_days_obs.size < self.min_values_for_relative_sdm_distribution_fit
+            or rainy_days_cm_hist.size
+            < self.min_values_for_relative_sdm_distribution_fit
+            or rainy_days_cm_future.size
+            < self.min_values_for_relative_sdm_distribution_fit
         ):
             raise ValueError(
-                "No values bigger than pr_lower_threshold in either obs, cm_hist or cm_future. Bias adjustment not possible."
+                f"""Not enough values larger than pr_lower_threshold (rainy days) in either obs, cm_hist or cm_future. Bias adjustment not possible.
+                Found {rainy_days_obs.size} ({obs.size}) rainy days (total days) in obs, {rainy_days_cm_hist.size} ({cm_hist.size}) in cm_hist and {rainy_days_cm_future.size} ({cm_future.size}) in cm_future.
+                Consider adjusting the threshold or increasing the running window size."""
             )
 
         # Set non rainy days to zero
