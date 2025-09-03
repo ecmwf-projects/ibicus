@@ -94,6 +94,8 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
 
     .. warning:: The relative SDM method does not currently allow correcting the number of precipitation days in cm_fut upwards, so to convert dry into rainy days. Should the calculated expected number of rainy days be higher than what is given inside the future climate model then the number of rainy days is left unadjusted. The method focuses on the biggest precipitation values, so this should not be an issue for most applications. However if such a correction is required this method might not be appropriate.
 
+    .. warning:: The relative SDM method can have problems in arid regions. The method is not defined and a error will be thrown if there are too few rain observations or rainy climate model values (less than `min_values_for_relative_sdm_distribution_fit`) within a given window. Consider using `failsafe = True` to contine debiasing at other locations, or increasing the window size in these cases.
+
 
     **Reference**:
 
