@@ -51,9 +51,11 @@ class TestAllDebiasers(unittest.TestCase):
             debiaser = debiaser_class.from_variable("tas")
             assert debiaser.variable == "Daily mean near-surface air temperature"
 
-            obs = np.random.normal(size=(10000, 2, 2)) + 270
-            cm_hist = np.random.normal(size=(10000, 2, 2)) + 270
-            cm_future = np.random.normal(size=(10000, 2, 2)) + 270 + 2
+            shape = (2, 2, 10000)
+            # shape = (10000, 2, 2)
+            obs = np.random.normal(size=shape) + 270
+            cm_hist = np.random.normal(size=shape) + 270
+            cm_future = np.random.normal(size=shape) + 270 + 2
 
             debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
             assert debiased_cm_future.shape == cm_future.shape
@@ -64,9 +66,9 @@ class TestAllDebiasers(unittest.TestCase):
             debiaser = debiaser_class.from_variable("pr")
             assert debiaser.variable == "Daily mean precipitation flux"
 
-            obs = np.exp(np.random.normal(size=(10000, 2, 2)))
-            cm_hist = np.exp(np.random.normal(size=(10000, 2, 2)))
-            cm_future = np.exp(np.random.normal(size=(10000, 2, 2))) * 2
+            obs = np.exp(np.random.normal(size=shape))
+            cm_hist = np.exp(np.random.normal(size=shape))
+            cm_future = np.exp(np.random.normal(size=shape)) * 2
 
             debiased_cm_future = debiaser.apply(obs, cm_hist, cm_future)
             assert debiased_cm_future.shape == cm_future.shape

@@ -184,22 +184,56 @@ class Debiaser(ABC):
     @staticmethod
     def _have_same_shape(obs, cm_hist, cm_future):
         return (
-            obs.shape[1:] == cm_hist.shape[1:] and obs.shape[1:] == cm_future.shape[1:]
+            obs.shape[:-1] == cm_hist.shape[:-1] and obs.shape[:-1] == cm_future.shape[:-1]
         )
 
     @staticmethod
     def _contains_inf_nan(x):
         return np.any(np.logical_or(np.isnan(x), np.isinf(x)))
 
-    def _not_if_or_nan_vals_outside_reasonable_physical_range(self, x):
-        if self.reasonable_physical_range is not None:
-            return not np.all(
-                (x >= self.reasonable_physical_range[0])
-                & (x <= self.reasonable_physical_range[1])
-                | np.isinf(x)
-                | np.isnan(x)
+    def _not_if_or_nan_vals_outside_reasonable_physical_range(self, x, vtype):
+        """
+        Combine methods to improver performance
+
+        In previous version, had a _contains_inf_nan static method and a
+        method to check for data within range with secondary check of out
+        of range data was nan/inf.
+
+        Functionality of these methods have been combined to improve
+        performance so don't have to compute nan/inf masks twice
+
+        Arguments:
+            x: Data values to check
+            vtype: Label/type of data; e.g., obs, cm_hist, cm_future, etc.
+                Used for warning labels
+
+        """
+
+        nan_inf = np.isinf(x) | np.isnan(x)
+        if nan_inf.any():
+            warnings.warn(
+                f"{vtype} contains inf or nan values. Not all debiasers support missing values and their "
+                "presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
+                stacklevel=2,
             )
-        return False
+
+        if self.reasonable_physical_range is None:
+            return False
+
+        if np.all(
+            (x >= self.reasonable_physical_range[0])
+            & (x <= self.reasonable_physical_range[1])
+            | nan_inf
+        ):
+            return False
+
+        warnings.warn(
+            "%s contains values outside the reasonable physical range of %s for the variable: %s. "
+            "This might be due to different units of to data problems. It is recommended to check the input."
+            % (vtype, self.reasonable_physical_range, self.variable),
+            stacklevel=2,
+        )
+        return True
 
     @staticmethod
     def _has_float_dtype(x):
@@ -229,8 +263,17 @@ class Debiaser(ABC):
         return x.filled(np.nan)
 
     # ----- Input checks ----- #
-
     def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
+        """
+        Check inputs are correct
+
+        Updates:
+            Uses the updated
+            _not_if_or_nan_vals_outside_reasonable_physical_range() method for
+            speedup
+
+        """
+
         # correct type
         if not Debiaser._is_correct_type(obs):
             raise TypeError("Wrong type for obs. Needs to be np.ndarray")
@@ -260,54 +303,21 @@ class Debiaser(ABC):
 
         # correct shape
         if not Debiaser._has_correct_shape(obs):
-            raise ValueError("obs needs to have 3 dimensions: time, x, y")
+            raise ValueError("obs needs to have 3 dimensions: x, y, time")
         if not Debiaser._has_correct_shape(cm_hist):
-            raise ValueError("cm_hist needs to have 3 dimensions: time, x, y")
+            raise ValueError("cm_hist needs to have 3 dimensions: x, y, time")
         if not Debiaser._has_correct_shape(cm_future):
-            raise ValueError("cm_future needs to have 3 dimensions: time, x, y")
+            raise ValueError("cm_future needs to have 3 dimensions: x, y, time")
 
         # have shame shape
         if not Debiaser._have_same_shape(obs, cm_hist, cm_future):
             raise ValueError(
-                "obs, cm_hist, cm_future need to have same (number of) spatial dimensions. The arrays of obs, cm_hist and cm_future are assumed to have the following structure: [t, x, y] where t is the time dimension and x, y are spatial ones."
+                "obs, cm_hist, cm_future need to have same (number of) spatial dimensions. The arrays of obs, cm_hist and cm_future are assumed to have the following structure: [x, y, t] where t is the time dimension and x, y are spatial ones."
             )
 
-        # contains inf or nan
-        if Debiaser._contains_inf_nan(obs):
-            warnings.warn(
-                "obs contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
-                stacklevel=2,
-            )
-        if Debiaser._contains_inf_nan(cm_hist):
-            warnings.warn(
-                "cm_hist contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
-                stacklevel=2,
-            )
-        if Debiaser._contains_inf_nan(cm_future):
-            warnings.warn(
-                "cm_future contains inf or nan values. Not all debiasers support missing values and their presence might lead to infs or nans inside of the debiased values. Consider infilling the missing values.",
-                stacklevel=2,
-            )
-
-        # in reasonable physical range:
-        if self._not_if_or_nan_vals_outside_reasonable_physical_range(obs):
-            warnings.warn(
-                "obs contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable),
-                stacklevel=2,
-            )
-        if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_hist):
-            warnings.warn(
-                "cm_hist contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable),
-                stacklevel=2,
-            )
-        if self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_future):
-            warnings.warn(
-                "cm_future contains values outside the reasonable physical range of %s for the variable: %s. This might be due to different units of to data problems. It is recommended to check the input."
-                % (self.reasonable_physical_range, self.variable),
-                stacklevel=2,
-            )
+        self._not_if_or_nan_vals_outside_reasonable_physical_range(obs, 'obs')
+        self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_hist, 'cm_hist')
+        self._not_if_or_nan_vals_outside_reasonable_physical_range(cm_future, 'cm_future')
 
         # masked arrays
         if Debiaser._is_masked_array(obs):
@@ -345,24 +355,12 @@ class Debiaser(ABC):
                     "cm_future is a masked array, but contains no invalid data. It is converted to a normal numpy array.",
                     stacklevel=2,
                 )
-            cm_future = Debiaser._fill_masked_array_with_nan(cm_future)
 
         return obs, cm_hist, cm_future
 
     def _check_output(self, output):
-        if Debiaser._contains_inf_nan(output):
-            warnings.warn(
-                "The debiaser output contains inf or nan values. This might be due to inf or nan values inside the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully",
-                stacklevel=2,
-            )
-
         # in reasonable physical range:
-        if self._not_if_or_nan_vals_outside_reasonable_physical_range(output):
-            warnings.warn(
-                "The debiaser output contains values outside the reasonable physical range of %s for the variable: %s. This might be due to values outside the range in the input, or to a problem of the debiaser for the given dataset at hand. It is recommended to check the output carefully."
-                % (self.reasonable_physical_range, self.variable),
-                stacklevel=2,
-            )
+        self._not_if_or_nan_vals_outside_reasonable_physical_range(output, "The debiaser output")
 
     # ----- Helpers ----- #
 
@@ -402,7 +400,6 @@ class Debiaser(ABC):
     @staticmethod
     def map_over_locations(
         func,
-        output_size,
         obs,
         cm_hist,
         cm_future,
@@ -410,17 +407,20 @@ class Debiaser(ABC):
         failsafe=False,
         **kwargs,
     ):
-        output = np.empty(output_size, dtype=cm_future.dtype)
+        output = np.empty_like(cm_future)
 
-        indices = np.ndindex(obs.shape[1:])
+        # Generator object of indices of all but the time (last) dimension
+        indices = np.ndindex(obs.shape[:-1])
         if progressbar:
-            indices = tqdm(indices, total=np.prod(obs.shape[1:]))
+            indices = tqdm(indices, total=np.prod(obs.shape[:-1]))
 
-        for i, j in indices:
-            output[:, i, j] = Debiaser._run_func_on_location_and_catch_error(
-                obs[:, i, j],
-                cm_hist[:, i, j],
-                cm_future[:, i, j],
+        # Iterate over all indices; applies function to timeseries at each
+        # location sequentially
+        for idx in indices:
+            output[*idx, :] = Debiaser._run_func_on_location_and_catch_error(
+                obs[*idx, :],
+                cm_hist[*idx, :],
+                cm_future[*idx, :],
                 func,
                 failsafe=failsafe,
                 **kwargs,
@@ -430,7 +430,6 @@ class Debiaser(ABC):
     @staticmethod
     def parallel_map_over_locations(
         func,
-        output_size,
         obs,
         cm_hist,
         cm_future,
@@ -438,29 +437,36 @@ class Debiaser(ABC):
         failsafe=False,
         **kwargs,
     ):
+
         # compute results
-        indices = [(i, j) for i in range(obs.shape[1]) for j in range(obs.shape[2])]
-        with Pool(processes=nr_processes) as pool:
-            result = pool.starmap(
-                partial(
-                    Debiaser._run_func_on_location_and_catch_error,
-                    func=func,
-                    failsafe=failsafe,
-                    **kwargs,
-                ),
-                [
-                    (obs[:, i, j], cm_hist[:, i, j], cm_future[:, i, j])
-                    for (i, j) in indices
-                ],
+        func = partial(
+            Debiaser._run_func_on_location_and_catch_error,
+            func=func,
+            failsafe=failsafe,
+            progressbar=False,  # Disable progress bar
+            **kwargs,
+        )
+
+        # Open pool an pass chunks to it for processing. By passing chunks
+        # we reduce communcation (slow) with each process and allow them to
+        # work for a while
+        pool = Pool(processes=nr_processes)
+        objs = [
+            pool.apply_async(
+                func,
+                (obs[i, ...], cm_hist[i, ...], cm_future[i, ...]),
             )
+            for i in range(obs.shape[0])
+        ]
+        pool.close()
+        pool.join()
 
         # fill output
-        output = np.empty(output_size, dtype=cm_future.dtype)
-        for k, index in enumerate(indices):
-            output[:, index[0], index[1]] = result[k]
-
-        # result = np.array(result)
-        # result = np.moveaxis(result.reshape(obs.shape[1], obs.shape[2], obs.shape[0]), -1, 0)
+        i = -1
+        output = np.empty_like(cm_future)
+        while len(objs) > 0:
+            output[i, ...] = objs.pop().get()
+            i -= 1
 
         return output
 
@@ -538,8 +544,7 @@ class Debiaser(ABC):
                 warnings.warn("progressbar argument is ignored when parallel = True.")
 
             output = Debiaser.parallel_map_over_locations(
-                self.apply_location,
-                output_size=cm_future.shape,
+                partial(self.map_over_locations, self.apply_location),
                 obs=obs,
                 cm_hist=cm_hist,
                 cm_future=cm_future,
@@ -550,7 +555,6 @@ class Debiaser(ABC):
         else:
             output = Debiaser.map_over_locations(
                 self.apply_location,
-                output_size=cm_future.shape,
                 obs=obs,
                 cm_hist=cm_hist,
                 cm_future=cm_future,
