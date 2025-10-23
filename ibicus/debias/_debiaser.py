@@ -179,7 +179,7 @@ class Debiaser(ABC):
 
     @staticmethod
     def _has_correct_shape(df):
-        return df.ndim == 3
+        return df.ndim > 0
 
     @staticmethod
     def _have_same_shape(obs, cm_hist, cm_future):
@@ -538,6 +538,10 @@ class Debiaser(ABC):
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
         )
+
+        if obs.shape[:-1] == () and parallel:
+            logger.info("Running on single location, disabling parallel")
+            parallel = False
 
         if parallel:
             if progressbar:
