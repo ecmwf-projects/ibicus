@@ -354,7 +354,10 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
             * recurrence_interval_cm_future
             / recurrence_interval_cm_hist,
         )
-        cdf_scaled = threshold_cdf_vals(1 - 1 / recurrence_interval_scaled)
+        cdf_scaled = threshold_cdf_vals(
+            1 - 1 / recurrence_interval_scaled,
+            self.cdf_threshold,
+        )
 
         # Step 6
 
@@ -385,15 +388,18 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         argsort_cm_future = np.argsort(cm_future_detrended)
 
         cdf_vals_obs_detrended_thresholded = threshold_cdf_vals(
-            np.sort(self.distribution.cdf(obs_detrended, *fit_obs_detrended))
+            np.sort(self.distribution.cdf(obs_detrended, *fit_obs_detrended)),
+            self.cdf_threshold,
         )
         cdf_vals_cm_hist_detrended_thresholded = threshold_cdf_vals(
-            np.sort(self.distribution.cdf(cm_hist_detrended, *fit_cm_hist_detrended))
+            np.sort(self.distribution.cdf(cm_hist_detrended, *fit_cm_hist_detrended)),
+            self.cdf_threshold,
         )
         cdf_vals_cm_future_detrended_thresholded = threshold_cdf_vals(
             self.distribution.cdf(cm_future_detrended, *fit_cm_future_detrended)[
                 argsort_cm_future
-            ]
+            ],
+            self.cdf_threshold,
         )
 
         # interpolate cdf-values for obs and mod to the length of the scenario
@@ -443,7 +449,8 @@ class ScaledDistributionMapping(SeasonalAndFutureRunningWindowDebiaser):
         cdf_scaled = threshold_cdf_vals(
             0.5
             + np.sign(cdf_vals_obs_detrended_thresholded_intpol - 0.5)
-            * np.abs(0.5 - 1 / recurrence_interval_scaled)
+            * np.abs(0.5 - 1 / recurrence_interval_scaled),
+            self.cdf_threshold,
         )
 
         # Step 6
