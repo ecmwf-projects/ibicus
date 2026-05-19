@@ -16,7 +16,6 @@ from ..utils import (
     RunningWindowOverDaysOfYear,
     check_time_information_and_raise_error,
     day_of_year,
-    get_library_logger,
     infer_and_create_time_arrays_if_not_given,
 )
 from ..variables import (
@@ -221,48 +220,3 @@ class DeltaChange(Debiaser):
             return debiased_cm_future
         else:
             return self._apply_on_within_year_window(obs, cm_hist, cm_future)
-
-    def apply(
-        self,
-        obs,
-        cm_hist,
-        cm_future,
-        progressbar=True,
-        parallel=False,
-        nr_processes=4,
-        failsafe=False,
-        **kwargs
-    ):
-        logger = get_library_logger()
-        logger.info("----- Running debiasing for variable: %s -----" % self.variable)
-
-        obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
-            obs, cm_hist, cm_future
-        )
-
-        if parallel:
-            output = Debiaser.parallel_map_over_locations(
-                self.apply_location,
-                output_size=obs.shape,
-                obs=obs,
-                cm_hist=cm_hist,
-                cm_future=cm_future,
-                nr_processes=nr_processes,
-                failsafe=failsafe,
-                **kwargs,
-            )
-        else:
-            output = Debiaser.map_over_locations(
-                self.apply_location,
-                output_size=obs.shape,
-                obs=obs,
-                cm_hist=cm_hist,
-                cm_future=cm_future,
-                progressbar=progressbar,
-                failsafe=failsafe,
-                **kwargs,
-            )
-
-        self._check_output(output)
-
-        return output
