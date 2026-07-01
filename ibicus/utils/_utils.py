@@ -192,12 +192,10 @@ def check_time_information_and_raise_error(
         or cm_hist.size != time_cm_hist.size
         or cm_future.size != time_cm_future.size
     ):
-        raise ValueError(
-            """
+        raise ValueError("""
             Dimensions of time information for one of time_obs, time_cm_hist, time_cm_future do not correspond to the dimensions of obs, cm_hist, cm_future.
             Make sure that for each one of obs, cm_hist, cm_future time information is given for each value in the arrays.
-            """
-        )
+            """)
 
 
 # ----- Variables ----- #
