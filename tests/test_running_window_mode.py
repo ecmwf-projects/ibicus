@@ -168,6 +168,43 @@ class TestRunningWindowOverYears(unittest.TestCase):
                             window, i, j
                         )
 
+    def test_use_returns_modes_are_consistent(self):
+        years = np.arange(2000, 2050)
+
+        window_years = RunningWindowOverYears(17, 9, returns="years")
+        window_indices = RunningWindowOverYears(17, 9, returns="indices")
+        window_mask = RunningWindowOverYears(17, 9, returns="mask")
+
+        for (
+            (years_to_adjust, years_in_window),
+            (idx_adjust, idx_window),
+            (
+                mask_adjust,
+                mask_window,
+            ),
+        ) in zip(
+            window_years.use(years),
+            window_indices.use(years),
+            window_mask.use(years),
+        ):
+            # The mask flags which of the window's years are present in the data.
+            assert np.array_equal(mask_adjust, np.isin(years_to_adjust, years))
+            assert np.array_equal(mask_window, np.isin(years_in_window, years))
+
+            # The indices correspond to the masked positions.
+            assert np.array_equal(idx_adjust, np.where(mask_adjust)[0])
+            assert np.array_equal(idx_window, np.where(mask_window)[0])
+
+            # Applying the mask recovers exactly the in-data years to adjust.
+            assert np.array_equal(
+                np.sort(years_to_adjust[mask_adjust]),
+                np.sort(years_to_adjust[np.isin(years_to_adjust, years)]),
+            )
+
+    def test_invalid_returns_raises(self):
+        with self.assertRaises(ValueError):
+            RunningWindowOverYears(17, 9, returns="not_a_mode")
+
 
 class TestRunningWindowOverDaysOfYear(unittest.TestCase):
     @classmethod

@@ -155,3 +155,65 @@ class TestQuantileMapping(unittest.TestCase):
                                     )
                                     < 0.1
                                 )
+
+
+class TestQuantileMappingHelpers(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+        cls.obs = np.random.normal(loc=0, scale=1, size=2000)
+        cls.cm_hist = np.random.normal(loc=5, scale=1, size=2000)
+        cls.cm_future = np.random.normal(loc=5, scale=1, size=2000)
+
+    def test_for_precipitation_model_types(self):
+        for model_type in ["censored", "hurdle", "ignore_zeros"]:
+            debiaser = QuantileMapping.for_precipitation(model_type=model_type)
+            assert debiaser.variable == "Daily mean precipitation flux"
+
+    def test_standard_qm_parametric_vs_nonparametric(self):
+        parametric = QuantileMapping.from_variable("tas", mapping_type="parametric")
+        nonparametric = QuantileMapping.from_variable(
+            "tas", mapping_type="nonparametric"
+        )
+
+        out_param = parametric._standard_qm(self.cm_future, self.obs, self.cm_hist)
+        out_nonparam = nonparametric._standard_qm(
+            self.cm_future, self.obs, self.cm_hist
+        )
+
+        # Both correct the mean towards the observations
+        assert np.abs(np.mean(out_param) - np.mean(self.obs)) < 0.5
+        assert np.abs(np.mean(out_nonparam) - np.mean(self.obs)) < 0.5
+
+    def test_invalid_mapping_type_rejected(self):
+        # attrs validates mapping_type both at construction and on assignment
+        with self.assertRaises(ValueError):
+            QuantileMapping.from_variable("tas", mapping_type="not_a_type")
+
+        debiaser = QuantileMapping.from_variable("tas")
+        with self.assertRaises(ValueError):
+            debiaser.mapping_type = "not_a_type"
+
+    def test_apply_on_seasonal_and_future_window_detrending(self):
+        obs = np.random.normal(loc=0, scale=1, size=2000) ** 2
+        cm_hist = np.random.normal(loc=0, scale=1, size=2000) ** 2
+        cm_future = np.random.normal(loc=0, scale=1, size=2000) ** 2 * 5
+        debiaser = QuantileMapping.from_variable("tas", detrending="multiplicative")
+        out = debiaser.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future)
+        assert np.abs(np.mean(out / 5) - np.mean(obs)) < 0.1
+
+        obs = np.random.normal(loc=0, scale=1, size=2000) ** 2
+        cm_hist = np.random.normal(loc=0, scale=1, size=2000) ** 2
+        cm_future = np.random.normal(loc=0, scale=1, size=2000) ** 2 + 5
+        debiaser = QuantileMapping.from_variable("tas", detrending="additive")
+        out = debiaser.apply_on_seasonal_and_future_window(obs, cm_hist, cm_future)
+        assert np.abs(np.mean(out - 5) - np.mean(obs)) < 0.1
+
+    def test_invalid_detrending_rejected(self):
+        # attrs validates detrending both at construction and on assignment
+        with self.assertRaises(ValueError):
+            QuantileMapping.from_variable("tas", detrending="not_a_detrending")
+
+        debiaser = QuantileMapping.from_variable("tas")
+        with self.assertRaises(ValueError):
+            debiaser.detrending = "not_a_detrending"

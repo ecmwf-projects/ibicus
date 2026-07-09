@@ -16,9 +16,11 @@ import numpy as np
 import scipy.stats
 
 from ibicus.utils import (
+    IECDF,
     PrecipitationGammaLeftCensoredModel_5mm_threshold,
     PrecipitationGammaModelIgnoreZeroValues,
     PrecipitationHurdleModelGamma,
+    PrecipitationHurdleModelGammaWithoutCDFRandomization,
     StatisticalModel,
     ecdf,
     gen_PrecipitationGammaLeftCensoredModel,
@@ -29,6 +31,7 @@ from ibicus.utils import (
     quantile_map_non_parametically_with_constant_extrapolation,
     quantile_map_x_on_y_non_parametically,
 )
+from ibicus.utils._math_utils import _isimip_quantile_map_x_on_y_non_parametically
 
 
 def nested_tuples_similar_up_to_diff(tuple1, tuple2, diff):
@@ -402,3 +405,100 @@ class TestOtherHelpers(unittest.TestCase):
         # Test mapping on same vector squared
         y = np.square(x)
         assert np.allclose(y, quantile_map_x_on_y_non_parametically(x, y))
+
+    def test_quantile_map_x_on_y_non_parametically_isimip_mode(self):
+        x = np.random.random(1000)
+
+        # isimipv3.0 mode delegates to the rankdata-based implementation
+        y = x + 100
+        out = quantile_map_x_on_y_non_parametically(x, y, mode="isimipv3.0")
+        assert np.allclose(out, _isimip_quantile_map_x_on_y_non_parametically(x, y))
+        # Monotone translation is recovered up to interpolation accuracy
+        assert np.allclose(out, y, atol=1e-2)
+
+    def test_quantile_map_x_on_y_non_parametically_invalid_mode(self):
+        x = np.random.random(100)
+        with self.assertRaises(ValueError):
+            quantile_map_x_on_y_non_parametically(x, x, mode="not_a_mode")
+
+    def test_isimip_quantile_map_x_on_y_non_parametically(self):
+        x = np.random.random(500)
+
+        # Mapping onto the same vector roughly recovers the input
+        out = _isimip_quantile_map_x_on_y_non_parametically(x, x)
+        assert out.size == x.size
+        assert np.allclose(out, x, atol=1e-2)
+
+
+class TestIECDF(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
+    def test_IECDF_callable_matches_iecdf(self):
+        x = np.random.random(1000)
+        p = np.random.random(200)
+
+        iecdf_fn = IECDF(x)
+        # The closure agrees with the iecdf helper using "inverted_cdf"
+        assert np.allclose(iecdf_fn(p), iecdf(x, p, method="inverted_cdf"))
+
+    def test_IECDF_endpoints(self):
+        x = np.array([3.0, 1.0, 2.0, 5.0, 4.0])
+        iecdf_fn = IECDF(x)
+        assert iecdf_fn(0.0) == x.min()
+        assert iecdf_fn(1.0) == x.max()
+
+    def test_iecdf_close_to_numpy_quantile(self):
+        x = np.random.normal(size=10000)
+        p = np.linspace(0, 1, 50)
+        # Delegated quantile methods should match np.quantile directly
+        assert np.allclose(
+            iecdf(x, p, method="linear"), np.quantile(x, p, method="linear")
+        )
+
+
+class TestEcdfErrors(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
+    def test_ecdf_invalid_method_raises(self):
+        x = np.random.random(100)
+        y = np.random.random(10)
+        with self.assertRaises(ValueError):
+            ecdf(x, y, method="not_a_method")
+
+    def test_ecdf_step_function_is_monotone_in_zero_one(self):
+        x = np.random.random(1000)
+        y = np.sort(np.random.random(100))
+        out = ecdf(x, y, method="step_function")
+        assert np.all((out >= 0) & (out <= 1))
+        assert np.all(np.diff(out) >= 0)
+
+
+class TestHurdleModelCDFRandomization(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
+    def test_cdf_randomization_flag(self):
+        model_random = gen_PrecipitationHurdleModel(cdf_randomization=True)
+        model_no_random = PrecipitationHurdleModelGammaWithoutCDFRandomization
+
+        assert model_random.cdf_randomization is True
+        assert model_no_random.cdf_randomization is False
+
+        x = np.array([0.0, 0.0, 1.0, 2.0])
+        fit = (0.6, (3, 0, 2))
+
+        # Without randomization, zero-values map exactly to p0
+        cdf_no_random = model_no_random.cdf(x, *fit)
+        assert np.all(cdf_no_random[x == 0] == 0.6)
+
+        # With randomization, zero-values map into (0, p0)
+        cdf_random = model_random.cdf(x, *fit)
+        assert np.all((cdf_random[x == 0] >= 0) & (cdf_random[x == 0] <= 0.6))
+
+        # Non-zero values are identical regardless of randomization
+        assert np.allclose(cdf_no_random[x > 0], cdf_random[x > 0])
