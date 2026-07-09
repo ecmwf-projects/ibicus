@@ -1,5 +1,5 @@
 # Requirements for readthedocs
-sphinx
+sphinx>=7.0,<9.0
 ipykernel
 nbsphinx
 sphinx_rtd_theme

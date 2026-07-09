@@ -22,18 +22,18 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.x
-    - uses: pre-commit/action@v3.0.0
+    - uses: pre-commit/action@v3.0.1
 
   unit-tests:
-    name: unit-tests (3.12)
+    name: unit-tests (3.14)
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install Conda environment with Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
@@ -42,7 +42,7 @@ jobs:
         channels: conda-forge
         cache-env: true
         create-args: |
-          python=3.12
+          python=3.14
     - name: Install package
       run: |
         python -m pip install --no-deps -e .
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install Conda environment with Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
@@ -79,11 +79,11 @@ jobs:
     strategy:
       matrix:
         include:
-        - python-version: '3.12'
+        - python-version: '3.14'
           extra: -minver
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install Conda environment with Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
@@ -105,7 +105,7 @@ jobs:
     needs: [integration-tests, docs-build]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build distributions
       run: |
         $CONDA/bin/python -m pip install build
