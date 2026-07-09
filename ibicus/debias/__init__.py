@@ -161,3 +161,4 @@ from ._quantile_delta_mapping import QuantileDeltaMapping
 from ._quantile_mapping import QuantileMapping
 from ._running_window_debiaser import *
 from ._scaled_distribution_mapping import ScaledDistributionMapping
+from ._xclim import XclimQuantileMapping
