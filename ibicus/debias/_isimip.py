@@ -745,7 +745,7 @@ class ISIMIP(Debiaser):
         nr_of_entries_to_set_to_upper_bound,
         size_cm_future,
     ):
-        nr_of_entries_to_set_to_lower_bound = round(
+        nr_of_entries_to_set_to_lower_bound_new = round(
             nr_of_entries_to_set_to_lower_bound
             * size_cm_future
             / (
@@ -753,7 +753,7 @@ class ISIMIP(Debiaser):
                 + nr_of_entries_to_set_to_upper_bound
             )
         )
-        nr_of_entries_to_set_to_upper_bound = round(
+        nr_of_entries_to_set_to_upper_bound_new = round(
             nr_of_entries_to_set_to_upper_bound
             * size_cm_future
             / (
@@ -761,7 +761,10 @@ class ISIMIP(Debiaser):
                 + nr_of_entries_to_set_to_upper_bound
             )
         )
-        return nr_of_entries_to_set_to_lower_bound, nr_of_entries_to_set_to_upper_bound
+        return (
+            nr_of_entries_to_set_to_lower_bound_new,
+            nr_of_entries_to_set_to_upper_bound_new,
+        )
 
     @staticmethod
     def _step6_get_mask_for_entries_to_set_to_lower_bound(nr, cm_future_sorted):
