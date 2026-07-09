@@ -356,14 +356,16 @@ class TestISIMIPStep6Helpers(unittest.TestCase):
         assert np.array_equal(np.where(mask)[0], np.array([8, 9]))
 
     def test_fit_good_enough(self):
+
+        debiaser = ISIMIP.from_variable("tas")
         np.random.seed(1)
         data = scipy.stats.norm.rvs(size=2000)
         good_fit = scipy.stats.norm.fit(data)
-        assert ISIMIP._step6_fit_good_enough(data, scipy.stats.norm, good_fit)
+        assert debiaser._step6_fit_good_enough(data, scipy.stats.norm, good_fit)
 
         # A badly mismatched fit fails the goodness-of-fit check
         bad_fit = (50.0, 1.0)
-        assert not ISIMIP._step6_fit_good_enough(data, scipy.stats.norm, bad_fit)
+        assert not debiaser._step6_fit_good_enough(data, scipy.stats.norm, bad_fit)
 
     def test_get_nr_of_entries_to_set_to_bound_no_frequency_correction(self):
         debiaser = _make_isimip("tas")

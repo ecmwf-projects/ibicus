@@ -187,6 +187,8 @@ class ISIMIP(Debiaser):
         Step 6: Whether in conjuction with quantile mapping an event likelihood adjustment is used inspired by Switanek et al. 2017. Default: ``False``.
     ks_test_for_goodness_of_cdf_fit : bool
         Step 6: Whether a Kolmogorov Smirnov statistic is used to diagnose misfit of the parametric CDF prior to quantile mapping. If such misfit is diagnosed nonparametric quantile mapping is used. Only relevant if ``nonparametric_qm = False``. Default: ``True``.
+    ks_fit_threshold : float
+        Step 6: The critical Kolmogorov Smirnov statistic used to diagnose misfit of the parametric CDF prior to quantile mapping. If the statistic is above this threshold nonparametric quantile mapping is used. Only relevant if ``nonparametric_qm = False`` and ``ks_test_for_goodness_of_cdf_fit = True``. Default: ``0.5``.
 
     ecdf_method : str
         Computation: One of ``["kernel_density", "linear_interpolation", "step_function"]``. Method to calculate the empirical CDF. Default: ``"linear_interpolation"``.
@@ -287,6 +289,9 @@ class ISIMIP(Debiaser):
     )
     ks_test_for_goodness_of_cdf_fit: bool = attrs.field(
         default=True, validator=attrs.validators.instance_of(bool)
+    )
+    ks_fit_threshold: float = attrs.field(
+        default=0.5, validator=attrs.validators.instance_of(float)
     )
 
     # Computation arguments
@@ -778,10 +783,9 @@ class ISIMIP(Debiaser):
         mask[(cm_future_sorted.size - nr) :] = True
         return mask
 
-    @staticmethod
-    def _step6_fit_good_enough(data, distribution, fit):
+    def _step6_fit_good_enough(self, data, distribution, fit):
         ks_statistic = scipy.stats.kstest(data, distribution.cdf, args=fit)[0]
-        return ks_statistic <= 0.5
+        return ks_statistic <= self.ks_fit_threshold
 
     def _step6_adjust_values_between_thresholds(
         self,
@@ -862,10 +866,12 @@ class ISIMIP(Debiaser):
         try:
             # Calculate cdf-fits
             fit_cm_future = self.distribution.fit(
-                cm_future_sorted_entries_between_thresholds, **fixed_args
+                cm_future_sorted_entries_between_thresholds.astype(np.float64),
+                **fixed_args,
             )
             fit_obs_future = self.distribution.fit(
-                obs_future_sorted_entries_between_thresholds, **fixed_args
+                obs_future_sorted_entries_between_thresholds.astype(np.float64),
+                **fixed_args,
             )
 
             # For scipy <= 1.11.0 in certain cases when a fit failed not error was raised, but instead a np.nan returned.
@@ -892,12 +898,12 @@ class ISIMIP(Debiaser):
         # If ks_test_for_goodness_of_fit = True then test for goodness of fit and do nonparametric qm if too bad
         if self.ks_test_for_goodness_of_cdf_fit:
             if not (
-                ISIMIP._step6_fit_good_enough(
+                self._step6_fit_good_enough(
                     cm_future_sorted_entries_between_thresholds,
                     self.distribution,
                     fit_cm_future,
                 )
-                and ISIMIP._step6_fit_good_enough(
+                and self._step6_fit_good_enough(
                     obs_future_sorted_entries_between_thresholds,
                     self.distribution,
                     fit_obs_future,
