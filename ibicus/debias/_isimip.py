@@ -291,7 +291,7 @@ class ISIMIP(Debiaser):
         default=True, validator=attrs.validators.instance_of(bool)
     )
     ks_fit_threshold: float = attrs.field(
-        default=0.5, validator=attrs.validators.instance_of(float)
+        default=0.15, validator=attrs.validators.instance_of(float)
     )
 
     # Computation arguments
