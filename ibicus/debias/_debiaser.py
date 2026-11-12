@@ -512,11 +512,11 @@ class Debiaser(ABC):
         Parameters
         ----------
         obs : np.ndarray
-            3-dimensional numpy array of observations of the meteorological variable. The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations.
+            3-dimensional numpy array of observations of the meteorological variable. The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations (time last if ``time_first=False``).
         cm_hist : np.ndarray
-            3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
+            3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations (time last if ``time_first=False``). Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         cm_future : np.ndarray
-            3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
+            3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations (time last if ``time_first=False``). Shape in the 2nd and 3rd dimension needs to be the same as for obs.
         progressbar : bool = False
             Whether a progressbar shall be shown to indicate the debiaser status. Default: ``True``.
         parallel : bool = False
