@@ -19,7 +19,7 @@ import warnings
 
 import numpy as np
 
-from ibicus.debias import Debiaser, LinearScaling
+from ibicus.debias import Debiaser, DeltaChange, LinearScaling, QuantileMapping
 
 
 def _make_debiaser(reasonable_physical_range=None):
@@ -254,6 +254,41 @@ class TestDebiaserApplyInputValidation(unittest.TestCase):
 
         assert out.shape == cm_future.shape
         assert any("float dtype" in str(w.message) for w in caught)
+
+
+class TestDebiaserApplyTimeLast(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        np.random.seed(12345)
+
+    def test_time_last_gives_same_values_as_time_first(self):
+        obs, cm_hist, cm_future = (
+            np.random.normal(size=(1000, 2, 3)) + 270 + k for k in (0, 1, 3)
+        )
+        obs_t, cm_hist_t, cm_future_t = (
+            np.ascontiguousarray(np.moveaxis(x, 0, -1))
+            for x in (obs, cm_hist, cm_future)
+        )
+
+        for debiaser, parallel in [
+            (LinearScaling.from_variable("tas"), False),
+            (LinearScaling.from_variable("tas"), True),
+            (QuantileMapping.from_variable("tas"), False),
+            (DeltaChange.from_variable("tas"), False),
+        ]:
+            expected = debiaser.apply(
+                obs, cm_hist, cm_future, progressbar=False, parallel=parallel
+            )
+            out = debiaser.apply(
+                obs_t,
+                cm_hist_t,
+                cm_future_t,
+                progressbar=False,
+                parallel=parallel,
+                time_first=False,
+            )
+            assert out.shape == (2, 3, 1000)
+            assert np.array_equal(np.moveaxis(out, -1, 0), expected)
 
 
 if __name__ == "__main__":

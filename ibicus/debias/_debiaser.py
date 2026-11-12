@@ -228,6 +228,13 @@ class Debiaser(ABC):
     def _fill_masked_array_with_nan(x):
         return x.filled(np.nan)
 
+    @staticmethod
+    def _move_time_axis_first(x):
+        # Anything that is not a 3d array is left to the input checks
+        if Debiaser._is_correct_type(x) and Debiaser._has_correct_shape(x):
+            return np.moveaxis(x, -1, 0)
+        return x
+
     # ----- Input checks ----- #
 
     def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
@@ -496,6 +503,7 @@ class Debiaser(ABC):
         parallel=False,
         nr_processes=4,
         failsafe=False,
+        time_first=True,
         **kwargs,
     ):
         """
@@ -517,6 +525,8 @@ class Debiaser(ABC):
             Number of processes for parallel code execution. Default: 4.
         failsafe : bool = False
             Whether execution shall run in a failsafe mode. Debiasing then continues if it encounters an error at one location and returns ``np.nan`` at this location. Default: ``False``.
+        time_first : bool = True
+            Whether time is the first dimension of obs, cm_hist and cm_future. If ``False``, time needs to be the last dimension (``[x, y, t]``) and the output has the same order. Time series stored with time last are faster to read per location. Default: ``True``.
 
         Returns
         -------
@@ -528,6 +538,11 @@ class Debiaser(ABC):
 
         logger = get_library_logger()
         logger.info("----- Running debiasing for variable: %s -----" % self.variable)
+
+        if not time_first:
+            obs, cm_hist, cm_future = (
+                Debiaser._move_time_axis_first(x) for x in (obs, cm_hist, cm_future)
+            )
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
@@ -560,5 +575,8 @@ class Debiaser(ABC):
             )
 
         self._check_output(output)
+
+        if not time_first:
+            output = np.moveaxis(output, 0, -1)
 
         return output
