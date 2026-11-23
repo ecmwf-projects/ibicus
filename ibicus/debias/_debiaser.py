@@ -235,6 +235,10 @@ class Debiaser(ABC):
             return np.moveaxis(x, -1, 0)
         return x
 
+    @staticmethod
+    def _move_time_axis_last(x):
+        return np.moveaxis(x, 0, -1)
+
     # ----- Input checks ----- #
 
     def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
@@ -577,6 +581,6 @@ class Debiaser(ABC):
         self._check_output(output)
 
         if not time_first:
-            output = np.moveaxis(output, 0, -1)
+            output = Debiaser._move_time_axis_last(output)
 
         return output
