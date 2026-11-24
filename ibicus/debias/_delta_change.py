@@ -272,6 +272,6 @@ class DeltaChange(Debiaser):
         self._check_output(output)
 
         if not time_first:
-            output = np.moveaxis(output, 0, -1)
+            output = DeltaChange._move_time_axis_last(output)
 
         return output

@@ -470,9 +470,6 @@ class Debiaser(ABC):
         for k, index in enumerate(indices):
             output[:, index[0], index[1]] = result[k]
 
-        # result = np.array(result)
-        # result = np.moveaxis(result.reshape(obs.shape[1], obs.shape[2], obs.shape[0]), -1, 0)
-
         return output
 
     # ----- Apply functions ----- #
