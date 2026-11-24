@@ -231,10 +231,16 @@ class DeltaChange(Debiaser):
         parallel=False,
         nr_processes=4,
         failsafe=False,
+        time_first=True,
         **kwargs
     ):
         logger = get_library_logger()
         logger.info("----- Running debiasing for variable: %s -----" % self.variable)
+
+        if not time_first:
+            obs, cm_hist, cm_future = (
+                Debiaser._move_time_axis_first(x) for x in (obs, cm_hist, cm_future)
+            )
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
@@ -264,5 +270,8 @@ class DeltaChange(Debiaser):
             )
 
         self._check_output(output)
+
+        if not time_first:
+            output = np.moveaxis(output, 0, -1)
 
         return output

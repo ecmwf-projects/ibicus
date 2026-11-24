@@ -228,6 +228,17 @@ class Debiaser(ABC):
     def _fill_masked_array_with_nan(x):
         return x.filled(np.nan)
 
+    @staticmethod
+    def _move_time_axis_first(x):
+        # Anything that is not a 3d array is left to the input checks
+        if Debiaser._is_correct_type(x) and Debiaser._has_correct_shape(x):
+            return np.moveaxis(x, -1, 0)
+        return x
+
+    @staticmethod
+    def _move_time_axis_last(x):
+        return np.moveaxis(x, 0, -1)
+
     # ----- Input checks ----- #
 
     def _check_inputs_and_convert_if_possible(self, obs, cm_hist, cm_future):
@@ -496,6 +507,7 @@ class Debiaser(ABC):
         parallel=False,
         nr_processes=4,
         failsafe=False,
+        time_first=True,
         **kwargs,
     ):
         """
@@ -504,12 +516,12 @@ class Debiaser(ABC):
         Parameters
         ----------
         obs : np.ndarray
-            3-dimensional numpy array of observations of the meteorological variable. The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations.
+            3-dimensional numpy array of observations of the meteorological variable, with shape ``[t, x, y]``. The first dimension should correspond to temporal steps, followed by the spatial dimensions in the 2nd and 3rd dimension (see the ``time_first`` option for time-last input).
         cm_hist : np.ndarray
-            3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
+            3-dimensional numpy array of values of a climate model run during the same or a similar period as observations (historical run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to spatial dimensions: shape ``[t, x, y]`` (see the ``time_first`` option for time-last input). Spatial dimensions need to be the same as for obs.
         cm_future : np.ndarray
-            3-dimensional numpy array of values of a climate model to debias (future run).  The first dimension should correspond to temporal steps and the 2nd and 3rd one to locations. Shape in the 2nd and 3rd dimension needs to be the same as for obs.
-        progressbar : bool = False
+            3-dimensional numpy array of values of a climate model to debias (future run). The first dimension should correspond to temporal steps and the 2nd and 3rd one to spatial dimensions: shape ``[t, x, y]`` (see the ``time_first`` option for time-last input). Spatial dimensions need to be the same as for obs.
+        progressbar : bool = True
             Whether a progressbar shall be shown to indicate the debiaser status. Default: ``True``.
         parallel : bool = False
             Whether the debiasing shall be executed in parallel. No progressbar is shown in this case. Default: ``False``.
@@ -517,17 +529,24 @@ class Debiaser(ABC):
             Number of processes for parallel code execution. Default: 4.
         failsafe : bool = False
             Whether execution shall run in a failsafe mode. Debiasing then continues if it encounters an error at one location and returns ``np.nan`` at this location. Default: ``False``.
+        time_first : bool = True
+            Whether time is the first dimension of obs, cm_hist and cm_future (``[t, x, y]``). If ``False``, time is assumed to be the last dimension (``[x, y, t]``) and the output has the same ordering. Time series stored with time last are faster to read per location, if the array is stored contiguously in memory. Check with ``data.flags['C_CONTIGUOUS']`` and, for an ``[x, y, t]`` array that is not, enforce it with ``np.ascontiguousarray(data)``. Default: ``True``.
 
         Returns
         -------
         np.ndarray
-            3-dimensional numpy array containing the debiased climate model values for the future run (cm_future). Has the spatial dimensions as obs, cm_hist, cm_future.
+            3-dimensional numpy array containing the debiased climate model values for the future run (cm_future). Has the same spatial dimensions as obs, cm_hist and cm_future, and the same dimension ordering as the input (see ``time_first``).
         """
 
         self.__attrs_post_init__()
 
         logger = get_library_logger()
         logger.info("----- Running debiasing for variable: %s -----" % self.variable)
+
+        if not time_first:
+            obs, cm_hist, cm_future = (
+                Debiaser._move_time_axis_first(x) for x in (obs, cm_hist, cm_future)
+            )
 
         obs, cm_hist, cm_future = self._check_inputs_and_convert_if_possible(
             obs, cm_hist, cm_future
@@ -560,5 +579,8 @@ class Debiaser(ABC):
             )
 
         self._check_output(output)
+
+        if not time_first:
+            output = Debiaser._move_time_axis_last(output)
 
         return output
